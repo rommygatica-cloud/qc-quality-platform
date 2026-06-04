@@ -1,0 +1,66 @@
+[
+  {
+    "commodity": "Grapes",
+    "category": "Condition",
+    "defect": "Decay",
+    "severity": "Critical",
+    "image": "assets/Defects/Decay/decay_2.jpg",
+  "gallery":[
+    "assets/Defects/Decay/decay_4.jpg",
+    "assets/Defects/Decay/decay_3.jpg",
+    "assets/Defects/Decay/decay_1.jpg"
+  ],
+    "description": "Breakdown of berry tissue caused by microbial activity. Affected berries become soft, watery, and may develop off odors.",
+    "recommendation": "Monitor closely and evaluate hold order if decay with mold or nests are present."
+  },
+  {
+    "commodity": "Grapes",
+    "category": "Condition",
+    "defect": "Mold",
+    "severity": "Critical",
+    "image": "assets/Defects/Mold/mold_02.jpg",
+  "gallery":[
+    "assets/Defects/Mold/mold_01.jpg",
+    "assets/Defects/Mold/mold_03.jpg",
+    "assets/Defects/Mold/mold_04.jpg"
+  ],
+    "description": "Visible fungal growth on berries or rachis, typically appearing as white, gray, or green mycelium.",
+    "recommendation": "Evaluate hold order, possible repack, and customer risk before shipment."
+  },
+  {
+    "commodity": "Grapes",
+    "category": "Condition",
+    "defect": "Waterberries",
+    "severity": "Major",
+    "image": "assets/Defects/Waterberries/waterberries_01.jpg",
+    "description": "Physiological disorder characterized by watery, translucent, and soft berries with a water-soaked appearance.",
+    "recommendation": "Monitor shelf life and evaluate risk based on severity and customer requirements."
+  },
+  {
+    "commodity": "Grapes",
+    "category": "Condition",
+    "defect": "Shatter",
+    "severity": "Variable",
+    "image": "assets/placeholder-grapes.svg",
+    "description": "Detachment of berries from the rachis, either partially or completely, reducing cluster integrity.",
+    "recommendation": "Evaluate cluster integrity, percentage affected, and customer tolerance."
+  },
+    {
+    "commodity": "Grapes",
+    "category": "Condition",
+    "defect": "Split",
+    "severity": "Variable",
+    "image": "assets/Defects/Split/split_01.jpg",
+    "description": "Detachment of berries from the rachis, either partially or completely, reducing cluster integrity.",
+    "recommendation": "Evaluate cluster integrity, percentage affected, and customer tolerance."
+  },
+  {
+    "commodity": "Grapes",
+    "category": "Quality",
+    "defect": "Amber",
+    "severity": "Variable",
+    "image": "assets/placeholder-grapes.svg",
+    "description": "Yellow to amber-colored berries typically associated with overmaturity, heat exposure, or storage conditions.",
+    "recommendation": "Review customer color tolerance and market destination before shipment."
+  }
+]

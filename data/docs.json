@@ -1,0 +1,14 @@
+{
+  "tolerances":[
+    {"title":"USDA US No.1 - Grapes","type":"USDA","commodity":"Grapes","status":"Active","file":"docs/replace-with-your-usda-grapes.pdf"},
+    {"title":"PTF Internal Tolerances - Grapes","type":"PTF Internal","commodity":"Grapes","status":"Active","file":"docs/replace-with-your-ptf-grapes.pdf"},
+    {"title":"Walmart Retail Tolerances - Grapes","type":"Retail","commodity":"Grapes","status":"Pending Review","file":"docs/replace-with-your-walmart-grapes.pdf"}
+  ],
+  "specs":[
+    {"title":"Walmart Sweet Globe 18 lb Graphic Bag","customer":"Walmart","commodity":"Grapes","variety":"Sweet Globe","status":"Active","file":"docs/replace-with-your-spec.pdf"},
+    {"title":"Costco Grapes Spec","customer":"Costco","commodity":"Grapes","variety":"Mixed","status":"Active","file":"docs/replace-with-your-costco-spec.pdf"}
+  ],
+  "barcodes":[
+    {"upc":"895321002693","gtin":"10895321002690","variety":"Green Seedless","label":"Dulcinea","packStyle":"Clamshell 6x3 LB","plu":"94022","coo":"Chile/Peru"}
+  ]
+}

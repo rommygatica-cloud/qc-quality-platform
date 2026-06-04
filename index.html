@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QC Quality Platform</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span>🍇</span><div><b>QC Platform</b><small>Quality Operations</small></div></div>
+    <nav>
+      <button class="nav active" data-view="dashboard">Dashboard</button>
+      <button class="nav" data-view="defects">Defects Library</button>
+      <button class="nav" data-view="tolerances">Tolerances</button>
+      <button class="nav" data-view="specs">Specs Library</button>
+      <button class="nav" data-view="barcode">Barcode Scanner</button>
+    </nav>
+  </aside>
+
+  <main>
+    <header>
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <p id="pageSubtitle">Internal QC knowledge platform</p>
+      </div>
+      <input id="globalSearch" placeholder="Search defects, specs, tolerances, UPC..." />
+    </header>
+
+    <section id="dashboard" class="view active">
+      <div class="cards">
+        <article class="stat"><b id="defectCount">0</b><span>Defects</span></article>
+        <article class="stat"><b>3</b><span>Commodities</span></article>
+        <article class="stat"><b id="tolCount">0</b><span>Tolerance PDFs</span></article>
+        <article class="stat"><b id="specCount">0</b><span>Spec PDFs</span></article>
+      </div>
+      <div class="quickGrid">
+        <button data-view="defects">📚 Defects Library</button>
+        <button data-view="tolerances">📋 Tolerances</button>
+        <button data-view="specs">📄 Specs Library</button>
+        <button data-view="barcode">📱 Barcode Scanner</button>
+      </div>
+    </section>
+
+    <section id="defects" class="view">
+      <div class="filters">
+        <select id="commodityFilter"><option value="">All commodities</option></select>
+        <select id="categoryFilter"><option value="">All categories</option></select>
+        <select id="severityFilter"><option value="">All severities</option></select>
+      </div>
+      <div id="defectGrid" class="grid"></div>
+    </section>
+
+    <section id="tolerances" class="view">
+      <div id="toleranceGrid" class="grid"></div>
+    </section>
+
+    <section id="specs" class="view">
+      <div id="specGrid" class="grid"></div>
+    </section>
+
+    <section id="barcode" class="view">
+      <div class="scannerCard">
+        <h2>Barcode lookup</h2>
+        <p>Type or scan a UPC/GTIN. Camera scanner can be added in version 2.</p>
+        <input id="barcodeInput" placeholder="Example: 895321002693" />
+        <button id="barcodeBtn">Search</button>
+        <div id="barcodeResult"></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="modal"><button id="closeModal">×</button><div id="modalContent"></div></dialog>
+  <script src="app.js"></script>
+</body>
+</html>
