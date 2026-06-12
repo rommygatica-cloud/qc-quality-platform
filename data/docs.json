@@ -1,8 +1,35 @@
 {
   "tolerances":[
-    {"title":"USDA US No.1 - Grapes","type":"USDA","commodity":"Grapes","status":"Active","file":"docs/replace-with-your-usda-grapes.pdf"},
-    {"title":"PTF Internal Tolerances - Grapes","type":"PTF Internal","commodity":"Grapes","status":"Active","file":"docs/replace-with-your-ptf-grapes.pdf"},
-    {"title":"Walmart Retail Tolerances - Grapes","type":"Retail","commodity":"Grapes","status":"Pending Review","file":"docs/replace-with-your-walmart-grapes.pdf"}
+   {"title": "Apricots",
+      "type": "PTF Internal",
+      "commodity": "Stone Fruit",
+      "status": "Active",
+      "file": "https://igdafcjpdbwewlcmftdu.supabase.co/storage/v1/object/public/documents/Pacific%20Trellis%20QC%20Apricots%20scores%202025.pdf"
+    }
+           ,{"title": "Grapes",
+      "type": "PTF Internal",
+      "commodity": "Grapes",
+      "status": "Active",
+      "file": "https://igdafcjpdbwewlcmftdu.supabase.co/storage/v1/object/public/documents/Pacific%20Trellis%20QC%20grape%20scores%20Dec%202023.pdf"
+    }
+           ,{"title": "Nectarines and Plums",
+      "type": "PTF Internal",
+      "commodity": "Stone Fruit",
+      "status": "Active",
+      "file": "https://igdafcjpdbwewlcmftdu.supabase.co/storage/v1/object/public/documents/Pacific%20Trellis%20QC%20Nectarines%20-%20Plums%20scores%202024.pdf"
+    }
+       ,{"title": "Peaches",
+      "type": "PTF Internal",
+      "commodity": "Stone Fruit",
+      "status": "Active",
+      "file": "https://igdafcjpdbwewlcmftdu.supabase.co/storage/v1/object/public/documents/Pacific%20Trellis%20QC%20Peaches%20scores%202024.pdf"
+    }
+       ,{"title": "Cherries",
+      "type": "PTF Internal",
+      "commodity": "Stone Fruit",
+      "status": "Active",
+      "file": "https://igdafcjpdbwewlcmftdu.supabase.co/storage/v1/object/public/documents/Pacific%20Trellis%20scores%20cherries%20-%20US%20Good%20Destination.pdf"
+    }
   ],
   "specs":[
     {"title":"Walmart Sweet Globe 18 lb Graphic Bag","customer":"Walmart","commodity":"Grapes","variety":"Sweet Globe","status":"Active","file":"docs/replace-with-your-spec.pdf"},

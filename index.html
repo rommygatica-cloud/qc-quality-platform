@@ -3,19 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quality Operations Hub</title>
+  <title>QC Operations Hub</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <aside class="sidebar">
-    <div class="brand"><span>🛡️</span><div><b>Quality Operations Hub</b><small>Internal Quality Platform</small></div></div>
+    <div class="brand">
+      <span>🔎</span>
+      <div>
+        <b>QC Operations Hub</b>
+        <small>Internal Quality Platform</small>
+      </div>
+    </div>
+
     <nav>
-      <button class="nav active" data-view="dashboard">🏠 Dashboard</button>
-      <button class="nav" data-view="defects">📚 Defects Library</button>
-      <button class="nav" data-view="tolerances">📋 Tolerances</button>
-      <button class="nav" data-view="specs">📄 Specifications</button>
-      <button class="nav" data-view="barcode">🏷️ Barcode Verification</button>
+      <button class="nav active" data-view="dashboard">Dashboard</button>
+      <button class="nav" data-view="defects">Library</button>
+      <button class="nav" data-view="tolerances">Tolerances</button>
+      <button class="nav" data-view="specs">Specifications</button>
+      <button class="nav" data-view="sops">SOPs</button>
+      <button class="nav" data-view="daily">Arrival Control</button>
+      <button class="nav" data-view="barcode">Barcode Verification</button>
+     <button class="nav" data-view="traceability">Traceability Search</button>
+     <button class="nav" data-view="qa">QA Control</button>
+      <button id="adminMenu" class="nav" data-view="admin">⚙️ Administration</button>
     </nav>
   </aside>
 
@@ -23,9 +36,16 @@
     <header>
       <div>
         <h1 id="pageTitle">Dashboard</h1>
-        <p id="pageSubtitle">Centralized quality standards, specifications, tolerances, and inspection resources.</p>
+        <p id="pageSubtitle">
+          Quality standards and operational resources.
+        </p>
+        <p id="userRoleBadge"></p>
       </div>
-      <input id="globalSearch" placeholder="Search defects, specs, tolerances, UPC..." />
+
+      <div class="headerActions">
+        <input id="globalSearch" placeholder="Search defects, specs, tolerances, UPC..." />
+        <button id="logoutBtn">🚪 Logout</button>
+      </div>
     </header>
 
     <section id="dashboard" class="view active">
@@ -35,30 +55,123 @@
         <article class="stat"><b id="tolCount">0</b><span>Tolerance PDFs</span></article>
         <article class="stat"><b id="specCount">0</b><span>Spec PDFs</span></article>
       </div>
+
       <div class="quickGrid">
-        <button data-view="defects">📚 Defects Library</button>
-        <button data-view="tolerances">📋 Tolerances</button>
-        <button data-view="specs">📄 Specifications</button>
-        <button data-view="barcode">🏷️ Barcode Verification</button>
+        <button data-view="defects"> Library</button>
+        <button data-view="tolerances"> Tolerances</button>
+        <button data-view="specs"> Specifications</button>
+        <button data-view="sops"> SOPs</button>
+        <button data-view="daily">Arrival Control</button>
+        <button data-view="barcode"> Barcode Verification</button>
+        <button data-view="traceability"> Traceability Search</button>
+        <button data-view="qa"> QA Control</button>
       </div>
     </section>
 
-    <section id="defects" class="view">
-      <div class="filters">
-        <select id="commodityFilter"><option value="">All commodities</option></select>
-        <select id="categoryFilter"><option value="">All categories</option></select>
-        <select id="severityFilter"><option value="">All severities</option></select>
-      </div>
-      <div id="defectGrid" class="grid"></div>
-    </section>
+<section id="defects" class="view">
+
+  <div id="qcLibraryHome">
+    <div id="qcLibraryCommodityGrid" class="grid"></div>
+  </div>
+
+  <div id="qcLibraryDetail" style="display:none;">
+
+    <button onclick="backToQCLibrary()"
+      style="margin-bottom:20px;padding:10px 16px;border-radius:10px;border:1px solid #e5e7eb;background:white;cursor:pointer;">
+      ← Back
+    </button>
+
+    <h2 id="qcCommodityTitle"></h2>
+
+    <div class="cards">
+
+      <article class="stat">
+        <b>🔍</b>
+        <span>Quality Defects</span>
+      </article>
+
+      <article class="stat">
+        <b>⚠️</b>
+        <span>Condition Defects</span>
+      </article>
+
+      <article class="stat">
+        <b>📊</b>
+        <span>Parameters</span>
+      </article>
+
+      <article class="stat">
+        <b>📷</b>
+        <span>Photo Gallery</span>
+      </article>
+
+    </div>
+
+  </div>
+
+</section>
 
     <section id="tolerances" class="view">
       <div id="toleranceGrid" class="grid"></div>
     </section>
 
-    <section id="specs" class="view">
-      <div id="specGrid" class="grid"></div>
+<section id="specs" class="view">
+  <div id="specMainCards" class="cards">
+    <article class="stat" onclick="showSpecSection('PTF Internal')">
+      <b>PTF Specs</b>
+      <span id="ptfSpecCount">0 Documents</span>
+    </article>
+
+    <article class="stat" onclick="showSpecSection('Retail')">
+      <b>Retail</b>
+      <span id="retailSpecCount">0 Documents</span>
+    </article>
+
+    <article class="stat" onclick="showSpecSection('USDA')">
+      <b>USDA</b>
+      <span id="usdaSpecCount">0 Documents</span>
+    </article>
+  </div>
+
+  <div id="specSectionTitle"></div>
+  <div id="latestDocumentCard"></div>
+  <div id="specGrid" class="grid"></div>
+</section>
+
+    <section id="sops" class="view">
+      <h2>SOPs</h2>
+      <div class="cards">
+        <article class="stat"><b>Receiving</b><span>Inbound, transfers, outside purchase</span></article>
+        <article class="stat"><b>Inventory</b><span>Holds, reinspections, easy landing</span></article>
+        <article class="stat"><b>Reports</b><span>Claims, grower reports, summaries</span></article>
+      </div>
     </section>
+
+    <section id="daily" class="view">
+  <h2>Daily Work</h2>
+
+  <div class="cards">
+    <article class="stat">
+      <b>Weekly Arrivals</b>
+      <span>Vessels and containers</span>
+    </article>
+
+    <article class="stat">
+      <b>Inspections</b>
+      <span>Status tracking</span>
+    </article>
+
+    <article class="stat">
+      <b>Discrepancies</b>
+      <span>Log issues and mismatches</span>
+    </article>
+
+    <article class="stat">
+      <b>Reports</b>
+      <span>Pending and sent reports</span>
+    </article>
+  </div>
+</section>
 
     <section id="barcode" class="view">
       <div class="scannerCard">
@@ -69,9 +182,105 @@
         <div id="barcodeResult"></div>
       </div>
     </section>
+
+    <section id="admin" class="view">
+      <h2>Administration</h2>
+
+      <div class="cards">
+        <article class="stat">
+          <b>Users</b>
+          <span>Manage access</span>
+        </article>
+
+        <article class="stat">
+          <b>Roles</b>
+          <span>Manage permissions</span>
+        </article>
+
+        <article class="stat" onclick="showUploadForm()">
+          <b>Documents</b>
+          <span>Upload PDFs</span>
+        </article>
+      </div>
+
+      <div id="uploadDocumentPanel" style="display:none;margin-top:30px;">
+        <h3>Upload Document</h3>
+
+        <input id="docTitle" placeholder="Document Title">
+
+        <select id="docType">
+          <option>Specification</option>
+          <option>Tolerance</option>
+          <option>SOP</option>
+        </select>
+
+        <select id="docSection">
+          <option>PTF Specs</option>
+          <option>Retail</option>
+          <option>USDA / Industry</option>
+        </select>
+
+        <input id="docCommodity" placeholder="Commodity">
+        <input id="docCustomer" placeholder="Customer">
+
+        <input type="file" id="docFile">
+
+        <button onclick="uploadDocument()">Upload</button>
+        <hr style="margin:30px 0;">
+
+<h3>Upload Barcode Excel</h3>
+
+<p style="color:#64748b;">
+  Upload an Excel file with barcode / label information. Existing UPC or GTIN records will be skipped.
+</p>
+
+<input type="file" id="barcodeExcelFile" accept=".xlsx,.xls,.csv">
+
+<button onclick="importBarcodeExcel()">
+  Import Barcode Excel
+</button>
+
+<div id="barcodeImportResult" style="margin-top:15px;"></div>
+
+<hr style="margin:30px 0;">
+
+<h3>Upload Commodity Image</h3>
+
+<p style="color:#64748b;">
+  Upload a commodity image for the QC Knowledge Base.
+</p>
+
+<select id="commodityImageSelect">
+  <option>Grape</option>
+  <option>Orange</option>
+  <option>Mandarin</option>
+  <option>Peach</option>
+  <option>Pear</option>
+  <option>Cherry</option>
+  <option>Nectarine</option>
+  <option>Lemon</option>
+  <option>Plum</option>
+</select>
+
+<input type="file" id="commodityImageFile" accept="image/*">
+
+<button onclick="uploadCommodityImage()">
+  Upload Image
+</button>
+
+<div id="commodityImageResult" style="margin-top:15px;"></div>
+      </div>
+    </section>
   </main>
 
-  <dialog id="modal"><button id="closeModal">×</button><div id="modalContent"></div></dialog>
-  <script src="app.js"></script>
+  <dialog id="modal">
+    <button id="closeModal">×</button>
+    <div id="modalContent"></div>
+  </dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="auth.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
