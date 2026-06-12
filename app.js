@@ -74,6 +74,10 @@ function initNav() {
 }
 
 function show(id) {
+  if (typeof canAccessView === "function" && !canAccessView(id)) {
+  alert("You do not have permission to access this section.");
+  return;
+}
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
 
   $(id).classList.add("active");
@@ -402,6 +406,7 @@ function getCommodityGroup(commodity) {
     value.includes("peaches") ||
     value.includes("nectarines") ||
     value.includes("plums") ||
+    value.includes("pears") ||
     value.includes("stone")
   ) {
     return "Stone Fruit";

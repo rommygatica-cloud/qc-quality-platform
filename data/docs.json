@@ -28,7 +28,8 @@
       "type": "PTF Internal",
       "commodity": "Stone Fruit",
       "status": "Active",
-      "file": "https://igdafcjpdbwewlcmftdu.supabase.co/storage/v1/object/public/documents/Pacific%20Trellis%20scores%20cherries%20-%20US%20Good%20Destination.pdf"
+      "file": "https://igdafcjpdbwewlcmftdu.supabase.co/storage/v1/object/public/documents/Pacific%20Trellis%20scores%20
+      // ies%20-%20US%20Good%20Destination.pdf"
     }
   ],
   "specs":[

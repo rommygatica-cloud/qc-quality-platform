@@ -3,6 +3,16 @@ const SUPABASE_KEY = "sb_publishable_SVWL5r4zuVaxFu6b2HWHSg_7huKH3tB";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const ROLE_ACCESS = {
+  "QC User": ["dashboard", "defects", "tolerances", "specs", "daily", "barcode"],
+  "QA User": ["dashboard", "defects", "tolerances", "specs", "qa"],
+  "Sourcing User": ["dashboard", "tolerances", "specs", "traceability"],
+  "QC Admin": ["dashboard", "defects", "tolerances", "specs", "sops", "daily", "barcode", "traceability", "qa", "admin"],
+  "Repack User": ["dashboard", "defects", "tolerances", "specs"]
+};
+
+let currentUserRole = null;
+
 async function getUserRole(email) {
   const { data, error } = await supabaseClient
     .from("user_roles")
@@ -17,10 +27,42 @@ async function getUserRole(email) {
   }
 
   const userRole = data.find(row =>
-  row.email?.trim().toLowerCase() === email.trim().toLowerCase()
-);
+    row.email?.trim().toLowerCase() === email.trim().toLowerCase()
+  );
 
   return userRole ? userRole.role : "no role found";
+}
+
+function applyRoleAccess(role) {
+  currentUserRole = role;
+
+  const allowedViews = ROLE_ACCESS[role] || ["dashboard"];
+
+  document.querySelectorAll("[data-view]").forEach(btn => {
+    const view = btn.dataset.view;
+
+    if (!allowedViews.includes(view)) {
+      btn.style.display = "none";
+    } else {
+      btn.style.display = "";
+    }
+  });
+
+  document.querySelectorAll(".view").forEach(section => {
+    if (!allowedViews.includes(section.id)) {
+      section.style.display = "none";
+    }
+  });
+
+  if (!allowedViews.includes("admin")) {
+    const adminMenu = document.getElementById("adminMenu");
+    if (adminMenu) adminMenu.style.display = "none";
+  }
+}
+
+function canAccessView(viewId) {
+  const allowedViews = ROLE_ACCESS[currentUserRole] || ["dashboard"];
+  return allowedViews.includes(viewId);
 }
 
 async function checkAuth() {
@@ -51,6 +93,8 @@ async function checkAuth() {
     const role = await getUserRole(session.user.email);
 
     console.log("User role:", role);
+
+    setTimeout(() => applyRoleAccess(role), 300);
 
     const badge = document.getElementById("userRoleBadge");
 
