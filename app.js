@@ -120,11 +120,14 @@ function renderDashboard() {
 }
 
 function options(id, values) {
-  $(id).innerHTML =
-    $(id).children[0].outerHTML +
+  const element = $(id);
+  if (!element) return;
+
+  element.innerHTML =
+    element.children[0].outerHTML +
     [...new Set(values)].sort().map(v => `<option>${v}</option>`).join("");
 
-  $(id).onchange = renderDefects;
+  element.onchange = renderDefects;
 }
 
 function renderFilters() {
