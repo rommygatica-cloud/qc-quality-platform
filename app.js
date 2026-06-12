@@ -137,14 +137,13 @@ function renderFilters() {
 }
 
 function matchText(obj) {
-  const q = $("globalSearch").value.toLowerCase();
+  const search = $("globalSearch");
+  const q = search ? search.value.toLowerCase() : "";
   return !q || JSON.stringify(obj).toLowerCase().includes(q);
 }
 function matchDocument(doc) {
-
-  const q = $("globalSearch").value
-    .toLowerCase()
-    .trim();
+  const search = $("globalSearch");
+  const q = search ? search.value.toLowerCase().trim() : "";
 
   if (!q) return true;
 
