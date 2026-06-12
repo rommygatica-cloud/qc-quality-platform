@@ -161,14 +161,21 @@ function matchDocument(doc) {
   );
 }
 function renderDefects() {
+  const defectGrid = $("defectGrid");
+  if (!defectGrid) return;
+
+  const commodityFilter = $("commodityFilter");
+  const categoryFilter = $("categoryFilter");
+  const severityFilter = $("severityFilter");
+
   const list = defects.filter(d =>
-    (!$("commodityFilter").value || d.commodity === $("commodityFilter").value) &&
-    (!$("categoryFilter").value || d.category === $("categoryFilter").value) &&
-    (!$("severityFilter").value || d.severity === $("severityFilter").value) &&
+    (!commodityFilter || !commodityFilter.value || d.commodity === commodityFilter.value) &&
+    (!categoryFilter || !categoryFilter.value || d.category === categoryFilter.value) &&
+    (!severityFilter || !severityFilter.value || d.severity === severityFilter.value) &&
     matchText(d)
   );
 
-  $("defectGrid").innerHTML = list.map((d, i) => `
+  defectGrid.innerHTML = list.map((d, i) => `
     <article class="card" onclick="openDefect(${i})">
       <img src="${d.image}">
       <div class="cardBody">
