@@ -144,17 +144,17 @@
   <div class="cards">
     <article class="stat" onclick="showSopSection('Receiving')">
       <b>Receiving</b>
-      <span>Inbound, transfers, outside purchase</span>
+      <span>Inbound,USDA, Transfers, Outside Purchase</span>
     </article>
 
     <article class="stat" onclick="showSopSection('Inventory')">
       <b>Inventory</b>
-      <span>Holds, reinspections, easy landing</span>
+      <span>Holds, reinspections</span>
     </article>
 
     <article class="stat" onclick="showSopSection('Reports')">
       <b>Reports</b>
-      <span>Claims, grower reports, summaries</span>
+      <span>Surveys, retail reports</span>
     </article>
   </div>
 
@@ -262,10 +262,10 @@
 
 <hr style="margin:30px 0;">
 
-<h3>Upload Commodity Image</h3>
+<h3>Upload Commodity Cover Image</h3>
 
 <p style="color:#64748b;">
-  Upload a commodity image for the QC Knowledge Base.
+  Upload the main cover image shown on each commodity card.
 </p>
 
 <select id="commodityImageSelect">
@@ -274,7 +274,7 @@
   <option>Mandarin</option>
   <option>Peach</option>
   <option>Pear</option>
-  <option>Cherry</option>
+  <option>Cherries</option>
   <option>Nectarine</option>
   <option>Lemon</option>
   <option>Plum</option>
@@ -283,7 +283,7 @@
 <input type="file" id="commodityImageFile" accept="image/*">
 
 <button onclick="uploadCommodityImage()">
-  Upload Image
+  Upload Cover Image
 </button>
 
 <div id="commodityImageResult" style="margin-top:15px;"></div>

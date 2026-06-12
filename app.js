@@ -397,11 +397,11 @@ function getCommodityGroup(commodity) {
   const value = (commodity || "").toLowerCase();
 
   if (
-    value.includes("cherr") ||
-    value.includes("apricot") ||
-    value.includes("peach") ||
-    value.includes("nectarine") ||
-    value.includes("plum") ||
+    value.includes("cherries") ||
+    value.includes("apricots") ||
+    value.includes("peaches") ||
+    value.includes("nectarines") ||
+    value.includes("plums") ||
     value.includes("stone")
   ) {
     return "Stone Fruit";
@@ -409,14 +409,14 @@ function getCommodityGroup(commodity) {
 
   if (
     value.includes("citrus") ||
-    value.includes("mandarin") ||
-    value.includes("orange") ||
-    value.includes("lemon")
+    value.includes("mandarins") ||
+    value.includes("oranges") ||
+    value.includes("lemons")
   ) {
     return "Citrus";
   }
 
-  if (value.includes("grape")) {
+  if (value.includes("grapes")) {
     return "Grapes";
   }
 
@@ -686,22 +686,28 @@ async function uploadCommodityImage() {
 
   const imageUrl = publicUrlData.publicUrl;
 
-  const { error: updateError } = await supabaseClient
-    .from("commodities")
-    .update({
-      image_url: imageUrl
-    })
-    .eq("name", commodity);
+  const { data: updatedRows, error: updateError } = await supabaseClient
+  .from("commodities")
+  .update({
+    image_url: imageUrl
+  })
+  .eq("name", commodity)
+  .select();
 
-  if (updateError) {
-    resultBox.innerHTML = "Database error: " + updateError.message;
-    return;
-  }
+if (updateError) {
+  resultBox.innerHTML = "Database error: " + updateError.message;
+  return;
+}
 
-  resultBox.innerHTML = `
-    <b>Image uploaded successfully!</b><br>
-    ${commodity} updated.
-  `;
+if (!updatedRows || updatedRows.length === 0) {
+  resultBox.innerHTML = `No commodity found with name: ${commodity}`;
+  return;
+}
+
+resultBox.innerHTML = `
+  <b>Image uploaded successfully!</b><br>
+  ${commodity} updated.
+`;
 }
 
 function renderQCLibrary() {
