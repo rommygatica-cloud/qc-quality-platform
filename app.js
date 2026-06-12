@@ -312,9 +312,21 @@ if (latestCard) {
       : `<p style="color:#64748b;">Select a specification section.</p>`;
 
   const sopGrid = $("sopGrid");
-  if (sopGrid) {
-    sopGrid.innerHTML = docs.sops.filter(matchDocument).map(docCard).join("");
-  }
+
+if (sopGrid) {
+  const sopList = currentSopSection
+    ? docs.sops.filter(d =>
+        d.section === currentSopSection &&
+        matchDocument(d)
+      )
+    : [];
+
+  sopGrid.innerHTML = currentSopSection
+    ? sopList.length
+      ? sopList.map(docCard).join("")
+      : `<p style="color:#64748b;">No SOPs found for ${currentSopSection}.</p>`
+    : `<p style="color:#64748b;">Select an SOP section.</p>`;
+}
 }
 function renderSpecSearchResults(list) {
   if (!list.length) {
@@ -730,6 +742,17 @@ function openQCLibraryCommodity(commodity) {
 function backToQCLibrary() {
   $("qcLibraryDetail").style.display = "none";
   $("qcLibraryHome").style.display = "block";
+}
+let currentSopSection = "";
+
+function showSopSection(section) {
+
+  currentSopSection = section;
+
+  $("sopSectionTitle").innerHTML =
+    `<h2>${section}</h2>`;
+
+  renderDocs();
 }
 load();
 

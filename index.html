@@ -139,13 +139,28 @@
 </section>
 
     <section id="sops" class="view">
-      <h2>SOPs</h2>
-      <div class="cards">
-        <article class="stat"><b>Receiving</b><span>Inbound, transfers, outside purchase</span></article>
-        <article class="stat"><b>Inventory</b><span>Holds, reinspections, easy landing</span></article>
-        <article class="stat"><b>Reports</b><span>Claims, grower reports, summaries</span></article>
-      </div>
-    </section>
+  <h2>SOPs</h2>
+
+  <div class="cards">
+    <article class="stat" onclick="showSopSection('Receiving')">
+      <b>Receiving</b>
+      <span>Inbound, transfers, outside purchase</span>
+    </article>
+
+    <article class="stat" onclick="showSopSection('Inventory')">
+      <b>Inventory</b>
+      <span>Holds, reinspections, easy landing</span>
+    </article>
+
+    <article class="stat" onclick="showSopSection('Reports')">
+      <b>Reports</b>
+      <span>Claims, grower reports, summaries</span>
+    </article>
+  </div>
+
+  <div id="sopSectionTitle" style="margin-top:24px;"></div>
+  <div id="sopGrid" class="grid"></div>
+</section>
 
     <section id="daily" class="view">
   <h2>Daily Work</h2>
@@ -215,10 +230,13 @@
         </select>
 
         <select id="docSection">
-          <option>PTF Specs</option>
-          <option>Retail</option>
-          <option>USDA / Industry</option>
-        </select>
+  <option>PTF Specs</option>
+  <option>Retail</option>
+  <option>USDA / Industry</option>
+  <option>Receiving</option>
+  <option>Inventory</option>
+  <option>Reports</option>
+</select>
 
         <input id="docCommodity" placeholder="Commodity">
         <input id="docCustomer" placeholder="Customer">
