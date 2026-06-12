@@ -765,6 +765,64 @@ function showSopSection(section) {
 
   renderDocs();
 }
+async function uploadQCLibraryPhoto() {
+  const commodity = $("libraryPhotoCommodity").value;
+  const section = $("libraryPhotoSection").value;
+  const defectName = $("libraryPhotoDefectName").value.trim();
+  const notes = $("libraryPhotoNotes").value.trim();
+  const file = $("libraryPhotoFile").files[0];
+  const resultBox = $("libraryPhotoResult");
+
+  if (!commodity || !section || !defectName || !file) {
+    alert("Please complete commodity, section, defect/topic name, and image.");
+    return;
+  }
+
+  resultBox.innerHTML = "Uploading QC photo...";
+
+  const safeName = defectName.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+  const filePath = `${commodity}/${section}/${safeName}-${Date.now()}-${file.name}`;
+
+  const { error: uploadError } = await supabaseClient.storage
+    .from("qc-library-photos")
+    .upload(filePath, file);
+
+  if (uploadError) {
+    resultBox.innerHTML = "Upload error: " + uploadError.message;
+    return;
+  }
+
+  const { data: publicUrlData } = supabaseClient.storage
+    .from("qc-library-photos")
+    .getPublicUrl(filePath);
+
+  const imageUrl = publicUrlData.publicUrl;
+
+  const { error: insertError } = await supabaseClient
+    .from("qc_library_photos")
+    .insert({
+      commodity: commodity,
+      section: section,
+      defect_name: defectName,
+      image_url: imageUrl,
+      notes: notes,
+      status: "Active"
+    });
+
+  if (insertError) {
+    resultBox.innerHTML = "Database error: " + insertError.message;
+    return;
+  }
+
+  resultBox.innerHTML = `
+    <b>QC photo uploaded successfully!</b><br>
+    ${commodity} → ${section} → ${defectName}
+  `;
+
+  $("libraryPhotoDefectName").value = "";
+  $("libraryPhotoNotes").value = "";
+  $("libraryPhotoFile").value = "";
+}
 load();
 
 // Service worker disabled for development/cache issues

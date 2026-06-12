@@ -264,6 +264,45 @@
 
 <h3>Upload Commodity Cover Image</h3>
 
+<hr style="margin:30px 0;">
+
+<h3>Upload Defect / Reference Photo</h3>
+
+<p style="color:#64748b;">
+  Upload photos for QC Knowledge Base sections such as quality defects, condition defects, parameters, or gallery.
+</p>
+
+<select id="libraryPhotoCommodity">
+  <option>Grapes</option>
+  <option>Oranges</option>
+  <option>Mandarins</option>
+  <option>Peaches</option>
+  <option>Pears</option>
+  <option>Cherries</option>
+  <option>Nectarines</option>
+  <option>Lemons</option>
+  <option>Plums</option>
+</select>
+
+<select id="libraryPhotoSection">
+  <option>Quality Defects</option>
+  <option>Condition Defects</option>
+  <option>Parameters</option>
+  <option>Photo Gallery</option>
+</select>
+
+<input id="libraryPhotoDefectName" placeholder="Defect / Topic Name">
+
+<input id="libraryPhotoNotes" placeholder="Notes">
+
+<input type="file" id="libraryPhotoFile" accept="image/*">
+
+<button onclick="uploadQCLibraryPhoto()">
+  Upload QC Photo
+</button>
+
+<div id="libraryPhotoResult" style="margin-top:15px;"></div>
+
 <p style="color:#64748b;">
   Upload the main cover image shown on each commodity card.
 </p>
