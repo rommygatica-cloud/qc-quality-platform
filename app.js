@@ -1,10 +1,11 @@
 let defects = [];
 let docs = { tolerances: [], specs: [], sops: [], barcodes: [] };
-
 let commodities = [];
 
 let currentSpecSection = "";
 let currentSpecCommodity = "";
+let currentSopSection = "";
+let currentQCLibraryCommodity = "";
 
 const $ = id => document.getElementById(id);
 
@@ -27,19 +28,20 @@ async function load() {
       barcodes: []
     };
   }
-const { data: commoditiesData, error: commoditiesError } =
-  await supabaseClient
-    .from("commodities")
-    .select("*")
-    .eq("status", "Active")
-    .order("name");
 
-if (commoditiesError) {
-  console.error("Commodities error:", commoditiesError);
-  commodities = [];
-} else {
-  commodities = commoditiesData || [];
-}
+  const { data: commoditiesData, error: commoditiesError } =
+    await supabaseClient
+      .from("commodities")
+      .select("*")
+      .eq("status", "Active")
+      .order("name");
+
+  if (commoditiesError) {
+    console.error("Commodities error:", commoditiesError);
+    commodities = [];
+  } else {
+    commodities = commoditiesData || [];
+  }
 
   initNav();
   renderDashboard();
@@ -75,12 +77,16 @@ function initNav() {
 
 function show(id) {
   if (typeof canAccessView === "function" && !canAccessView(id)) {
-  alert("You do not have permission to access this section.");
-  return;
-}
+    alert("You do not have permission to access this section.");
+    return;
+  }
+
   document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
 
-  $(id).classList.add("active");
+  const view = $(id);
+  if (!view) return;
+
+  view.classList.add("active");
 
   document.querySelectorAll(".nav").forEach(n =>
     n.classList.toggle("active", n.dataset.view === id)
@@ -103,23 +109,20 @@ function show(id) {
 }
 
 function renderDashboard() {
-  $("defectCount").textContent = defects.length;
-  $("tolCount").textContent = docs.tolerances.length;
-  $("specCount").textContent = docs.specs.length;
+  if ($("defectCount")) $("defectCount").textContent = defects.length;
+  if ($("tolCount")) $("tolCount").textContent = docs.tolerances.length;
+  if ($("specCount")) $("specCount").textContent = docs.specs.length;
 
   if ($("ptfSpecCount")) {
-    $("ptfSpecCount").textContent =
-      `${getSectionCount("PTF Internal")} Documents`;
+    $("ptfSpecCount").textContent = `${getSectionCount("PTF Internal")} Documents`;
   }
 
   if ($("retailSpecCount")) {
-    $("retailSpecCount").textContent =
-      `${getSectionCount("Retail")} Documents`;
+    $("retailSpecCount").textContent = `${getSectionCount("Retail")} Documents`;
   }
 
   if ($("usdaSpecCount")) {
-    $("usdaSpecCount").textContent =
-      `${getSectionCount("USDA / Industry")} Documents`;
+    $("usdaSpecCount").textContent = `${getSectionCount("USDA / Industry")} Documents`;
   }
 }
 
@@ -145,6 +148,7 @@ function matchText(obj) {
   const q = search ? search.value.toLowerCase() : "";
   return !q || JSON.stringify(obj).toLowerCase().includes(q);
 }
+
 function matchDocument(doc) {
   const search = $("globalSearch");
   const q = search ? search.value.toLowerCase().trim() : "";
@@ -159,10 +163,9 @@ function matchDocument(doc) {
     ${doc.category || ""}
   `.toLowerCase();
 
-  return q.split(" ").every(word =>
-    text.includes(word)
-  );
+  return q.split(" ").every(word => text.includes(word));
 }
+
 function renderDefects() {
   const defectGrid = $("defectGrid");
   if (!defectGrid) return;
@@ -232,18 +235,10 @@ function docCard(d) {
     <article class="card" onclick="window.open('${d.file_url}','_blank')">
       <div class="cardBody">
         <div class="docIcon">📄</div>
-
         <span class="tag">${d.status}</span>
-
         <h3>${d.title}</h3>
-
         <p>${getCommodityIcon(d.commodity)} ${d.commodity || ""}</p>
-
-        ${d.customer
-          ? `<p>🏪 ${d.customer}</p>`
-          : ""
-        }
-
+        ${d.customer ? `<p>🏪 ${d.customer}</p>` : ""}
         <p style="font-size:12px;color:#64748b;">
           📅 Updated ${updated}
         </p>
@@ -253,44 +248,49 @@ function docCard(d) {
 }
 
 function renderDocs() {
-  $("toleranceGrid").innerHTML =
-  docs.tolerances.filter(matchDocument).map(docCard).join("");
-
-const latestDoc = getLatestDocument();
-if ($("latestDocumentCard")) {
-  if (latestDoc) {
-    $("latestDocumentCard").innerHTML = `
-      <div class="latestDoc">
-        <h3>📄 Latest Upload</h3>
-        <p><strong>${latestDoc.title}</strong></p>
-        <p>${getCommodityIcon(latestDoc.commodity)} ${latestDoc.commodity || ""}</p>
-        <p style="font-size:12px;color:#64748b;">
-          📅 Updated ${new Date(latestDoc.created_at).toLocaleDateString()}
-        </p>
-      </div>
-    `;
-  } else {
-    $("latestDocumentCard").innerHTML = "";
+  if ($("toleranceGrid")) {
+    $("toleranceGrid").innerHTML =
+      docs.tolerances.filter(matchDocument).map(docCard).join("");
   }
-}
-  const searchActive =
-    $("globalSearch").value.trim() !== "";
 
-    const mainCards = $("specMainCards");
+  const latestDoc = getLatestDocument();
 
-if (mainCards) {
-  mainCards.style.display = searchActive ? "none" : "grid";
-}
-const sectionTitle = $("specSectionTitle");
-const latestCard = $("latestDocumentCard");
+  if ($("latestDocumentCard")) {
+    if (latestDoc) {
+      $("latestDocumentCard").innerHTML = `
+        <div class="latestDoc">
+          <h3>📄 Latest Upload</h3>
+          <p><strong>${latestDoc.title}</strong></p>
+          <p>${getCommodityIcon(latestDoc.commodity)} ${latestDoc.commodity || ""}</p>
+          <p style="font-size:12px;color:#64748b;">
+            📅 Updated ${new Date(latestDoc.created_at).toLocaleDateString()}
+          </p>
+        </div>
+      `;
+    } else {
+      $("latestDocumentCard").innerHTML = "";
+    }
+  }
 
-if (sectionTitle) {
-  sectionTitle.style.display = searchActive ? "none" : "block";
-}
+  const search = $("globalSearch");
+  const searchActive = search ? search.value.trim() !== "" : false;
 
-if (latestCard) {
-  latestCard.style.display = searchActive ? "none" : "block";
-}
+  const mainCards = $("specMainCards");
+  if (mainCards) {
+    mainCards.style.display = searchActive ? "none" : "grid";
+  }
+
+  const sectionTitle = $("specSectionTitle");
+  const latestCard = $("latestDocumentCard");
+
+  if (sectionTitle) {
+    sectionTitle.style.display = searchActive ? "none" : "block";
+  }
+
+  if (latestCard) {
+    latestCard.style.display = searchActive ? "none" : "block";
+  }
+
   let specsToShow = [];
 
   if (searchActive) {
@@ -309,29 +309,32 @@ if (latestCard) {
     });
   }
 
-  $("specGrid").innerHTML = searchActive
-    ? renderSpecSearchResults(specsToShow)
-    : currentSpecSection
-      ? renderSpecDocuments(specsToShow)
-      : `<p style="color:#64748b;">Select a specification section.</p>`;
+  if ($("specGrid")) {
+    $("specGrid").innerHTML = searchActive
+      ? renderSpecSearchResults(specsToShow)
+      : currentSpecSection
+        ? renderSpecDocuments(specsToShow)
+        : `<p style="color:#64748b;">Select a specification section.</p>`;
+  }
 
   const sopGrid = $("sopGrid");
 
-if (sopGrid) {
-  const sopList = currentSopSection
-    ? docs.sops.filter(d =>
-        d.section === currentSopSection &&
-        matchDocument(d)
-      )
-    : [];
+  if (sopGrid) {
+    const sopList = currentSopSection
+      ? docs.sops.filter(d =>
+          d.section === currentSopSection &&
+          matchDocument(d)
+        )
+      : [];
 
-  sopGrid.innerHTML = currentSopSection
-    ? sopList.length
-      ? sopList.map(docCard).join("")
-      : `<p style="color:#64748b;">No SOPs found for ${currentSopSection}.</p>`
-    : `<p style="color:#64748b;">Select an SOP section.</p>`;
+    sopGrid.innerHTML = currentSopSection
+      ? sopList.length
+        ? sopList.map(docCard).join("")
+        : `<p style="color:#64748b;">No SOPs found for ${currentSopSection}.</p>`
+      : `<p style="color:#64748b;">Select an SOP section.</p>`;
+  }
 }
-}
+
 function renderSpecSearchResults(list) {
   if (!list.length) {
     return `<p style="color:#64748b;">No specification results found.</p>`;
@@ -353,7 +356,6 @@ function showSpecSection(section) {
     <h2>${section}</h2>
 
     <div class="cards">
-
       <article class="stat" onclick="showSpecCommodity('Stone Fruit')">
         <b>🍑 Stone Fruit</b>
         <span>${getCommodityCount(section, "Stone Fruit")} Documents</span>
@@ -368,7 +370,6 @@ function showSpecSection(section) {
         <b>🍇 Grapes</b>
         <span>${getCommodityCount(section, "Grapes")} Documents</span>
       </article>
-
     </div>
   `;
 
@@ -440,14 +441,11 @@ function getCommodityCount(section, commodityGroup) {
 }
 
 function getLatestDocument() {
-  if (!docs.specs.length) {
-    return null;
-  }
+  if (!docs.specs.length) return null;
 
-  return [...docs.specs]
-    .sort((a, b) =>
-      new Date(b.created_at) - new Date(a.created_at)
-    )[0];
+  return [...docs.specs].sort((a, b) =>
+    new Date(b.created_at) - new Date(a.created_at)
+  )[0];
 }
 
 async function lookupBarcode() {
@@ -511,6 +509,7 @@ async function lookupBarcode() {
       <p>This UPC / GTIN does not exist in the Label Database.</p>
     `;
 }
+
 function showUploadForm() {
   const panel = $("uploadDocumentPanel");
   panel.style.display = panel.style.display === "none" ? "block" : "none";
@@ -662,7 +661,6 @@ async function importBarcodeExcel() {
 }
 
 async function uploadCommodityImage() {
-
   const commodity = $("commodityImageSelect").value;
   const file = $("commodityImageFile").files[0];
   const resultBox = $("commodityImageResult");
@@ -692,79 +690,109 @@ async function uploadCommodityImage() {
   const imageUrl = publicUrlData.publicUrl;
 
   const { data: updatedRows, error: updateError } = await supabaseClient
-  .from("commodities")
-  .update({
-    image_url: imageUrl
-  })
-  .eq("name", commodity)
-  .select();
+    .from("commodities")
+    .update({ image_url: imageUrl })
+    .eq("name", commodity)
+    .select();
 
-if (updateError) {
-  resultBox.innerHTML = "Database error: " + updateError.message;
-  return;
-}
+  if (updateError) {
+    resultBox.innerHTML = "Database error: " + updateError.message;
+    return;
+  }
 
-if (!updatedRows || updatedRows.length === 0) {
-  resultBox.innerHTML = `No commodity found with name: ${commodity}`;
-  return;
-}
+  if (!updatedRows || updatedRows.length === 0) {
+    resultBox.innerHTML = `No commodity found with name: ${commodity}`;
+    return;
+  }
 
-resultBox.innerHTML = `
-  <b>Image uploaded successfully!</b><br>
-  ${commodity} updated.
-`;
+  resultBox.innerHTML = `
+    <b>Image uploaded successfully!</b><br>
+    ${commodity} updated.
+  `;
 }
 
 function renderQCLibrary() {
-
   const grid = $("qcLibraryCommodityGrid");
-
   if (!grid) return;
 
   grid.innerHTML = commodities.map(c => `
-
-    <article class="commodityCard"
-      onclick="openQCLibraryCommodity('${c.name}')">
-
+    <article class="commodityCard" onclick="openQCLibraryCommodity('${c.name}')">
       ${
         c.image_url
           ? `<img src="${c.image_url}" alt="${c.name}">`
-          : `<div class="commodityPlaceholder">
-              ${c.name}
-             </div>`
+          : `<div class="commodityPlaceholder">${c.name}</div>`
       }
 
       <div class="commodityBody">
         <h3>${c.name}</h3>
         <p>Quality Standards & Defects</p>
       </div>
-
     </article>
-
   `).join("");
 }
 
 function openQCLibraryCommodity(commodity) {
+  currentQCLibraryCommodity = commodity;
+
   $("qcLibraryHome").style.display = "none";
   $("qcLibraryDetail").style.display = "block";
   $("qcCommodityTitle").textContent = commodity;
+
+  if ($("qcSectionTitle")) $("qcSectionTitle").innerHTML = "";
+  if ($("qcPhotoGrid")) $("qcPhotoGrid").innerHTML = "";
 }
 
 function backToQCLibrary() {
   $("qcLibraryDetail").style.display = "none";
   $("qcLibraryHome").style.display = "block";
+
+  currentQCLibraryCommodity = "";
+
+  if ($("qcSectionTitle")) $("qcSectionTitle").innerHTML = "";
+  if ($("qcPhotoGrid")) $("qcPhotoGrid").innerHTML = "";
 }
-let currentSopSection = "";
+
+async function openQCLibrarySection(section) {
+  $("qcSectionTitle").innerHTML = `<h3>${section}</h3>`;
+
+  const { data, error } = await supabaseClient
+    .from("qc_library_photos")
+    .select("*")
+    .eq("commodity", currentQCLibraryCommodity)
+    .eq("section", section)
+    .eq("status", "Active")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    $("qcPhotoGrid").innerHTML =
+      `<p style="color:#991b1b;">Error loading photos.</p>`;
+    return;
+  }
+
+  if (!data.length) {
+    $("qcPhotoGrid").innerHTML =
+      `<p style="color:#64748b;">No photos found for ${section}.</p>`;
+    return;
+  }
+
+  $("qcPhotoGrid").innerHTML = data.map(photo => `
+    <article class="card">
+      <img src="${photo.image_url}">
+      <div class="cardBody">
+        <h3>${photo.defect_name}</h3>
+        <p>${photo.notes || ""}</p>
+      </div>
+    </article>
+  `).join("");
+}
 
 function showSopSection(section) {
-
   currentSopSection = section;
-
-  $("sopSectionTitle").innerHTML =
-    `<h2>${section}</h2>`;
-
+  $("sopSectionTitle").innerHTML = `<h2>${section}</h2>`;
   renderDocs();
 }
+
 async function uploadQCLibraryPhoto() {
   const commodity = $("libraryPhotoCommodity").value;
   const section = $("libraryPhotoSection").value;
@@ -781,7 +809,8 @@ async function uploadQCLibraryPhoto() {
   resultBox.innerHTML = "Uploading QC photo...";
 
   const safeName = defectName.replace(/[^a-z0-9]/gi, "-").toLowerCase();
-  const filePath = `${commodity}/${section}/${safeName}-${Date.now()}-${file.name}`;
+  const safeFileName = file.name.replace(/[^a-z0-9.]/gi, "-").toLowerCase();
+  const filePath = `${commodity}/${section}/${safeName}-${Date.now()}-${safeFileName}`;
 
   const { error: uploadError } = await supabaseClient.storage
     .from("qc-library-photos")
@@ -823,9 +852,5 @@ async function uploadQCLibraryPhoto() {
   $("libraryPhotoNotes").value = "";
   $("libraryPhotoFile").value = "";
 }
-load();
 
-// Service worker disabled for development/cache issues
-// if ("serviceWorker" in navigator) {
-//   navigator.serviceWorker.register("sw.js").catch(() => {});
-// }
+load();

@@ -85,30 +85,34 @@
 
     <div class="cards">
 
-      <article class="stat">
-        <b>🔍</b>
-        <span>Quality Defects</span>
-      </article>
+      <article class="stat" onclick="openQCLibrarySection('Quality Defects')">
+  <b>🔍</b>
+  <span>Quality Defects</span>
+</article>
 
-      <article class="stat">
-        <b>⚠️</b>
-        <span>Condition Defects</span>
-      </article>
+<article class="stat" onclick="openQCLibrarySection('Condition Defects')">
+  <b>⚠️</b>
+  <span>Condition Defects</span>
+</article>
 
-      <article class="stat">
-        <b>📊</b>
-        <span>Parameters</span>
-      </article>
+<article class="stat" onclick="openQCLibrarySection('Parameters')">
+  <b>📊</b>
+  <span>Parameters</span>
+</article>
 
-      <article class="stat">
-        <b>📷</b>
-        <span>Photo Gallery</span>
-      </article>
+<article class="stat" onclick="openQCLibrarySection('Photo Gallery')">
+  <b>📷</b>
+  <span>Photo Gallery</span>
+</article>
 
-    </div>
+</div>
 
-  </div>
+<div id="qcSectionTitle" style="margin-top:25px;"></div>
 
+<div id="qcPhotoGrid" class="grid"></div>
+
+</div>
+</section>
 </section>
 
     <section id="tolerances" class="view">
