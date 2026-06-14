@@ -383,3 +383,62 @@ dialog{
   color:#6b7280;
   font-weight:600;
 }
+.adminGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(280px,1fr));
+  gap:22px;
+  margin-top:24px;
+}
+
+.adminPanel{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:24px;
+  box-shadow:0 8px 22px rgba(17,24,39,.05);
+}
+
+.adminPanel h3{
+  margin:0;
+  font-size:22px;
+  color:#111827;
+}
+
+.adminPanel p{
+  margin:8px 0 18px;
+  color:#64748b;
+}
+
+.adminForm{
+  display:grid;
+  gap:12px;
+}
+
+.adminForm input,
+.adminForm select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:11px 13px;
+  background:#fff;
+}
+
+.adminForm button{
+  border:0;
+  background:var(--primary);
+  color:white;
+  border-radius:12px;
+  padding:12px 16px;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.adminForm button:hover{
+  background:var(--primary-dark);
+}
+
+@media(max-width:850px){
+  .adminGrid{
+    grid-template-columns:1fr;
+  }
+}

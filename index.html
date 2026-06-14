@@ -202,136 +202,108 @@
       </div>
     </section>
 
-    <section id="admin" class="view">
-      <h2>Administration</h2>
+    <h2>Administration</h2>
 
-      <div class="cards">
-        <article class="stat">
-          <b>Users</b>
-          <span>Manage access</span>
-        </article>
+<div class="adminGrid">
 
-        <article class="stat">
-          <b>Roles</b>
-          <span>Manage permissions</span>
-        </article>
+  <div class="adminPanel">
+    <h3>📄 Upload Document</h3>
+    <p>Upload specifications, tolerances, or SOP documents.</p>
 
-        <article class="stat" onclick="showUploadForm()">
-          <b>Documents</b>
-          <span>Upload PDFs</span>
-        </article>
-      </div>
+    <div class="adminForm">
+      <input id="docTitle" placeholder="Document Title">
 
-      <div id="uploadDocumentPanel" style="display:none;margin-top:30px;">
-        <h3>Upload Document</h3>
+      <select id="docType">
+        <option>Specification</option>
+        <option>Tolerance</option>
+        <option>SOP</option>
+      </select>
 
-        <input id="docTitle" placeholder="Document Title">
+      <select id="docSection">
+        <option>PTF Specs</option>
+        <option>Retail</option>
+        <option>USDA / Industry</option>
+        <option>Receiving</option>
+        <option>Inventory</option>
+        <option>Reports</option>
+      </select>
 
-        <select id="docType">
-          <option>Specification</option>
-          <option>Tolerance</option>
-          <option>SOP</option>
-        </select>
+      <input id="docCommodity" placeholder="Commodity">
+      <input id="docCustomer" placeholder="Customer">
+      <input type="file" id="docFile">
 
-        <select id="docSection">
-  <option>PTF Specs</option>
-  <option>Retail</option>
-  <option>USDA / Industry</option>
-  <option>Receiving</option>
-  <option>Inventory</option>
-  <option>Reports</option>
-</select>
+      <button onclick="uploadDocument()">Upload Document</button>
+    </div>
+  </div>
 
-        <input id="docCommodity" placeholder="Commodity">
-        <input id="docCustomer" placeholder="Customer">
+  <div class="adminPanel">
+    <h3>📊 Upload Barcode Excel</h3>
+    <p>Import barcode / label information. Existing UPC or GTIN records will be skipped.</p>
 
-        <input type="file" id="docFile">
+    <div class="adminForm">
+      <input type="file" id="barcodeExcelFile" accept=".xlsx,.xls,.csv">
+      <button onclick="importBarcodeExcel()">Import Barcode Excel</button>
+      <div id="barcodeImportResult"></div>
+    </div>
+  </div>
 
-        <button onclick="uploadDocument()">Upload</button>
-        <hr style="margin:30px 0;">
+  <div class="adminPanel">
+    <h3>🖼️ Upload Commodity Cover Image</h3>
+    <p>Upload the main cover image shown on each commodity card.</p>
 
-<h3>Upload Barcode Excel</h3>
+    <div class="adminForm">
+      <select id="commodityImageSelect">
+        <option>Grapes</option>
+        <option>Oranges</option>
+        <option>Mandarins</option>
+        <option>Peaches</option>
+        <option>Pears</option>
+        <option>Cherries</option>
+        <option>Nectarines</option>
+        <option>Lemons</option>
+        <option>Plums</option>
+      </select>
 
-<p style="color:#64748b;">
-  Upload an Excel file with barcode / label information. Existing UPC or GTIN records will be skipped.
-</p>
+      <input type="file" id="commodityImageFile" accept="image/*">
+      <button onclick="uploadCommodityImage()">Upload Cover Image</button>
+      <div id="commodityImageResult"></div>
+    </div>
+  </div>
 
-<input type="file" id="barcodeExcelFile" accept=".xlsx,.xls,.csv">
+  <div class="adminPanel">
+    <h3>📸 Upload Defect / Reference Photo</h3>
+    <p>Upload photos for quality defects, condition defects, parameters, or gallery.</p>
 
-<button onclick="importBarcodeExcel()">
-  Import Barcode Excel
-</button>
+    <div class="adminForm">
+      <select id="libraryPhotoCommodity">
+        <option>Grapes</option>
+        <option>Oranges</option>
+        <option>Mandarins</option>
+        <option>Peaches</option>
+        <option>Pears</option>
+        <option>Cherries</option>
+        <option>Nectarines</option>
+        <option>Lemons</option>
+        <option>Plums</option>
+      </select>
 
-<div id="barcodeImportResult" style="margin-top:15px;"></div>
+      <select id="libraryPhotoSection">
+        <option>Quality Defects</option>
+        <option>Condition Defects</option>
+        <option>Parameters</option>
+        <option>Photo Gallery</option>
+      </select>
 
-<hr style="margin:30px 0;">
+      <input id="libraryPhotoDefectName" placeholder="Defect / Topic Name">
+      <input id="libraryPhotoNotes" placeholder="Notes">
+      <input type="file" id="libraryPhotoFile" accept="image/*">
 
-<h3>Upload Commodity Cover Image</h3>
+      <button onclick="uploadQCLibraryPhoto()">Upload QC Photo</button>
+      <div id="libraryPhotoResult"></div>
+    </div>
+  </div>
 
-<hr style="margin:30px 0;">
-
-<h3>Upload Defect / Reference Photo</h3>
-
-<p style="color:#64748b;">
-  Upload photos for QC Knowledge Base sections such as quality defects, condition defects, parameters, or gallery.
-</p>
-
-<select id="libraryPhotoCommodity">
-  <option>Grapes</option>
-  <option>Oranges</option>
-  <option>Mandarins</option>
-  <option>Peaches</option>
-  <option>Pears</option>
-  <option>Cherries</option>
-  <option>Nectarines</option>
-  <option>Lemons</option>
-  <option>Plums</option>
-</select>
-
-<select id="libraryPhotoSection">
-  <option>Quality Defects</option>
-  <option>Condition Defects</option>
-  <option>Parameters</option>
-  <option>Photo Gallery</option>
-</select>
-
-<input id="libraryPhotoDefectName" placeholder="Defect / Topic Name">
-
-<input id="libraryPhotoNotes" placeholder="Notes">
-
-<input type="file" id="libraryPhotoFile" accept="image/*">
-
-<button onclick="uploadQCLibraryPhoto()">
-  Upload QC Photo
-</button>
-
-<div id="libraryPhotoResult" style="margin-top:15px;"></div>
-
-<p style="color:#64748b;">
-  Upload the main cover image shown on each commodity card.
-</p>
-
-<select id="commodityImageSelect">
-  <option>Grapes</option>
-  <option>Oranges</option>
-  <option>Mandarins</option>
-  <option>Peaches</option>
-  <option>Pears</option>
-  <option>Cherries</option>
-  <option>Nectarines</option>
-  <option>Lemons</option>
-  <option>Plums</option>
-</select>
-
-<input type="file" id="commodityImageFile" accept="image/*">
-
-<button onclick="uploadCommodityImage()">
-  Upload Cover Image
-</button>
-
-<div id="commodityImageResult" style="margin-top:15px;"></div>
-      </div>
-    </section>
+</div>
     <section id="traceability" class="view">
   <h2>Traceability Search</h2>
   <p>Search by PO, Lot, Container, Grower, or Commodity.</p>
