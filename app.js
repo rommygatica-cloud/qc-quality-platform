@@ -853,6 +853,33 @@ async function uploadQCLibraryPhoto() {
   $("libraryPhotoFile").value = "";
 }
 async function importQARejectionsExcel() {
-  alert("QA Rejections Import coming soon 🚀");
+  const file = $("qaRejectionsFile").files[0];
+  const resultBox = $("qaRejectionsResult");
+
+  if (!file) {
+    alert("Please select an Excel or CSV file.");
+    return;
+  }
+
+  resultBox.innerHTML = "Reading QA Rejections file...";
+
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+  if (!rows.length) {
+    resultBox.innerHTML = "No rows found in this file.";
+    return;
+  }
+
+  console.log("QA Rejections rows:", rows);
+
+  resultBox.innerHTML = `
+    <b>File read successfully!</b><br>
+    Rows found: ${rows.length}<br>
+    Check console for column names.
+  `;
 }
+
 load();
