@@ -207,6 +207,28 @@
   <div class="adminGrid">
 
     <div class="adminPanel">
+  <h3>📉 Upload QA Rejections Excel</h3>
+
+  <p>
+    Import QA and Repack rejection records from Excel.
+  </p>
+
+  <div class="adminForm">
+
+    <input
+      type="file"
+      id="qaRejectionsFile"
+      accept=".xlsx,.xls,.csv">
+
+    <button onclick="importQARejectionsExcel()">
+      Import QA Rejections
+    </button>
+
+    <div id="qaRejectionsResult"></div>
+
+  </div>
+</div>
+    <div class="adminPanel">
       <h3>📄 Upload Document</h3>
       <p>Upload specifications, tolerances, or SOP documents.</p>
 
@@ -222,7 +244,7 @@
         <select id="docSection">
           <option>PTF Specs</option>
           <option>Retail</option>
-          <option>USDA / Industry</option>
+          <option>USDA</option>
           <option>Receiving</option>
           <option>Inventory</option>
           <option>Reports</option>

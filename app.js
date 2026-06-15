@@ -81,12 +81,16 @@ function show(id) {
     return;
   }
 
-  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.querySelectorAll(".view").forEach(v => {
+  v.classList.remove("active");
+  v.style.display = "none";
+});
 
-  const view = $(id);
-  if (!view) return;
+const view = $(id);
+if (!view) return;
 
-  view.classList.add("active");
+view.classList.add("active");
+view.style.display = "block";
 
   document.querySelectorAll(".nav").forEach(n =>
     n.classList.toggle("active", n.dataset.view === id)
@@ -122,7 +126,7 @@ function renderDashboard() {
   }
 
   if ($("usdaSpecCount")) {
-    $("usdaSpecCount").textContent = `${getSectionCount("USDA / Industry")} Documents`;
+    $("usdaSpecCount").textContent = `${getSectionCount("USDA")} Documents`;
   }
 }
 
@@ -848,5 +852,7 @@ async function uploadQCLibraryPhoto() {
   $("libraryPhotoNotes").value = "";
   $("libraryPhotoFile").value = "";
 }
-
+async function importQARejectionsExcel() {
+  alert("QA Rejections Import coming soon 🚀");
+}
 load();

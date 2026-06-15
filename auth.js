@@ -48,11 +48,27 @@ function applyRoleAccess(role) {
     }
   });
 
-  document.querySelectorAll(".view").forEach(section => {
-    if (!allowedViews.includes(section.id)) {
-      section.style.display = "none";
+  function applyRoleAccess(role) {
+  currentUserRole = role;
+
+  const allowedViews = ROLE_ACCESS[role] || ["dashboard"];
+
+  document.querySelectorAll("[data-view]").forEach(btn => {
+    const view = btn.dataset.view;
+
+    if (!allowedViews.includes(view)) {
+      btn.style.display = "none";
+    } else {
+      btn.style.display = "";
     }
   });
+
+  const currentActive = document.querySelector(".view.active");
+
+  if (currentActive && !allowedViews.includes(currentActive.id)) {
+    show("dashboard");
+  }
+};
 
   if (!allowedViews.includes("admin")) {
     const adminMenu = document.getElementById("adminMenu");
