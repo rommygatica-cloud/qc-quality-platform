@@ -853,33 +853,119 @@ async function uploadQCLibraryPhoto() {
   $("libraryPhotoFile").value = "";
 }
 async function importQARejectionsExcel() {
+
   const file = $("qaRejectionsFile").files[0];
   const resultBox = $("qaRejectionsResult");
 
   if (!file) {
-    alert("Please select an Excel or CSV file.");
+    alert("Please select an Excel file.");
     return;
   }
 
-  resultBox.innerHTML = "Reading QA Rejections file...";
+  resultBox.innerHTML = "Reading file...";
 
   const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+  const workbook = XLSX.read(buffer, {
+    type: "array"
+  });
+
+  const sheet =
+    workbook.Sheets[workbook.SheetNames[0]];
+
+  const rows =
+    XLSX.utils.sheet_to_json(sheet, {
+      defval: ""
+    });
 
   if (!rows.length) {
-    resultBox.innerHTML = "No rows found in this file.";
+    resultBox.innerHTML = "No rows found.";
     return;
   }
 
-  console.log("QA Rejections rows:", rows);
+  const records = rows.map(row => ({
+
+    return_date:
+      row["RETURN DATE"] || "",
+
+    loc:
+      String(row["LOC"] || ""),
+
+    order_number:
+      String(row["ORDER#"] || ""),
+
+    type:
+      row["TYPE"] || "",
+
+    reason:
+      row["REASON"] || "",
+
+    po_wo:
+      String(row["PO"] || row["WO"] || ""),
+
+    lot:
+      String(row["LOT"] || ""),
+
+    customer:
+      row["CUSTOMER"] || "",
+
+    dc:
+      row["DC"] || "",
+
+    commodity:
+      row["COMODITY"] ||
+      row["COMMODITY"] || "",
+
+    variety:
+      row["VARIETY"] || "",
+
+    size:
+      row["SIZE"] || "",
+
+    grower:
+      row["GROWER"] || "",
+
+    ship_date:
+      row["SHIP DATE"] || "",
+
+    qty_cases:
+      Number(row["QTY CASES"] || 0),
+
+    qc_comments:
+      row["QC COMMENTS"] || "",
+
+    score:
+      row["SCORE"] || "",
+
+    source:
+      row["TYPE"]?.includes("QA")
+        ? "QA"
+        : "REPACK",
+
+    status:
+      "Open"
+
+  }));
+
+  const { error } =
+    await supabaseClient
+      .from("qa_rejections")
+      .insert(records);
+
+  if (error) {
+    console.error(error);
+
+    resultBox.innerHTML =
+      "Import error: " + error.message;
+
+    return;
+  }
 
   resultBox.innerHTML = `
-    <b>File read successfully!</b><br>
-    Rows found: ${rows.length}<br>
-    Check console for column names.
+    ✅ ${records.length}
+    records imported successfully!
   `;
+
 }
 
 load();
