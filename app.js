@@ -510,10 +510,6 @@ async function lookupBarcode() {
     `;
 }
 
-function showUploadForm() {
-  const panel = $("uploadDocumentPanel");
-  panel.style.display = panel.style.display === "none" ? "block" : "none";
-}
 
 async function uploadDocument() {
   const title = $("docTitle").value.trim();
