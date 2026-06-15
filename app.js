@@ -49,6 +49,8 @@ async function load() {
   renderDefects();
   renderDocs();
   renderQCLibrary();
+
+await loadQARejections();
 }
 
 function initNav() {
@@ -967,5 +969,63 @@ async function importQARejectionsExcel() {
   `;
 
 }
+async function loadQARejections() {
 
+  const { data, error } = await supabaseClient
+    .from("qa_rejections")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  console.log("QA data:", data);
+  // KPI 1: Total Rejections
+  $("qaTotalRejections").textContent = data.length;
+
+  // KPI 2: Total Cases
+  const totalCases = data.reduce(
+    (sum, row) => sum + (Number(row.qty_cases) || 0),
+    0
+  );
+
+  $("qaTotalCases").textContent = totalCases.toLocaleString();
+
+  // Tabla simple
+  $("qaRejectionsTable").innerHTML = `
+    <table style="
+      width:100%;
+      border-collapse:collapse;
+      background:white;
+      border-radius:16px;
+      overflow:hidden;
+    ">
+      <thead>
+        <tr style="background:#f3f4f6;">
+          <th style="padding:12px;">Date</th>
+          <th>Commodity</th>
+          <th>Customer</th>
+          <th>Reason</th>
+          <th>Cases</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        ${data.map(r => `
+          <tr style="border-top:1px solid #e5e7eb;">
+            <td style="padding:12px;">${r.return_date || "-"}</td>
+            <td>${r.commodity || "-"}</td>
+            <td>${r.customer || "-"}</td>
+            <td>${r.reason || "-"}</td>
+            <td>${r.qty_cases || 0}</td>
+            <td>${r.score || "-"}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
 load();
