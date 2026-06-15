@@ -374,7 +374,34 @@
 
 <section id="qa" class="view">
   <h2>QA Control</h2>
-  <p>Monitor storage aging, reinspections, holds, and rejection history.</p>
+  <p>Monitor rejections, QA cases, repack records, and rejection trends.</p>
+
+  <div class="cards">
+    <article class="stat">
+      <b id="qaTotalRejections">0</b>
+      <span>Total Rejections</span>
+    </article>
+
+    <article class="stat">
+      <b id="qaTotalCases">0</b>
+      <span>Total Cases</span>
+    </article>
+
+    <article class="stat">
+      <b id="qaTopCommodity">-</b>
+      <span>Top Commodity</span>
+    </article>
+
+    <article class="stat">
+      <b id="qaTopReason">-</b>
+      <span>Top Reason</span>
+    </article>
+  </div>
+
+  <div style="margin-top:28px;">
+    <h3>Rejection Records</h3>
+    <div id="qaRejectionsTable"></div>
+  </div>
 </section>
   </main>
 
