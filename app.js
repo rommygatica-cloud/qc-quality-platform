@@ -854,6 +854,23 @@ async function uploadQCLibraryPhoto() {
   $("libraryPhotoNotes").value = "";
   $("libraryPhotoFile").value = "";
 }
+function formatExcelDate(value) {
+  if (!value) return "";
+
+  if (typeof value === "number") {
+    const date = XLSX.SSF.parse_date_code(value);
+    if (!date) return String(value);
+
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+
+    return `${date.d}-${months[date.m - 1]}`;
+  }
+
+  return String(value).trim();
+}
 async function importQARejectionsExcel() {
 
   const file = $("qaRejectionsFile").files[0];
@@ -888,7 +905,7 @@ async function importQARejectionsExcel() {
   const records = rows.map(row => ({
 
     return_date:
-      row["RETURN DATE"] || "",
+  formatExcelDate(row["RETURN DATE"] || ""),
 
     loc:
       String(row["LOC"] || ""),
@@ -909,7 +926,10 @@ async function importQARejectionsExcel() {
       String(row["LOT"] || ""),
 
     customer:
-      row["CUSTOMER"] || "",
+  row["CUSTOMER"] ||
+  row["CUSTOMER "] ||
+  row["CUSTOMER NAME"] ||
+  "",
 
     dc:
       row["DC"] || "",
@@ -931,7 +951,13 @@ async function importQARejectionsExcel() {
       row["SHIP DATE"] || "",
 
     qty_cases:
-      Number(row["QTY CASES"] || 0),
+  Number(
+    row["QTY CASES"] ||
+    row["QTYCASES"] ||
+    row["QTY CASE"] ||
+    row["CASES"] ||
+    0
+  ),
 
     qc_comments:
       row["QC COMMENTS"] || "",
@@ -1003,28 +1029,36 @@ async function loadQARejections() {
       overflow:hidden;
     ">
       <thead>
-        <tr style="background:#f3f4f6;">
-          <th style="padding:12px;">Date</th>
-          <th>Commodity</th>
-          <th>Customer</th>
-          <th>Reason</th>
-          <th>Cases</th>
-          <th>Score</th>
-        </tr>
-      </thead>
+  <tr style="background:#f3f4f6;">
+    <th style="padding:12px;">RETURN DATE</th>
+    <th>LOC</th>
+    <th>ORDER#</th>
+    <th>PO/WO</th>
+    <th>LOT</th>
+    <th>CUSTOMER</th>
+    <th>COMMODITY</th>
+    <th>VARIETY</th>
+    <th>GROWER</th>
+    <th>QTY CASES</th>
+  </tr>
+</thead>
 
       <tbody>
-        ${data.map(r => `
-          <tr style="border-top:1px solid #e5e7eb;">
-            <td style="padding:12px;">${r.return_date || "-"}</td>
-            <td>${r.commodity || "-"}</td>
-            <td>${r.customer || "-"}</td>
-            <td>${r.reason || "-"}</td>
-            <td>${r.qty_cases || 0}</td>
-            <td>${r.score || "-"}</td>
-          </tr>
-        `).join("")}
-      </tbody>
+  ${data.map(r => `
+    <tr style="border-top:1px solid #e5e7eb;">
+      <td style="padding:12px;">${formatExcelDate(r.return_date) || "-"}</td>
+      <td>${r.loc || "-"}</td>
+      <td>${r.order_number || "-"}</td>
+      <td>${r.po_wo || "-"}</td>
+      <td>${r.lot || "-"}</td>
+      <td>${r.customer || "-"}</td>
+      <td>${r.commodity || "-"}</td>
+      <td>${r.variety || "-"}</td>
+      <td>${r.grower || "-"}</td>
+      <td>${r.qty_cases || 0}</td>
+    </tr>
+  `).join("")}
+</tbody>
     </table>
   `;
 }
