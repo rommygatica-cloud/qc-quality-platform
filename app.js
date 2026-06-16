@@ -1,6 +1,8 @@
+```js
 let defects = [];
 let docs = { tolerances: [], specs: [], sops: [], barcodes: [] };
 let commodities = [];
+let qaRejections = [];
 
 let currentSpecSection = "";
 let currentSpecCommodity = "";
@@ -43,14 +45,14 @@ async function load() {
     commodities = commoditiesData || [];
   }
 
+  await loadQARejections();
+
   initNav();
   renderDashboard();
   renderFilters();
   renderDefects();
   renderDocs();
   renderQCLibrary();
-
-await loadQARejections();
 }
 
 function initNav() {
@@ -84,15 +86,15 @@ function show(id) {
   }
 
   document.querySelectorAll(".view").forEach(v => {
-  v.classList.remove("active");
-  v.style.display = "none";
-});
+    v.classList.remove("active");
+    v.style.display = "none";
+  });
 
-const view = $(id);
-if (!view) return;
+  const view = $(id);
+  if (!view) return;
 
-view.classList.add("active");
-view.style.display = "block";
+  view.classList.add("active");
+  view.style.display = "block";
 
   document.querySelectorAll(".nav").forEach(n =>
     n.classList.toggle("active", n.dataset.view === id)
@@ -134,11 +136,11 @@ function renderDashboard() {
 
 function options(id, values) {
   const element = $(id);
-  if (!element) return;
+  if (!element || !element.children[0]) return;
 
   element.innerHTML =
     element.children[0].outerHTML +
-    [...new Set(values)].sort().map(v => `<option>${v}</option>`).join("");
+    [...new Set(values)].filter(Boolean).sort().map(v => `<option>${v}</option>`).join("");
 
   element.onchange = renderDefects;
 }
@@ -194,7 +196,7 @@ function renderDefects() {
         <span class="tag">${d.category}</span>
         <span class="tag ${d.severity}">${d.severity}</span>
         <h3>${d.defect}</h3>
-        <p>${d.description.slice(0, 95)}...</p>
+        <p>${(d.description || "").slice(0, 95)}...</p>
       </div>
     </article>
   `).join("");
@@ -229,7 +231,7 @@ function getCommodityIcon(commodity) {
   if (group === "Citrus") return "🍊";
   if (group === "Grapes") return "🍇";
 
-  return "📦";
+  return "";
 }
 
 function docCard(d) {
@@ -240,14 +242,11 @@ function docCard(d) {
   return `
     <article class="card" onclick="window.open('${d.file_url}','_blank')">
       <div class="cardBody">
-        <div class="docIcon">📄</div>
-        <span class="tag">${d.status}</span>
+        <span class="tag">${d.status || "Active"}</span>
         <h3>${d.title}</h3>
         <p>${getCommodityIcon(d.commodity)} ${d.commodity || ""}</p>
-        ${d.customer ? `<p>🏪 ${d.customer}</p>` : ""}
-        <p style="font-size:12px;color:#64748b;">
-          📅 Updated ${updated}
-        </p>
+        ${d.customer ? `<p>${d.customer}</p>` : ""}
+        <p style="font-size:12px;color:#64748b;">Updated ${updated}</p>
       </div>
     </article>
   `;
@@ -265,11 +264,11 @@ function renderDocs() {
     if (latestDoc) {
       $("latestDocumentCard").innerHTML = `
         <div class="latestDoc">
-          <h3>📄 Latest Upload</h3>
+          <h3>Latest Upload</h3>
           <p><strong>${latestDoc.title}</strong></p>
           <p>${getCommodityIcon(latestDoc.commodity)} ${latestDoc.commodity || ""}</p>
           <p style="font-size:12px;color:#64748b;">
-            📅 Updated ${new Date(latestDoc.created_at).toLocaleDateString()}
+            Updated ${new Date(latestDoc.created_at).toLocaleDateString()}
           </p>
         </div>
       `;
@@ -282,20 +281,13 @@ function renderDocs() {
   const searchActive = search ? search.value.trim() !== "" : false;
 
   const mainCards = $("specMainCards");
-  if (mainCards) {
-    mainCards.style.display = searchActive ? "none" : "grid";
-  }
+  if (mainCards) mainCards.style.display = searchActive ? "none" : "grid";
 
   const sectionTitle = $("specSectionTitle");
   const latestCard = $("latestDocumentCard");
 
-  if (sectionTitle) {
-    sectionTitle.style.display = searchActive ? "none" : "block";
-  }
-
-  if (latestCard) {
-    latestCard.style.display = searchActive ? "none" : "block";
-  }
+  if (sectionTitle) sectionTitle.style.display = searchActive ? "none" : "block";
+  if (latestCard) latestCard.style.display = searchActive ? "none" : "block";
 
   let specsToShow = [];
 
@@ -485,7 +477,7 @@ async function lookupBarcode() {
     console.error(error);
 
     $("barcodeResult").innerHTML = `
-      <h3>⚠ Database Error</h3>
+      <h3>Database Error</h3>
       <p>${error.message}</p>
     `;
     return;
@@ -495,7 +487,7 @@ async function lookupBarcode() {
 
   $("barcodeResult").innerHTML = r
     ? `
-      <h3>✓ Match Found</h3>
+      <h3>Match Found</h3>
       <p><b>Commodity:</b> ${r.commodity || "-"}</p>
       <p><b>Program:</b> ${r.program || "-"}</p>
       <p><b>Label:</b> ${r.label || "-"}</p>
@@ -511,11 +503,10 @@ async function lookupBarcode() {
       <p><b>Item Number:</b> ${r.item_number || "-"}</p>
     `
     : `
-      <h3>⚠ No Match Found</h3>
+      <h3>No Match Found</h3>
       <p>This UPC / GTIN does not exist in the Label Database.</p>
     `;
 }
-
 
 async function uploadDocument() {
   const title = $("docTitle").value.trim();
@@ -854,11 +845,14 @@ async function uploadQCLibraryPhoto() {
   $("libraryPhotoNotes").value = "";
   $("libraryPhotoFile").value = "";
 }
+
 function formatExcelDate(value) {
   if (!value) return "";
 
-  if (typeof value === "number") {
-    const date = XLSX.SSF.parse_date_code(value);
+  const numberValue = Number(value);
+
+  if (!isNaN(numberValue) && numberValue > 30000) {
+    const date = XLSX.SSF.parse_date_code(numberValue);
     if (!date) return String(value);
 
     const months = [
@@ -871,8 +865,22 @@ function formatExcelDate(value) {
 
   return String(value).trim();
 }
-async function importQARejectionsExcel() {
 
+function getExcelValue(row, possibleNames) {
+  const keys = Object.keys(row);
+
+  for (const name of possibleNames) {
+    const foundKey = keys.find(k =>
+      k.trim().toUpperCase() === name.trim().toUpperCase()
+    );
+
+    if (foundKey) return row[foundKey];
+  }
+
+  return "";
+}
+
+async function importQARejectionsExcel() {
   const file = $("qaRejectionsFile").files[0];
   const resultBox = $("qaRejectionsResult");
 
@@ -889,13 +897,11 @@ async function importQARejectionsExcel() {
     type: "array"
   });
 
-  const sheet =
-    workbook.Sheets[workbook.SheetNames[0]];
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-  const rows =
-    XLSX.utils.sheet_to_json(sheet, {
-      defval: ""
-    });
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+    defval: ""
+  });
 
   if (!rows.length) {
     resultBox.innerHTML = "No rows found.";
@@ -903,163 +909,640 @@ async function importQARejectionsExcel() {
   }
 
   const records = rows.map(row => ({
+    return_date: formatExcelDate(getExcelValue(row, ["RETURN DATE", "RETURN_DATE", "DATE"])),
 
-    return_date:
-  formatExcelDate(row["RETURN DATE"] || ""),
+    loc: String(getExcelValue(row, ["LOC", "LOCATION"]) || "").trim(),
 
-    loc:
-      String(row["LOC"] || ""),
+    order_number: String(getExcelValue(row, ["ORDER#", "ORDER", "ORDER NUMBER"]) || "").trim(),
 
-    order_number:
-      String(row["ORDER#"] || ""),
+    type: String(getExcelValue(row, ["TYPE"]) || "").trim(),
 
-    type:
-      row["TYPE"] || "",
+    reason: String(getExcelValue(row, ["REASON", "REJECTION REASON"]) || "").trim(),
 
-    reason:
-      row["REASON"] || "",
+    po_wo: String(getExcelValue(row, ["PO", "WO", "PO/WO", "PO WO"]) || "").trim(),
 
-    po_wo:
-      String(row["PO"] || row["WO"] || ""),
+    lot: String(getExcelValue(row, ["LOT", "LOT#"]) || "").trim(),
 
-    lot:
-      String(row["LOT"] || ""),
+    customer: String(getExcelValue(row, ["CUSTOMER", "CUSTOMER NAME"]) || "").trim(),
 
-    customer:
-  row["CUSTOMER"] ||
-  row["CUSTOMER "] ||
-  row["CUSTOMER NAME"] ||
-  "",
+    dc: String(getExcelValue(row, ["DC"]) || "").trim(),
 
-    dc:
-      row["DC"] || "",
+    commodity: String(getExcelValue(row, ["COMMODITY", "COMODITY"]) || "").trim(),
 
-    commodity:
-      row["COMODITY"] ||
-      row["COMMODITY"] || "",
+    variety: String(getExcelValue(row, ["VARIETY"]) || "").trim(),
 
-    variety:
-      row["VARIETY"] || "",
+    size: String(getExcelValue(row, ["SIZE"]) || "").trim(),
 
-    size:
-      row["SIZE"] || "",
+    grower: String(getExcelValue(row, ["GROWER", "PRODUCER", "PRODUCTOR"]) || "").trim(),
 
-    grower:
-      row["GROWER"] || "",
+    ship_date: formatExcelDate(getExcelValue(row, ["SHIP DATE", "SHIP_DATE"])),
 
-    ship_date:
-      row["SHIP DATE"] || "",
+    qty_cases: Number(getExcelValue(row, ["QTY CASES", "QTY", "CASES", "QTY_CASES"]) || 0),
 
-    qty_cases:
-  Number(
-    row["QTY CASES"] ||
-    row["QTYCASES"] ||
-    row["QTY CASE"] ||
-    row["CASES"] ||
-    0
-  ),
+    qc_comments: String(getExcelValue(row, ["QC COMMENTS", "COMMENTS"]) || "").trim(),
 
-    qc_comments:
-      row["QC COMMENTS"] || "",
+    score: String(getExcelValue(row, ["SCORE", "GRADE"]) || "").trim(),
 
-    score:
-      row["SCORE"] || "",
+    source: String(getExcelValue(row, ["TYPE"]) || "").toUpperCase().includes("QA")
+      ? "QA"
+      : "REPACK",
 
-    source:
-      row["TYPE"]?.includes("QA")
-        ? "QA"
-        : "REPACK",
-
-    status:
-      "Open"
-
+    status: "Open"
   }));
 
-  const { error } =
-    await supabaseClient
-      .from("qa_rejections")
-      .insert(records);
+  const { error } = await supabaseClient
+    .from("qa_rejections")
+    .insert(records);
 
   if (error) {
     console.error(error);
-
-    resultBox.innerHTML =
-      "Import error: " + error.message;
-
+    resultBox.innerHTML = "Import error: " + error.message;
     return;
   }
 
   resultBox.innerHTML = `
-    ✅ ${records.length}
-    records imported successfully!
+    <b>${records.length} records imported successfully.</b>
   `;
 
-}
-async function loadQARejections() {
+  $("qaRejectionsFile").value = "";
 
+  await loadQARejections();
+
+  if ($("qaModuleContent")) {
+    openQAModule("records");
+  }
+}
+
+/* QA CONTROL */
+
+async function loadQARejections() {
   const { data, error } = await supabaseClient
     .from("qa_rejections")
     .select("*")
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error(error);
+    console.error("QA rejections error:", error);
+    qaRejections = [];
     return;
   }
 
-  console.log("QA data:", data);
-  // KPI 1: Total Rejections
-  $("qaTotalRejections").textContent = data.length;
+  qaRejections = data || [];
+}
 
-  // KPI 2: Total Cases
-  const totalCases = data.reduce(
-    (sum, row) => sum + (Number(row.qty_cases) || 0),
-    0
-  );
+function openQAModule(module) {
+  const container = $("qaModuleContent");
+  if (!container) return;
 
-  $("qaTotalCases").textContent = totalCases.toLocaleString();
+  if (module === "dashboard") {
+    renderQARejectionDashboard();
+  }
 
-  // Tabla simple
-  $("qaRejectionsTable").innerHTML = `
-    <table style="
-      width:100%;
-      border-collapse:collapse;
-      background:white;
-      border-radius:16px;
-      overflow:hidden;
-    ">
-      <thead>
-  <tr style="background:#f3f4f6;">
-    <th style="padding:12px;">RETURN DATE</th>
-    <th>LOC</th>
-    <th>ORDER#</th>
-    <th>PO/WO</th>
-    <th>LOT</th>
-    <th>CUSTOMER</th>
-    <th>COMMODITY</th>
-    <th>VARIETY</th>
-    <th>GROWER</th>
-    <th>QTY CASES</th>
-  </tr>
-</thead>
+  if (module === "records") {
+    renderQARejectionRecords();
+  }
 
-      <tbody>
-  ${data.map(r => `
-    <tr style="border-top:1px solid #e5e7eb;">
-      <td style="padding:12px;">${formatExcelDate(r.return_date) || "-"}</td>
-      <td>${r.loc || "-"}</td>
-      <td>${r.order_number || "-"}</td>
-      <td>${r.po_wo || "-"}</td>
-      <td>${r.lot || "-"}</td>
-      <td>${r.customer || "-"}</td>
-      <td>${r.commodity || "-"}</td>
-      <td>${r.variety || "-"}</td>
-      <td>${r.grower || "-"}</td>
-      <td>${r.qty_cases || 0}</td>
-    </tr>
-  `).join("")}
-</tbody>
-    </table>
+  if (module === "entry") {
+    renderQAEntryForm();
+  }
+}
+
+function renderQARejectionDashboard() {
+  const container = $("qaModuleContent");
+
+  const totalRejections = qaRejections.length;
+  const totalCases = sumBy(qaRejections, "qty_cases");
+  const activeGrowers = uniqueValues(qaRejections, "grower").length;
+  const topCommodity = topValue(qaRejections, "commodity");
+
+  container.innerHTML = `
+    <section class="qaPanel">
+      <div class="qaPanelHeader">
+        <div>
+          <h2>Rejection Dashboard</h2>
+          <p>Monthly rejection trends by commodity, variety, and grower.</p>
+        </div>
+      </div>
+
+      <div class="qaKpiGrid">
+        <article class="stat">
+          <b>${totalRejections}</b>
+          <span>Total Rejections</span>
+        </article>
+
+        <article class="stat">
+          <b>${totalCases.toLocaleString()}</b>
+          <span>Total Cases Rejected</span>
+        </article>
+
+        <article class="stat">
+          <b>${activeGrowers}</b>
+          <span>Active Growers</span>
+        </article>
+
+        <article class="stat">
+          <b>${topCommodity || "-"}</b>
+          <span>Top Commodity</span>
+        </article>
+      </div>
+
+      <div class="qaFilters">
+        <select id="qaDashMonthFilter">
+          <option value="">All Months</option>
+          ${monthOptions(qaRejections)}
+        </select>
+
+        <select id="qaDashCommodityFilter">
+          <option value="">All Commodities</option>
+          ${optionList(uniqueValues(qaRejections, "commodity"))}
+        </select>
+
+        <select id="qaDashVarietyFilter">
+          <option value="">All Varieties</option>
+          ${optionList(uniqueValues(qaRejections, "variety"))}
+        </select>
+
+        <select id="qaDashGrowerFilter">
+          <option value="">All Growers</option>
+          ${optionList(uniqueValues(qaRejections, "grower"))}
+        </select>
+
+        <select id="qaDashCustomerFilter">
+          <option value="">All Customers</option>
+          ${optionList(uniqueValues(qaRejections, "customer"))}
+        </select>
+      </div>
+
+      <div class="qaChartGrid">
+        <div class="qaChartBox">
+          <h3>Rejections by Month</h3>
+          <div id="qaChartMonth"></div>
+        </div>
+
+        <div class="qaChartBox">
+          <h3>Rejections by Commodity</h3>
+          <div id="qaChartCommodity"></div>
+        </div>
+
+        <div class="qaChartBox">
+          <h3>Rejections by Variety</h3>
+          <div id="qaChartVariety"></div>
+        </div>
+
+        <div class="qaChartBox">
+          <h3>Rejections by Grower</h3>
+          <div id="qaChartGrower"></div>
+        </div>
+      </div>
+
+      <div id="qaDashboardDetail"></div>
+    </section>
+  `;
+
+  ["qaDashMonthFilter", "qaDashCommodityFilter", "qaDashVarietyFilter", "qaDashGrowerFilter", "qaDashCustomerFilter"]
+    .forEach(id => {
+      const el = $(id);
+      if (el) el.onchange = updateQADashboardCharts;
+    });
+
+  updateQADashboardCharts();
+}
+
+function updateQADashboardCharts() {
+  const filtered = getFilteredQAData({
+    month: $("qaDashMonthFilter")?.value || "",
+    commodity: $("qaDashCommodityFilter")?.value || "",
+    variety: $("qaDashVarietyFilter")?.value || "",
+    grower: $("qaDashGrowerFilter")?.value || "",
+    customer: $("qaDashCustomerFilter")?.value || ""
+  });
+
+  renderBarList("qaChartMonth", groupByMonth(filtered), "month");
+  renderBarList("qaChartCommodity", groupCount(filtered, "commodity"), "commodity");
+  renderBarList("qaChartVariety", groupCount(filtered, "variety"), "variety");
+  renderBarList("qaChartGrower", groupCount(filtered, "grower"), "grower");
+
+  const detail = $("qaDashboardDetail");
+
+  if (!detail) return;
+
+  if (!filtered.length) {
+    detail.innerHTML = `<p style="margin-top:18px;">No records found for the selected filters.</p>`;
+    return;
+  }
+
+  detail.innerHTML = `
+    <h3 style="margin-top:24px;">Detail</h3>
+    ${qaSimpleDetailTable(filtered)}
   `;
 }
+
+function renderQARejectionRecords() {
+  const container = $("qaModuleContent");
+
+  container.innerHTML = `
+    <section class="qaPanel">
+      <div class="qaPanelHeader">
+        <div>
+          <h2>Rejection Records</h2>
+          <p>Review complete rejection data, rankings, filters, and export tools.</p>
+        </div>
+
+        <button class="primaryBtn" onclick="openQAModule('entry')">
+          Enter Rejection Data
+        </button>
+      </div>
+
+      <div class="qaFilters">
+        <input id="qaRecordSearch" placeholder="Search records..." />
+
+        <select id="qaRecordMonthFilter">
+          <option value="">All Months</option>
+          ${monthOptions(qaRejections)}
+        </select>
+
+        <select id="qaRecordCommodityFilter">
+          <option value="">All Commodities</option>
+          ${optionList(uniqueValues(qaRejections, "commodity"))}
+        </select>
+
+        <select id="qaRecordVarietyFilter">
+          <option value="">All Varieties</option>
+          ${optionList(uniqueValues(qaRejections, "variety"))}
+        </select>
+
+        <select id="qaRecordGrowerFilter">
+          <option value="">All Growers</option>
+          ${optionList(uniqueValues(qaRejections, "grower"))}
+        </select>
+
+        <select id="qaRecordCustomerFilter">
+          <option value="">All Customers</option>
+          ${optionList(uniqueValues(qaRejections, "customer"))}
+        </select>
+      </div>
+
+      <div class="qaRankingGrid">
+        <div class="qaRankingCard">
+          <h3>Risky Customers</h3>
+          <div id="qaRiskyCustomers"></div>
+        </div>
+
+        <div class="qaRankingCard">
+          <h3>Most Rejected Varieties</h3>
+          <div id="qaRejectedVarieties"></div>
+        </div>
+
+        <div class="qaRankingCard">
+          <h3>Growers with More Rejections</h3>
+          <div id="qaRejectedGrowers"></div>
+        </div>
+      </div>
+
+      <div id="qaRecordsTable"></div>
+    </section>
+  `;
+
+  [
+    "qaRecordSearch",
+    "qaRecordMonthFilter",
+    "qaRecordCommodityFilter",
+    "qaRecordVarietyFilter",
+    "qaRecordGrowerFilter",
+    "qaRecordCustomerFilter"
+  ].forEach(id => {
+    const el = $(id);
+    if (el) el.oninput = updateQARecordsTable;
+    if (el) el.onchange = updateQARecordsTable;
+  });
+
+  updateQARecordsTable();
+}
+
+function updateQARecordsTable() {
+  const filtered = getFilteredQAData({
+    search: $("qaRecordSearch")?.value || "",
+    month: $("qaRecordMonthFilter")?.value || "",
+    commodity: $("qaRecordCommodityFilter")?.value || "",
+    variety: $("qaRecordVarietyFilter")?.value || "",
+    grower: $("qaRecordGrowerFilter")?.value || "",
+    customer: $("qaRecordCustomerFilter")?.value || ""
+  });
+
+  renderRanking("qaRiskyCustomers", groupSum(filtered, "customer", "qty_cases"));
+  renderRanking("qaRejectedVarieties", groupSum(filtered, "variety", "qty_cases"));
+  renderRanking("qaRejectedGrowers", groupSum(filtered, "grower", "qty_cases"));
+
+  const table = $("qaRecordsTable");
+
+  if (!table) return;
+
+  if (!filtered.length) {
+    table.innerHTML = `<p style="margin-top:18px;">No rejection records found.</p>`;
+    return;
+  }
+
+  table.innerHTML = `
+    <div class="qaTableWrap">
+      <table class="qaTable">
+        <thead>
+          <tr>
+            <th>RETURN DATE</th>
+            <th>LOC</th>
+            <th>ORDER#</th>
+            <th>PO/WO</th>
+            <th>LOT</th>
+            <th>CUSTOMER</th>
+            <th>COMMODITY</th>
+            <th>VARIETY</th>
+            <th>GROWER</th>
+            <th>QTY CASES</th>
+            <th>REASON</th>
+            <th>SCORE</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${filtered.map(r => `
+            <tr>
+              <td>${r.return_date || "-"}</td>
+              <td>${r.loc || "-"}</td>
+              <td>${r.order_number || "-"}</td>
+              <td>${r.po_wo || "-"}</td>
+              <td>${r.lot || "-"}</td>
+              <td>${r.customer || "-"}</td>
+              <td>${r.commodity || "-"}</td>
+              <td>${r.variety || "-"}</td>
+              <td>${r.grower || "-"}</td>
+              <td>${Number(r.qty_cases || 0).toLocaleString()}</td>
+              <td>${r.reason || "-"}</td>
+              <td>${r.score || "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderQAEntryForm() {
+  const container = $("qaModuleContent");
+
+  container.innerHTML = `
+    <section class="qaPanel">
+      <div class="qaPanelHeader">
+        <div>
+          <h2>Enter Rejection Data</h2>
+          <p>Mobile-friendly form for new rejection records.</p>
+        </div>
+
+        <button class="primaryBtn" onclick="openQAModule('records')">
+          View Records
+        </button>
+      </div>
+
+      <form id="qaEntryForm" class="qaForm">
+        <input id="qaEntryReturnDate" placeholder="Return Date" />
+        <input id="qaEntryLoc" placeholder="LOC" />
+
+        <input id="qaEntryOrder" placeholder="Order#" />
+        <input id="qaEntryPoWo" placeholder="PO/WO" />
+
+        <input id="qaEntryLot" placeholder="Lot" />
+        <input id="qaEntryCustomer" placeholder="Customer" />
+
+        <input id="qaEntryCommodity" placeholder="Commodity" />
+        <input id="qaEntryVariety" placeholder="Variety" />
+
+        <input id="qaEntryGrower" placeholder="Grower" />
+        <input id="qaEntryQtyCases" type="number" placeholder="Qty Cases" />
+
+        <input id="qaEntryScore" placeholder="Score" />
+
+        <textarea id="qaEntryReason" class="full" placeholder="Reason"></textarea>
+
+        <button type="submit" class="primaryBtn full">
+          Save Rejection Record
+        </button>
+      </form>
+
+      <div id="qaEntryResult" style="margin-top:16px;"></div>
+    </section>
+  `;
+
+  $("qaEntryForm").onsubmit = saveQAEntryRecord;
+}
+
+async function saveQAEntryRecord(event) {
+  event.preventDefault();
+
+  const record = {
+    return_date: $("qaEntryReturnDate").value.trim(),
+    loc: $("qaEntryLoc").value.trim(),
+    order_number: $("qaEntryOrder").value.trim(),
+    po_wo: $("qaEntryPoWo").value.trim(),
+    lot: $("qaEntryLot").value.trim(),
+    customer: $("qaEntryCustomer").value.trim(),
+    commodity: $("qaEntryCommodity").value.trim(),
+    variety: $("qaEntryVariety").value.trim(),
+    grower: $("qaEntryGrower").value.trim(),
+    qty_cases: Number($("qaEntryQtyCases").value || 0),
+    score: $("qaEntryScore").value.trim(),
+    reason: $("qaEntryReason").value.trim(),
+    source: "MANUAL",
+    status: "Open"
+  };
+
+  const { error } = await supabaseClient
+    .from("qa_rejections")
+    .insert(record);
+
+  if (error) {
+    $("qaEntryResult").innerHTML = `<p style="color:#991b1b;">${error.message}</p>`;
+    return;
+  }
+
+  $("qaEntryResult").innerHTML = `<p style="color:#166534;"><b>Record saved successfully.</b></p>`;
+  $("qaEntryForm").reset();
+
+  await loadQARejections();
+}
+
+/* QA HELPERS */
+
+function uniqueValues(list, key) {
+  return [...new Set(
+    list.map(item => item[key]).filter(Boolean)
+  )].sort();
+}
+
+function optionList(values) {
+  return values.map(v => `<option value="${v}">${v}</option>`).join("");
+}
+
+function sumBy(list, key) {
+  return list.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
+}
+
+function topValue(list, key) {
+  const grouped = groupCount(list, key);
+  const first = grouped[0];
+  return first ? first.label : "";
+}
+
+function getRecordMonth(record) {
+  const raw = record.return_date || record.created_at || "";
+
+  if (!raw) return "Unknown";
+
+  if (/^\d{4}-\d{2}/.test(raw)) {
+    return raw.slice(0, 7);
+  }
+
+  return String(raw);
+}
+
+function monthOptions(list) {
+  return uniqueValues(
+    list.map(r => ({ month: getRecordMonth(r) })),
+    "month"
+  ).map(month => `<option value="${month}">${month}</option>`).join("");
+}
+
+function getFilteredQAData(filters = {}) {
+  return qaRejections.filter(r => {
+    const text = JSON.stringify(r).toLowerCase();
+
+    return (
+      (!filters.search || text.includes(filters.search.toLowerCase())) &&
+      (!filters.month || getRecordMonth(r) === filters.month) &&
+      (!filters.commodity || r.commodity === filters.commodity) &&
+      (!filters.variety || r.variety === filters.variety) &&
+      (!filters.grower || r.grower === filters.grower) &&
+      (!filters.customer || r.customer === filters.customer)
+    );
+  });
+}
+
+function groupCount(list, key) {
+  const map = {};
+
+  list.forEach(item => {
+    const label = item[key] || "Unknown";
+    map[label] = (map[label] || 0) + 1;
+  });
+
+  return Object.entries(map)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
+}
+
+function groupSum(list, key, sumKey) {
+  const map = {};
+
+  list.forEach(item => {
+    const label = item[key] || "Unknown";
+    map[label] = (map[label] || 0) + (Number(item[sumKey]) || 0);
+  });
+
+  return Object.entries(map)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 10);
+}
+
+function groupByMonth(list) {
+  const map = {};
+
+  list.forEach(item => {
+    const label = getRecordMonth(item);
+    map[label] = (map[label] || 0) + 1;
+  });
+
+  return Object.entries(map)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function renderRanking(id, items) {
+  const el = $(id);
+  if (!el) return;
+
+  if (!items.length) {
+    el.innerHTML = `<p>No data.</p>`;
+    return;
+  }
+
+  el.innerHTML = items.map((item, index) => `
+    <p style="margin:8px 0;">
+      <b>${index + 1}. ${item.label}</b><br>
+      <span>${Number(item.value).toLocaleString()} cases</span>
+    </p>
+  `).join("");
+}
+
+function renderBarList(id, items) {
+  const el = $(id);
+  if (!el) return;
+
+  if (!items.length) {
+    el.innerHTML = `<p>No data.</p>`;
+    return;
+  }
+
+  const max = Math.max(...items.map(i => i.value));
+
+  el.innerHTML = items.map(item => {
+    const width = max ? Math.max((item.value / max) * 100, 5) : 0;
+
+    return `
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;">
+          <span>${item.label}</span>
+          <b>${item.value}</b>
+        </div>
+        <div style="height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:5px;">
+          <div style="height:100%;width:${width}%;background:var(--primary);border-radius:999px;"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function qaSimpleDetailTable(list) {
+  return `
+    <div class="qaTableWrap">
+      <table class="qaTable">
+        <thead>
+          <tr>
+            <th>RETURN DATE</th>
+            <th>LOT</th>
+            <th>PO/WO</th>
+            <th>VARIETY</th>
+            <th>GROWER</th>
+            <th>QTY CASES</th>
+            <th>REASON</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${list.map(r => `
+            <tr>
+              <td>${r.return_date || "-"}</td>
+              <td>${r.lot || "-"}</td>
+              <td>${r.po_wo || "-"}</td>
+              <td>${r.variety || "-"}</td>
+              <td>${r.grower || "-"}</td>
+              <td>${Number(r.qty_cases || 0).toLocaleString()}</td>
+              <td>${r.reason || "-"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 load();
+```

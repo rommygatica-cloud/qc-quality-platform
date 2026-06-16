@@ -1,3 +1,4 @@
+```css
 :root{
   --bg:#f7f8fa;
   --panel:#ffffff;
@@ -82,9 +83,22 @@ h1{
   color:#111827;
 }
 
-p{color:var(--muted)}
+h2{
+  margin:0 0 8px;
+  font-size:26px;
+}
 
-header input,.filters select,.scannerCard input{
+h3{
+  margin:0;
+}
+
+p{
+  color:var(--muted);
+}
+
+header input,
+.filters select,
+.scannerCard input{
   border:1px solid var(--line);
   background:white;
   border-radius:14px;
@@ -110,11 +124,28 @@ header input,.filters select,.scannerCard input{
 }
 
 .stat b{
-  font-size:34px;
+  font-size:28px;
   display:block;
 }
 
-.stat span{color:var(--muted)}
+.stat span{
+  color:var(--muted);
+  display:block;
+  margin-top:6px;
+}
+
+.stat[onclick],
+.qaHomeCard{
+  cursor:pointer;
+  transition:.2s;
+}
+
+.stat[onclick]:hover,
+.qaHomeCard:hover{
+  transform:translateY(-3px);
+  box-shadow:0 10px 25px rgba(0,0,0,.08);
+  border-color:var(--primary);
+}
 
 .quickGrid{
   display:grid;
@@ -131,6 +162,11 @@ header input,.filters select,.scannerCard input{
   font-size:18px;
   cursor:pointer;
   box-shadow:0 8px 18px rgba(17,24,39,.04);
+}
+
+.quickGrid button:hover{
+  border-color:var(--primary);
+  transform:translateY(-2px);
 }
 
 .filters{
@@ -161,7 +197,9 @@ header input,.filters select,.scannerCard input{
   background:#eef2f7;
 }
 
-.cardBody{padding:16px}
+.cardBody{
+  padding:16px;
+}
 
 .tag{
   display:inline-block;
@@ -178,7 +216,9 @@ header input,.filters select,.scannerCard input{
 .Variable{background:#fef9c3;color:#854d0e}
 .Minor{background:var(--ok);color:#166534}
 
-.docIcon{font-size:42px}
+.docIcon{
+  font-size:42px;
+}
 
 .scannerCard{
   background:#fff;
@@ -188,17 +228,19 @@ header input,.filters select,.scannerCard input{
   max-width:680px;
 }
 
-.scannerCard button{
+.scannerCard button,
+.primaryBtn{
   border:0;
   background:var(--primary);
   color:#fff;
   border-radius:13px;
   padding:13px 20px;
-  margin-left:8px;
   font-weight:600;
+  cursor:pointer;
 }
 
-.scannerCard button:hover{
+.scannerCard button:hover,
+.primaryBtn:hover{
   background:var(--primary-dark);
 }
 
@@ -231,7 +273,9 @@ dialog{
   font-size:20px;
 }
 
-#modalContent{padding:28px}
+#modalContent{
+  padding:28px;
+}
 
 #modalContent img{
   width:100%;
@@ -291,51 +335,15 @@ dialog{
   box-shadow:0 2px 8px rgba(0,0,0,.08);
 }
 
-@media(max-width:850px){
-  body{display:block}
-
-  .sidebar{
-    height:auto;
-    width:100%;
-    position:static;
-    padding:16px;
-  }
-
-  .sidebar nav{
-    display:flex;
-    overflow:auto;
-    gap:8px;
-  }
-
-  .nav{white-space:nowrap}
-
-  main{padding:18px}
-
-  header{display:block}
-
-  header input{
-    width:100%;
-    min-width:0;
-    margin-top:12px;
-  }
-
-  .cards,.quickGrid{
-    grid-template-columns:repeat(2,1fr);
-  }
-
-  .filters{display:grid}
-
-  .scannerCard button{
-    margin-left:0;
-    margin-top:10px;
-    width:100%;
-  }
-
-  .scannerCard input{
-    width:100%;
-    min-width:0;
-  }
+.backBtn{
+  margin-bottom:20px;
+  padding:10px 16px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:white;
+  cursor:pointer;
 }
+
 .commodityCard{
   background:white;
   border:1px solid #e5e7eb;
@@ -383,6 +391,7 @@ dialog{
   color:#6b7280;
   font-weight:600;
 }
+
 .adminGrid{
   display:grid;
   grid-template-columns:repeat(2,minmax(280px,1fr));
@@ -437,8 +446,229 @@ dialog{
   background:var(--primary-dark);
 }
 
+/* QA CONTROL */
+
+.pageIntro{
+  margin-bottom:22px;
+}
+
+.qaHomeGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(220px,1fr));
+  gap:18px;
+}
+
+.qaHomeCard b{
+  font-size:24px;
+}
+
+.qaPanel{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:24px;
+  box-shadow:0 8px 22px rgba(17,24,39,.05);
+}
+
+.qaPanelHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:20px;
+}
+
+.qaKpiGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(130px,1fr));
+  gap:16px;
+  margin:18px 0 22px;
+}
+
+.qaChartGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(260px,1fr));
+  gap:18px;
+}
+
+.qaChartBox{
+  background:#f9fafb;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px;
+  min-height:240px;
+}
+
+.qaChartBox h3{
+  font-size:18px;
+  margin-bottom:12px;
+}
+
+.qaFilters{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin:18px 0;
+}
+
+.qaFilters input,
+.qaFilters select{
+  border:1px solid var(--line);
+  background:white;
+  border-radius:12px;
+  padding:11px 13px;
+  min-width:180px;
+}
+
+.qaTableWrap{
+  width:100%;
+  overflow:auto;
+  margin-top:16px;
+  border:1px solid var(--line);
+  border-radius:16px;
+}
+
+.qaTable{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+  min-width:800px;
+}
+
+.qaTable th,
+.qaTable td{
+  padding:13px 14px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+  font-size:14px;
+}
+
+.qaTable th{
+  background:#f9fafb;
+  color:#374151;
+  font-weight:700;
+}
+
+.qaTable tr:last-child td{
+  border-bottom:0;
+}
+
+.qaRankingGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(220px,1fr));
+  gap:16px;
+  margin-top:20px;
+}
+
+.qaRankingCard{
+  background:#f9fafb;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px;
+}
+
+.qaRankingCard h3{
+  font-size:18px;
+  margin-bottom:12px;
+}
+
+.qaForm{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(220px,1fr));
+  gap:14px;
+  margin-top:18px;
+}
+
+.qaForm input,
+.qaForm select,
+.qaForm textarea{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px 13px;
+  background:#fff;
+  font-family:inherit;
+}
+
+.qaForm textarea{
+  min-height:90px;
+  resize:vertical;
+}
+
+.qaForm .full{
+  grid-column:1/-1;
+}
+
 @media(max-width:850px){
-  .adminGrid{
+  body{
+    display:block;
+  }
+
+  .sidebar{
+    height:auto;
+    width:100%;
+    position:static;
+    padding:16px;
+  }
+
+  .sidebar nav{
+    display:flex;
+    overflow:auto;
+    gap:8px;
+  }
+
+  .nav{
+    white-space:nowrap;
+  }
+
+  main{
+    padding:18px;
+  }
+
+  header{
+    display:block;
+  }
+
+  .headerActions{
+    display:grid;
+    grid-template-columns:1fr;
+    margin-top:12px;
+  }
+
+  header input{
+    width:100%;
+    min-width:0;
+  }
+
+  .cards,
+  .quickGrid,
+  .qaHomeGrid,
+  .qaKpiGrid,
+  .qaChartGrid,
+  .qaRankingGrid,
+  .adminGrid,
+  .qaForm{
     grid-template-columns:1fr;
   }
+
+  .filters,
+  .qaFilters{
+    display:grid;
+  }
+
+  .scannerCard button{
+    margin-left:0;
+    margin-top:10px;
+    width:100%;
+  }
+
+  .scannerCard input{
+    width:100%;
+    min-width:0;
+  }
+
+  .stat b{
+    font-size:24px;
+  }
 }
+```

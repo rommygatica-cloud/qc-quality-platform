@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -26,9 +27,9 @@
       <button class="nav" data-view="sops">SOPs</button>
       <button class="nav" data-view="daily">Arrival Control</button>
       <button class="nav" data-view="barcode">Barcode Verification</button>
-     <button class="nav" data-view="traceability">Traceability Search</button>
-     <button class="nav" data-view="qa">QA Control</button>
-      <button id="adminMenu" class="nav" data-view="admin">⚙️ Administration</button>
+      <button class="nav" data-view="traceability">Traceability Search</button>
+      <button class="nav" data-view="qa">QA Control</button>
+      <button id="adminMenu" class="nav" data-view="admin">Administration</button>
     </nav>
   </aside>
 
@@ -36,9 +37,7 @@
     <header>
       <div>
         <h1 id="pageTitle">Dashboard</h1>
-        <p id="pageSubtitle">
-          Quality standards and operational resources.
-        </p>
+        <p id="pageSubtitle">Quality standards and operational resources.</p>
         <p id="userRoleBadge"></p>
       </div>
 
@@ -57,352 +56,302 @@
       </div>
 
       <div class="quickGrid">
-        <button data-view="defects"> Library</button>
-        <button data-view="tolerances"> Tolerances</button>
-        <button data-view="specs"> Specifications</button>
-        <button data-view="sops"> SOPs</button>
+        <button data-view="defects">Library</button>
+        <button data-view="tolerances">Tolerances</button>
+        <button data-view="specs">Specifications</button>
+        <button data-view="sops">SOPs</button>
         <button data-view="daily">Arrival Control</button>
-        <button data-view="barcode"> Barcode Verification</button>
-        <button data-view="traceability"> Traceability Search</button>
-        <button data-view="qa"> QA Control</button>
+        <button data-view="barcode">Barcode Verification</button>
+        <button data-view="traceability">Traceability Search</button>
+        <button data-view="qa">QA Control</button>
       </div>
     </section>
 
-<section id="defects" class="view">
+    <section id="defects" class="view">
+      <div id="qcLibraryHome">
+        <div id="qcLibraryCommodityGrid" class="grid"></div>
+      </div>
 
-  <div id="qcLibraryHome">
-    <div id="qcLibraryCommodityGrid" class="grid"></div>
-  </div>
+      <div id="qcLibraryDetail" style="display:none;">
+        <button onclick="backToQCLibrary()" class="backBtn">← Back</button>
 
-  <div id="qcLibraryDetail" style="display:none;">
+        <h2 id="qcCommodityTitle"></h2>
 
-    <button onclick="backToQCLibrary()"
-      style="margin-bottom:20px;padding:10px 16px;border-radius:10px;border:1px solid #e5e7eb;background:white;cursor:pointer;">
-      ← Back
-    </button>
+        <div class="cards">
+          <article class="stat" onclick="openQCLibrarySection('Quality Defects')">
+            <b>Quality</b>
+            <span>Quality Defects</span>
+          </article>
 
-    <h2 id="qcCommodityTitle"></h2>
+          <article class="stat" onclick="openQCLibrarySection('Condition Defects')">
+            <b>Condition</b>
+            <span>Condition Defects</span>
+          </article>
 
-    <div class="cards">
+          <article class="stat" onclick="openQCLibrarySection('Parameters')">
+            <b>Parameters</b>
+            <span>Quality Parameters</span>
+          </article>
 
-      <article class="stat" onclick="openQCLibrarySection('Quality Defects')">
-  <b>🔍</b>
-  <span>Quality Defects</span>
-</article>
+          <article class="stat" onclick="openQCLibrarySection('Photo Gallery')">
+            <b>Gallery</b>
+            <span>Photo Gallery</span>
+          </article>
+        </div>
 
-<article class="stat" onclick="openQCLibrarySection('Condition Defects')">
-  <b>⚠️</b>
-  <span>Condition Defects</span>
-</article>
-
-<article class="stat" onclick="openQCLibrarySection('Parameters')">
-  <b>📊</b>
-  <span>Parameters</span>
-</article>
-
-<article class="stat" onclick="openQCLibrarySection('Photo Gallery')">
-  <b>📷</b>
-  <span>Photo Gallery</span>
-</article>
-
-</div>
-
-<div id="qcSectionTitle" style="margin-top:25px;"></div>
-
-<div id="qcPhotoGrid" class="grid"></div>
-
-</div>
-</section>
+        <div id="qcSectionTitle" style="margin-top:25px;"></div>
+        <div id="qcPhotoGrid" class="grid"></div>
+      </div>
+    </section>
 
     <section id="tolerances" class="view">
       <div id="toleranceGrid" class="grid"></div>
     </section>
 
-<section id="specs" class="view">
-  <div id="specMainCards" class="cards">
-    <article class="stat" onclick="showSpecSection('PTF Internal')">
-      <b>PTF Specs</b>
-      <span id="ptfSpecCount">0 Documents</span>
-    </article>
+    <section id="specs" class="view">
+      <div id="specMainCards" class="cards">
+        <article class="stat" onclick="showSpecSection('PTF Internal')">
+          <b>PTF Specs</b>
+          <span id="ptfSpecCount">0 Documents</span>
+        </article>
 
-    <article class="stat" onclick="showSpecSection('Retail')">
-      <b>Retail</b>
-      <span id="retailSpecCount">0 Documents</span>
-    </article>
+        <article class="stat" onclick="showSpecSection('Retail')">
+          <b>Retail</b>
+          <span id="retailSpecCount">0 Documents</span>
+        </article>
 
-    <article class="stat" onclick="showSpecSection('USDA')">
-      <b>USDA</b>
-      <span id="usdaSpecCount">0 Documents</span>
-    </article>
-  </div>
+        <article class="stat" onclick="showSpecSection('USDA')">
+          <b>USDA</b>
+          <span id="usdaSpecCount">0 Documents</span>
+        </article>
+      </div>
 
-  <div id="specSectionTitle"></div>
-  <div id="latestDocumentCard"></div>
-  <div id="specGrid" class="grid"></div>
-</section>
+      <div id="specSectionTitle"></div>
+      <div id="latestDocumentCard"></div>
+      <div id="specGrid" class="grid"></div>
+    </section>
 
     <section id="sops" class="view">
-  <h2>SOPs</h2>
+      <h2>SOPs</h2>
 
-  <div class="cards">
-    <article class="stat" onclick="showSopSection('Receiving')">
-      <b>Receiving</b>
-      <span>Inbound,USDA, Transfers, Outside Purchase</span>
-    </article>
+      <div class="cards">
+        <article class="stat" onclick="showSopSection('Receiving')">
+          <b>Receiving</b>
+          <span>Inbound, USDA, Transfers, Outside Purchase</span>
+        </article>
 
-    <article class="stat" onclick="showSopSection('Inventory')">
-      <b>Inventory</b>
-      <span>Holds, reinspections</span>
-    </article>
+        <article class="stat" onclick="showSopSection('Inventory')">
+          <b>Inventory</b>
+          <span>Holds and reinspections</span>
+        </article>
 
-    <article class="stat" onclick="showSopSection('Reports')">
-      <b>Reports</b>
-      <span>Surveys, retail reports</span>
-    </article>
-  </div>
+        <article class="stat" onclick="showSopSection('Reports')">
+          <b>Reports</b>
+          <span>Surveys and retail reports</span>
+        </article>
+      </div>
 
-  <div id="sopSectionTitle" style="margin-top:24px;"></div>
-  <div id="sopGrid" class="grid"></div>
-</section>
+      <div id="sopSectionTitle" style="margin-top:24px;"></div>
+      <div id="sopGrid" class="grid"></div>
+    </section>
 
     <section id="daily" class="view">
-  <h2>Daily Work</h2>
+      <h2>Daily Work</h2>
 
-  <div class="cards">
-    <article class="stat">
-      <b>Weekly Arrivals</b>
-      <span>Vessels and containers</span>
-    </article>
+      <div class="cards">
+        <article class="stat">
+          <b>Weekly Arrivals</b>
+          <span>Vessels and containers</span>
+        </article>
 
-    <article class="stat">
-      <b>Inspections</b>
-      <span>Status tracking</span>
-    </article>
+        <article class="stat">
+          <b>Inspections</b>
+          <span>Status tracking</span>
+        </article>
 
-    <article class="stat">
-      <b>Discrepancies</b>
-      <span>Log issues and mismatches</span>
-    </article>
+        <article class="stat">
+          <b>Discrepancies</b>
+          <span>Log issues and mismatches</span>
+        </article>
 
-    <article class="stat">
-      <b>Reports</b>
-      <span>Pending and sent reports</span>
-    </article>
-  </div>
-</section>
+        <article class="stat">
+          <b>Reports</b>
+          <span>Pending and sent reports</span>
+        </article>
+      </div>
+    </section>
 
     <section id="barcode" class="view">
       <div class="scannerCard">
-        <h2>Barcode lookup</h2>
+        <h2>Barcode Lookup</h2>
         <p>Type or scan a UPC/GTIN. Camera scanner can be added in version 2.</p>
         <input id="barcodeInput" placeholder="Example: 895321002693" />
         <button id="barcodeBtn">Search</button>
         <div id="barcodeResult"></div>
       </div>
     </section>
-<section id="admin" class="view">
-
-  <h2>Administration</h2>
-
-  <div class="adminGrid">
-
-    <div class="adminPanel">
-  <h3>📉 Upload QA Rejections Excel</h3>
-
-  <p>
-    Import QA and Repack rejection records from Excel.
-  </p>
-
-  <div class="adminForm">
-
-    <input
-      type="file"
-      id="qaRejectionsFile"
-      accept=".xlsx,.xls,.csv">
-
-    <button onclick="importQARejectionsExcel()">
-      Import QA Rejections
-    </button>
-
-    <div id="qaRejectionsResult"></div>
-
-  </div>
-</div>
-    <div class="adminPanel">
-      <h3>📄 Upload Document</h3>
-      <p>Upload specifications, tolerances, or SOP documents.</p>
-
-      <div class="adminForm">
-        <input id="docTitle" placeholder="Document Title">
-
-        <select id="docType">
-          <option>Specification</option>
-          <option>Tolerance</option>
-          <option>SOP</option>
-        </select>
-
-        <select id="docSection">
-          <option>PTF Specs</option>
-          <option>Retail</option>
-          <option>USDA</option>
-          <option>Receiving</option>
-          <option>Inventory</option>
-          <option>Reports</option>
-        </select>
-
-        <input id="docCommodity" placeholder="Commodity">
-        <input id="docCustomer" placeholder="Customer">
-        <input type="file" id="docFile">
-
-        <button onclick="uploadDocument()">
-          Upload Document
-        </button>
-      </div>
-    </div>
-
-    <div class="adminPanel">
-      <h3>📊 Upload Barcode Excel</h3>
-
-      <p>
-        Import barcode / label information.
-        Existing UPC or GTIN records will be skipped.
-      </p>
-
-      <div class="adminForm">
-        <input type="file"
-               id="barcodeExcelFile"
-               accept=".xlsx,.xls,.csv">
-
-        <button onclick="importBarcodeExcel()">
-          Import Barcode Excel
-        </button>
-
-        <div id="barcodeImportResult"></div>
-      </div>
-    </div>
-
-    <div class="adminPanel">
-      <h3>🖼️ Upload Commodity Cover Image</h3>
-
-      <p>
-        Upload the main cover image shown on each commodity card.
-      </p>
-
-      <div class="adminForm">
-
-        <select id="commodityImageSelect">
-          <option>Grapes</option>
-          <option>Oranges</option>
-          <option>Mandarins</option>
-          <option>Peaches</option>
-          <option>Pears</option>
-          <option>Cherries</option>
-          <option>Nectarines</option>
-          <option>Lemons</option>
-          <option>Plums</option>
-        </select>
-
-        <input type="file"
-               id="commodityImageFile"
-               accept="image/*">
-
-        <button onclick="uploadCommodityImage()">
-          Upload Cover Image
-        </button>
-
-        <div id="commodityImageResult"></div>
-
-      </div>
-    </div>
-
-    <div class="adminPanel">
-      <h3>📸 Upload Defect / Reference Photo</h3>
-
-      <p>
-        Upload photos for quality defects, condition defects,
-        parameters, or gallery.
-      </p>
-
-      <div class="adminForm">
-
-        <select id="libraryPhotoCommodity">
-          <option>Grapes</option>
-          <option>Oranges</option>
-          <option>Mandarins</option>
-          <option>Peaches</option>
-          <option>Pears</option>
-          <option>Cherries</option>
-          <option>Nectarines</option>
-          <option>Lemons</option>
-          <option>Plums</option>
-        </select>
-
-        <select id="libraryPhotoSection">
-          <option>Quality Defects</option>
-          <option>Condition Defects</option>
-          <option>Parameters</option>
-          <option>Photo Gallery</option>
-        </select>
-
-        <input id="libraryPhotoDefectName"
-               placeholder="Defect / Topic Name">
-
-        <input id="libraryPhotoNotes"
-               placeholder="Notes">
-
-        <input type="file"
-               id="libraryPhotoFile"
-               accept="image/*">
-
-        <button onclick="uploadQCLibraryPhoto()">
-          Upload QC Photo
-        </button>
-
-        <div id="libraryPhotoResult"></div>
-
-      </div>
-    </div>
-
-  </div>
-
-</section>
 
     <section id="traceability" class="view">
-  <h2>Traceability Search</h2>
-  <p>Search by PO, Lot, Container, Grower, or Commodity.</p>
-</section>
+      <h2>Traceability Search</h2>
+      <p>Search by PO, lot, container, grower, or commodity.</p>
+    </section>
 
-<section id="qa" class="view">
-  <h2>QA Control</h2>
-  <p>Monitor rejections, QA cases, repack records, and rejection trends.</p>
+    <section id="qa" class="view">
+      <div class="pageIntro">
+        <h2>QA Control</h2>
+        <p>Monitor rejection trends, review records, and enter QA rejection data.</p>
+      </div>
 
-  <div class="cards">
-    <article class="stat">
-      <b id="qaTotalRejections">0</b>
-      <span>Total Rejections</span>
-    </article>
+      <div class="qaHomeGrid">
+        <article class="stat qaHomeCard" onclick="openQAModule('dashboard')">
+          <b>Rejection Dashboard</b>
+          <span>Trends by month, commodity, variety, and grower.</span>
+        </article>
 
-    <article class="stat">
-      <b id="qaTotalCases">0</b>
-      <span>Total Cases</span>
-    </article>
+        <article class="stat qaHomeCard" onclick="openQAModule('records')">
+          <b>Rejection Records</b>
+          <span>Detailed records, rankings, filters, and export tools.</span>
+        </article>
 
-    <article class="stat">
-      <b id="qaTopCommodity">-</b>
-      <span>Top Commodity</span>
-    </article>
+        <article class="stat qaHomeCard" onclick="openQAModule('entry')">
+          <b>Enter Rejection Data</b>
+          <span>Mobile-friendly form for new rejection records.</span>
+        </article>
+      </div>
 
-    <article class="stat">
-      <b id="qaTopReason">-</b>
-      <span>Top Reason</span>
-    </article>
-  </div>
+      <div id="qaModuleContent" style="margin-top:28px;"></div>
+    </section>
 
-  <div style="margin-top:28px;">
-    <h3>Rejection Records</h3>
-    <div id="qaRejectionsTable"></div>
-  </div>
-</section>
+    <section id="admin" class="view">
+      <h2>Administration</h2>
+
+      <div class="adminGrid">
+        <div class="adminPanel">
+          <h3>Upload QA Rejections Excel</h3>
+          <p>Import QA and repack rejection records from Excel.</p>
+
+          <div class="adminForm">
+            <input type="file" id="qaRejectionsFile" accept=".xlsx,.xls,.csv" />
+
+            <button onclick="importQARejectionsExcel()">
+              Import QA Rejections
+            </button>
+
+            <div id="qaRejectionsResult"></div>
+          </div>
+        </div>
+
+        <div class="adminPanel">
+          <h3>Upload Document</h3>
+          <p>Upload specifications, tolerances, or SOP documents.</p>
+
+          <div class="adminForm">
+            <input id="docTitle" placeholder="Document Title" />
+
+            <select id="docType">
+              <option>Specification</option>
+              <option>Tolerance</option>
+              <option>SOP</option>
+            </select>
+
+            <select id="docSection">
+              <option>PTF Specs</option>
+              <option>Retail</option>
+              <option>USDA</option>
+              <option>Receiving</option>
+              <option>Inventory</option>
+              <option>Reports</option>
+            </select>
+
+            <input id="docCommodity" placeholder="Commodity" />
+            <input id="docCustomer" placeholder="Customer" />
+            <input type="file" id="docFile" />
+
+            <button onclick="uploadDocument()">
+              Upload Document
+            </button>
+          </div>
+        </div>
+
+        <div class="adminPanel">
+          <h3>Upload Barcode Excel</h3>
+          <p>Import barcode and label information. Existing UPC or GTIN records will be skipped.</p>
+
+          <div class="adminForm">
+            <input type="file" id="barcodeExcelFile" accept=".xlsx,.xls,.csv" />
+
+            <button onclick="importBarcodeExcel()">
+              Import Barcode Excel
+            </button>
+
+            <div id="barcodeImportResult"></div>
+          </div>
+        </div>
+
+        <div class="adminPanel">
+          <h3>Upload Commodity Cover Image</h3>
+          <p>Upload the main cover image shown on each commodity card.</p>
+
+          <div class="adminForm">
+            <select id="commodityImageSelect">
+              <option>Grapes</option>
+              <option>Oranges</option>
+              <option>Mandarins</option>
+              <option>Peaches</option>
+              <option>Pears</option>
+              <option>Cherries</option>
+              <option>Nectarines</option>
+              <option>Lemons</option>
+              <option>Plums</option>
+            </select>
+
+            <input type="file" id="commodityImageFile" accept="image/*" />
+
+            <button onclick="uploadCommodityImage()">
+              Upload Cover Image
+            </button>
+
+            <div id="commodityImageResult"></div>
+          </div>
+        </div>
+
+        <div class="adminPanel">
+          <h3>Upload Defect / Reference Photo</h3>
+          <p>Upload photos for quality defects, condition defects, parameters, or gallery.</p>
+
+          <div class="adminForm">
+            <select id="libraryPhotoCommodity">
+              <option>Grapes</option>
+              <option>Oranges</option>
+              <option>Mandarins</option>
+              <option>Peaches</option>
+              <option>Pears</option>
+              <option>Cherries</option>
+              <option>Nectarines</option>
+              <option>Lemons</option>
+              <option>Plums</option>
+            </select>
+
+            <select id="libraryPhotoSection">
+              <option>Quality Defects</option>
+              <option>Condition Defects</option>
+              <option>Parameters</option>
+              <option>Photo Gallery</option>
+            </select>
+
+            <input id="libraryPhotoDefectName" placeholder="Defect / Topic Name" />
+            <input id="libraryPhotoNotes" placeholder="Notes" />
+            <input type="file" id="libraryPhotoFile" accept="image/*" />
+
+            <button onclick="uploadQCLibraryPhoto()">
+              Upload QC Photo
+            </button>
+
+            <div id="libraryPhotoResult"></div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <dialog id="modal">
@@ -410,9 +359,10 @@
     <div id="modalContent"></div>
   </dialog>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="auth.js"></script>
-<script src="app.js?v=qa-table-2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="auth.js"></script>
+  <script src="app.js?v=qa-control-2"></script>
 </body>
 </html>
+```
