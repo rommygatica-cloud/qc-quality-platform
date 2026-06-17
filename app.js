@@ -1,4 +1,3 @@
-```js
 let defects = [];
 let docs = { tolerances: [], specs: [], sops: [], barcodes: [] };
 let commodities = [];
@@ -332,7 +331,6 @@ function renderDocs() {
       : `<p style="color:#64748b;">Select an SOP section.</p>`;
   }
 }
-
 function renderSpecSearchResults(list) {
   if (!list.length) {
     return `<p style="color:#64748b;">No specification results found.</p>`;
@@ -703,7 +701,6 @@ async function uploadCommodityImage() {
     ${commodity} updated.
   `;
 }
-
 function renderQCLibrary() {
   const grid = $("qcLibraryCommodityGrid");
   if (!grid) return;
@@ -1010,12 +1007,35 @@ function openQAModule(module) {
 function renderQARejectionDashboard() {
   const container = $("qaModuleContent");
 
-  const totalRejections = qaRejections.length;
-  const totalCases = sumBy(qaRejections, "qty_cases");
-  const activeGrowers = uniqueValues(qaRejections, "grower").length;
-  const topCommodity = topValue(qaRejections, "commodity");
+  const currentYear = new Date().getFullYear();
+
+  const currentYearData = qaRejections.filter(r =>
+    getRecordYear(r) === currentYear
+  );
+
+  const totalRejections = currentYearData.length;
+  const totalCases = sumBy(currentYearData, "qty_cases");
+
+  const casesWithProtection = sumBy(
+    currentYearData.filter(r =>
+      !String(r.return_date || "").toLowerCase().includes("no return")
+    ),
+    "qty_cases"
+  );
+
+  const growerSummary = getGrowerSummaryByCommodity(currentYearData);
 
   container.innerHTML = `
+    <div class="qaToolbar">
+      <button class="secondaryBtn" onclick="openQAModule('records')">
+        View Records
+      </button>
+
+      <button class="secondaryBtn" onclick="openQAModule('entry')">
+        Enter Data
+      </button>
+    </div>
+
     <section class="qaPanel">
       <div class="qaPanelHeader">
         <div>
@@ -1027,49 +1047,49 @@ function renderQARejectionDashboard() {
       <div class="qaKpiGrid">
         <article class="stat">
           <b>${totalRejections}</b>
-          <span>Total Rejections</span>
+          <span>Total Rejections ${currentYear}</span>
         </article>
 
         <article class="stat">
           <b>${totalCases.toLocaleString()}</b>
-          <span>Total Cases Rejected</span>
+          <span>Total Cases Rejected ${currentYear}</span>
         </article>
 
         <article class="stat">
-          <b>${activeGrowers}</b>
-          <span>Active Growers</span>
+          <b>${casesWithProtection.toLocaleString()}</b>
+          <span>Cases with Protection ${currentYear}</span>
         </article>
 
-        <article class="stat">
-          <b>${topCommodity || "-"}</b>
-          <span>Top Commodity</span>
+        <article class="stat summaryCard">
+          <h4 class="summaryTitle">Return Impact Summary</h4>
+          <span>${growerSummary}</span>
         </article>
       </div>
 
       <div class="qaFilters">
-        <select id="qaDashMonthFilter">
+        <select id="qaDashMonthFilter" multiple>
           <option value="">All Months</option>
-          ${monthOptions(qaRejections)}
+          ${monthOptions(currentYearData)}
         </select>
 
-        <select id="qaDashCommodityFilter">
+        <select id="qaDashCommodityFilter" multiple>
           <option value="">All Commodities</option>
-          ${optionList(uniqueValues(qaRejections, "commodity"))}
+          ${optionList(uniqueValues(currentYearData, "commodity"))}
         </select>
 
-        <select id="qaDashVarietyFilter">
+        <select id="qaDashVarietyFilter" multiple>
           <option value="">All Varieties</option>
-          ${optionList(uniqueValues(qaRejections, "variety"))}
+          ${optionList(uniqueValues(currentYearData, "variety"))}
         </select>
 
-        <select id="qaDashGrowerFilter">
+        <select id="qaDashGrowerFilter" multiple>
           <option value="">All Growers</option>
-          ${optionList(uniqueValues(qaRejections, "grower"))}
+          ${optionList(uniqueValues(currentYearData, "grower"))}
         </select>
 
-        <select id="qaDashCustomerFilter">
-          <option value="">All Customers</option>
-          ${optionList(uniqueValues(qaRejections, "customer"))}
+        <select id="qaDashLotFilter" multiple>
+          <option value="">All Lots</option>
+          ${optionList(uniqueValues(currentYearData, "lot"))}
         </select>
       </div>
 
@@ -1099,32 +1119,51 @@ function renderQARejectionDashboard() {
     </section>
   `;
 
-  ["qaDashMonthFilter", "qaDashCommodityFilter", "qaDashVarietyFilter", "qaDashGrowerFilter", "qaDashCustomerFilter"]
-    .forEach(id => {
-      const el = $(id);
-      if (el) el.onchange = updateQADashboardCharts;
-    });
+  [
+    "qaDashMonthFilter",
+    "qaDashCommodityFilter",
+    "qaDashVarietyFilter",
+    "qaDashGrowerFilter",
+    "qaDashLotFilter"
+  ].forEach(id => {
+    const el = $(id);
+    if (el) el.onchange = updateQADashboardCharts;
+  });
 
   updateQADashboardCharts();
 }
 
 function updateQADashboardCharts() {
+  const currentYear = new Date().getFullYear();
+
   const filtered = getFilteredQAData({
-    month: $("qaDashMonthFilter")?.value || "",
-    commodity: $("qaDashCommodityFilter")?.value || "",
-    variety: $("qaDashVarietyFilter")?.value || "",
-    grower: $("qaDashGrowerFilter")?.value || "",
-    customer: $("qaDashCustomerFilter")?.value || ""
+    year: currentYear,
+    months: getSelectedValues("qaDashMonthFilter"),
+    commodities: getSelectedValues("qaDashCommodityFilter"),
+    varieties: getSelectedValues("qaDashVarietyFilter"),
+    growers: getSelectedValues("qaDashGrowerFilter"),
+    lots: getSelectedValues("qaDashLotFilter")
   });
 
-  renderBarList("qaChartMonth", groupByMonth(filtered), "month");
-  renderBarList("qaChartCommodity", groupCount(filtered, "commodity"), "commodity");
-  renderBarList("qaChartVariety", groupCount(filtered, "variety"), "variety");
-  renderBarList("qaChartGrower", groupCount(filtered, "grower"), "grower");
+  renderBarList("qaChartMonth", groupByMonth(filtered));
+  renderBarList("qaChartCommodity", groupCount(filtered, "commodity"));
+  renderBarList("qaChartVariety", groupCount(filtered, "variety"));
+  renderBarList("qaChartGrower", groupCount(filtered, "grower"));
+
+  const hasFilters =
+    getSelectedValues("qaDashMonthFilter").length ||
+    getSelectedValues("qaDashCommodityFilter").length ||
+    getSelectedValues("qaDashVarietyFilter").length ||
+    getSelectedValues("qaDashGrowerFilter").length ||
+    getSelectedValues("qaDashLotFilter").length;
 
   const detail = $("qaDashboardDetail");
-
   if (!detail) return;
+
+  if (!hasFilters) {
+    detail.innerHTML = "";
+    return;
+  }
 
   if (!filtered.length) {
     detail.innerHTML = `<p style="margin-top:18px;">No records found for the selected filters.</p>`;
@@ -1136,7 +1175,6 @@ function updateQADashboardCharts() {
     ${qaSimpleDetailTable(filtered)}
   `;
 }
-
 function renderQARejectionRecords() {
   const container = $("qaModuleContent");
 
@@ -1370,6 +1408,15 @@ async function saveQAEntryRecord(event) {
 
 /* QA HELPERS */
 
+function getSelectedValues(id) {
+  const el = $(id);
+  if (!el) return [];
+
+  return [...el.selectedOptions]
+    .map(o => o.value)
+    .filter(v => v !== "");
+}
+
 function uniqueValues(list, key) {
   return [...new Set(
     list.map(item => item[key]).filter(Boolean)
@@ -1381,7 +1428,13 @@ function optionList(values) {
 }
 
 function sumBy(list, key) {
-  return list.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
+  return list.reduce((sum, item) => {
+    const value = String(item[key] || "")
+      .replace(/,/g, "")
+      .trim();
+
+    return sum + (Number(value) || 0);
+  }, 0);
 }
 
 function topValue(list, key) {
@@ -1394,10 +1447,6 @@ function getRecordMonth(record) {
   const raw = record.return_date || record.created_at || "";
 
   if (!raw) return "Unknown";
-
-  if (/^\d{4}-\d{2}/.test(raw)) {
-    return raw.slice(0, 7);
-  }
 
   return String(raw);
 }
@@ -1415,11 +1464,33 @@ function getFilteredQAData(filters = {}) {
 
     return (
       (!filters.search || text.includes(filters.search.toLowerCase())) &&
+
+      (!filters.year || getRecordYear(r) === filters.year) &&
+
       (!filters.month || getRecordMonth(r) === filters.month) &&
+
+      (!filters.months?.length ||
+        filters.months.includes(getRecordMonth(r))) &&
+
       (!filters.commodity || r.commodity === filters.commodity) &&
+
+      (!filters.commodities?.length ||
+        filters.commodities.includes(r.commodity)) &&
+
       (!filters.variety || r.variety === filters.variety) &&
+
+      (!filters.varieties?.length ||
+        filters.varieties.includes(r.variety)) &&
+
       (!filters.grower || r.grower === filters.grower) &&
-      (!filters.customer || r.customer === filters.customer)
+
+      (!filters.growers?.length ||
+        filters.growers.includes(r.grower)) &&
+
+      (!filters.customer || r.customer === filters.customer) &&
+
+      (!filters.lots?.length ||
+        filters.lots.includes(r.lot))
     );
   });
 }
@@ -1544,5 +1615,55 @@ function qaSimpleDetailTable(list) {
   `;
 }
 
+function getRecordYear(record) {
+  const value = record.ship_date;
+
+  if (!value) return null;
+
+  const num = Number(value);
+
+  if (!isNaN(num) && num > 30000) {
+    const excelDate = XLSX.SSF.parse_date_code(num);
+
+    if (excelDate) {
+      return excelDate.y;
+    }
+  }
+
+  const text = String(value);
+  const match = text.match(/20\d{2}/);
+
+  if (match) return Number(match[0]);
+
+  return null;
+}
+
+function getGrowerSummaryByCommodity(list) {
+  const map = {};
+
+  list.forEach(r => {
+    const commodity = r.commodity || "Unknown";
+    const grower = r.grower || "";
+
+    if (!grower) return;
+
+    if (!map[commodity]) map[commodity] = new Set();
+    map[commodity].add(grower);
+  });
+
+  const rows = Object.entries(map)
+    .map(([commodity, growers]) => ({
+      commodity,
+      count: growers.size
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  if (!rows.length) return "-";
+
+  return rows
+    .map(r => `${r.commodity}: ${r.count} growers`)
+    .join("<br>");
+}
+
 load();
-```

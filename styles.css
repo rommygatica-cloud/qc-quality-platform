@@ -1,4 +1,3 @@
-```css
 :root{
   --bg:#f7f8fa;
   --panel:#ffffff;
@@ -454,12 +453,32 @@ dialog{
 
 .qaHomeGrid{
   display:grid;
-  grid-template-columns:repeat(3,minmax(220px,1fr));
+  grid-template-columns:repeat(3,1fr);
   gap:18px;
+  margin-bottom:24px;
+}
+
+.qaHomeCard{
+  cursor:pointer;
+  transition:.2s;
+  min-height:140px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.qaHomeCard:hover{
+  transform:translateY(-3px);
+  border-color:var(--primary);
 }
 
 .qaHomeCard b{
-  font-size:24px;
+  font-size:22px;
+}
+
+.qaHomeCard span{
+  font-size:14px;
+  color:var(--muted);
 }
 
 .qaPanel{
@@ -671,4 +690,37 @@ dialog{
     font-size:24px;
   }
 }
-```
+.qaToolbar{
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+  margin-bottom:20px;
+}
+
+.secondaryBtn{
+  border:1px solid var(--line);
+  background:white;
+  padding:10px 16px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.secondaryBtn:hover{
+  border-color:var(--primary);
+  color:var(--primary-dark);
+}
+.summaryTitle{
+  margin:0 0 10px;
+  font-size:20px;
+  font-weight:700;
+  color:#111827;
+  line-height:1.2;
+}
+
+.summaryCard span{
+  display:block;
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.4;
+}
