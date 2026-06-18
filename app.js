@@ -1175,7 +1175,7 @@ function updateQADashboardCharts() {
 
   detail.innerHTML = `
     <h3 style="margin-top:24px;">Detail</h3>
-    ${qaSimpleDetailTable(filtered)}
+    ${qaSimpleDetailTable(filtered.slice(0, 10))}
   `;
 }
 function renderQARejectionRecords() {
@@ -1536,7 +1536,7 @@ function groupCount(list, key) {
   return Object.entries(map)
     .map(([label, value]) => ({ label, value }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, 10);
+    .slice(0, 5);
 }
 
 function groupSum(list, key, sumKey) {
@@ -1645,8 +1645,15 @@ function qaSimpleDetailTable(list) {
   `;
 }
 
-function getRecordYear(record) {
-  return 2026;
+ffunction getRecordMonth(record) {
+  const raw = record.ship_date || record.return_date || record.created_at || "";
+  const parsed = new Date(String(raw).trim());
+
+  if (!isNaN(parsed)) {
+    return parsed.toLocaleString("en-US", { month: "long" });
+  }
+
+  return "Unknown";
 }
 
 function getGrowerSummaryByCommodity(list) {

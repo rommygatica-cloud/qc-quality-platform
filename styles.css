@@ -511,11 +511,13 @@ dialog{
 }
 
 .qaChartBox{
-  background:#f9fafb;
+  background:#fff;
   border:1px solid var(--line);
   border-radius:18px;
-  padding:18px;
-  min-height:240px;
+  padding:14px;
+  min-height:180px;
+  max-height:220px;
+  overflow:auto;
 }
 
 .qaChartBox h3{
@@ -723,4 +725,63 @@ dialog{
   color:var(--muted);
   font-size:14px;
   line-height:1.4;
+}
+.qaChartGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(280px,1fr));
+  gap:16px;
+  margin-top:18px;
+}
+
+.qaChartBox{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:16px;
+  min-height:240px;
+  max-height:300px;
+  overflow:auto;
+}
+
+.qaChartBox h3{
+  margin:0 0 14px;
+  font-size:17px;
+}
+
+#qaDashboardDetail{
+  margin-top:20px;
+}
+
+#qaDashboardDetail h3{
+  font-size:18px;
+  margin-bottom:12px;
+}
+
+.qaTable{
+  font-size:13px;
+}
+
+.qaTable th,
+.qaTable td{
+  padding:10px 12px;
+}
+.qaFilters{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(150px,1fr));
+  gap:12px;
+  margin:20px 0 18px;
+}
+
+.qaFilters select,
+.qaFilters input{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+  padding:10px 12px;
+  font-size:13px;
+}
+
+.qaFilters select[multiple]{
+  height:86px;
 }
