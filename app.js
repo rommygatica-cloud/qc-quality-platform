@@ -1108,12 +1108,12 @@ function renderQARejectionDashboard() {
         </div>
 
         <div class="qaChartBox">
-          <h3>Rejections by Variety</h3>
+          <h3>Top Varieties</h3>
           <div id="qaChartVariety"></div>
         </div>
 
         <div class="qaChartBox">
-          <h3>Rejections by Grower</h3>
+          <h3>Top Growers</h3>
           <div id="qaChartGrower"></div>
         </div>
       </div>
@@ -1528,6 +1528,11 @@ function groupSum(list, key, sumKey) {
 }
 
 function groupByMonth(list) {
+  const monthOrder = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
   const map = {};
 
   list.forEach(item => {
@@ -1537,7 +1542,7 @@ function groupByMonth(list) {
 
   return Object.entries(map)
     .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort((a, b) => monthOrder.indexOf(a.label) - monthOrder.indexOf(b.label));
 }
 
 function renderRanking(id, items) {
