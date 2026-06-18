@@ -1646,7 +1646,6 @@ function qaSimpleDetailTable(list) {
 }
 
 function getRecordYear(record) {
-  alert("APP.JS NUEVO");
   return 2026;
 }
 
