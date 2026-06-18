@@ -1118,6 +1118,11 @@ function renderQARejectionDashboard() {
         </div>
       </div>
 
+      <div class="qaChartBox">
+  <h3>Top Reasons by Selected Commodity</h3>
+  <div id="qaChartReason"></div>
+</div>
+
       <div id="qaDashboardDetail"></div>
     </section>
   `;
@@ -1152,6 +1157,7 @@ function updateQADashboardCharts() {
   renderBarList("qaChartCommodity", groupCount(filtered, "commodity"));
   renderBarList("qaChartVariety", groupCount(filtered, "variety"));
   renderBarList("qaChartGrower", groupCount(filtered, "grower"));
+  renderBarList("qaChartReason", groupCount(filtered, "reason"));
 
   const hasFilters =
     getSelectedValues("qaDashMonthFilter").length ||
