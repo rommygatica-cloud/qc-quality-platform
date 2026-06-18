@@ -738,9 +738,7 @@ dialog{
   border:1px solid var(--line);
   border-radius:18px;
   padding:16px;
-  min-height:240px;
-  max-height:300px;
-  overflow:auto;
+  min-height:180px;
 }
 
 .qaChartBox h3{

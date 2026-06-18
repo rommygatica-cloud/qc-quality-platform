@@ -1157,7 +1157,17 @@ function updateQADashboardCharts() {
   renderBarList("qaChartCommodity", groupSum(filtered, "commodity", "qty_cases"));
   renderBarList("qaChartVariety", groupSum(filtered, "variety", "qty_cases"));
   renderBarList("qaChartGrower", groupSum(filtered, "grower", "qty_cases"));
-  renderBarList("qaChartReason", groupCount(filtered, "reason"));
+renderBarList("qaChartGrower", groupSum(filtered, "grower", "qty_cases"));
+
+const validReasons = filtered.filter(r => {
+  const reason = String(r.reason || "").trim();
+  return reason && reason !== "-" && reason.toLowerCase() !== "empty";
+});
+
+renderBarList(
+  "qaChartReason",
+  groupCount(validReasons, "reason")
+);
 
   const hasFilters =
     getSelectedValues("qaDashMonthFilter").length ||
