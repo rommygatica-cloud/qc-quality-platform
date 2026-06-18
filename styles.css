@@ -810,3 +810,8 @@ dialog{
 #qaChartCommodity{
   height:250px !important;
 }
+#qaChartCommodity,
+#qaChartVariety,
+#qaChartGrower{
+  height:250px !important;
+}

@@ -1109,12 +1109,12 @@ function renderQARejectionDashboard() {
 
         <div class="qaChartBox">
           <h3>Rejected Cases by Variety</h3>
-          <div id="qaChartVariety"></div>
+          <canvas id="qaChartVariety"></canvas>
         </div>
 
         <div class="qaChartBox">
           <h3>Rejected Cases by Grower</h3>
-          <div id="qaChartGrower"></div>
+          <canvas id="qaChartGrower"></canvas>
         </div>
       </div>
 
@@ -1154,12 +1154,22 @@ function updateQADashboardCharts() {
   });
 
   renderBarList("qaChartMonth", groupByMonth(filtered));
-  renderCommodityChart(
+
+renderCommodityChart(
   groupSum(filtered, "commodity", "qty_cases")
 );
-  renderBarList("qaChartVariety", groupSum(filtered, "variety", "qty_cases"));
-  renderBarList("qaChartGrower", groupSum(filtered, "grower", "qty_cases"));
-renderBarList("qaChartGrower", groupSum(filtered, "grower", "qty_cases"));
+
+renderHorizontalChart(
+  "qaChartVariety",
+  groupSum(filtered, "variety", "qty_cases"),
+  "Rejected Cases"
+);
+
+renderHorizontalChart(
+  "qaChartGrower",
+  groupSum(filtered, "grower", "qty_cases"),
+  "Rejected Cases"
+);
 
 const validReasons = filtered.filter(r => {
   const reason = String(r.reason || "").trim();
@@ -1640,6 +1650,57 @@ function renderCommodityChart(data) {
       scales: {
         x: {
           beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+const qaCharts = {};
+
+function renderHorizontalChart(canvasId, data, label) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || typeof Chart === "undefined") return;
+
+  if (qaCharts[canvasId]) {
+    qaCharts[canvasId].destroy();
+  }
+
+  qaCharts[canvasId] = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: data.map(x => x.label),
+      datasets: [{
+        label,
+        data: data.map(x => x.value),
+        backgroundColor: "#d4a017",
+        borderRadius: 8,
+        barThickness: 18
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${Number(ctx.raw).toLocaleString()} cases`
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => Number(value).toLocaleString()
+          }
+        },
+        y: {
+          grid: {
+            display: false
+          }
         }
       }
     }
