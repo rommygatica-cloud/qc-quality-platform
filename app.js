@@ -1064,7 +1064,7 @@ function renderQARejectionDashboard() {
         </article>
 
         <article class="stat summaryCard">
-          <h4 class="summaryTitle">Return Impact Summary</h4>
+          <h4 class="summaryTitle">Active Growers by Commodity</h4>
           <span>${growerSummary}</span>
         </article>
       </div>
@@ -1103,23 +1103,23 @@ function renderQARejectionDashboard() {
         </div>
 
         <div class="qaChartBox">
-          <h3>Rejections by Commodity</h3>
-          <div id="qaChartCommodity"></div>
+          <h3>Rejected Cases by Commodity</h3>
+          <canvas id="qaChartCommodity"></canvas>
         </div>
 
         <div class="qaChartBox">
-          <h3>Top Varieties</h3>
+          <h3>Rejected Cases by Variety</h3>
           <div id="qaChartVariety"></div>
         </div>
 
         <div class="qaChartBox">
-          <h3>Top Growers</h3>
+          <h3>Rejected Cases by Grower</h3>
           <div id="qaChartGrower"></div>
         </div>
       </div>
 
       <div class="qaChartBox">
-  <h3>Top Reasons by Selected Commodity</h3>
+  <h3>Rejection Reasons</h3>
   <div id="qaChartReason"></div>
 </div>
 
@@ -1154,7 +1154,9 @@ function updateQADashboardCharts() {
   });
 
   renderBarList("qaChartMonth", groupByMonth(filtered));
-  renderBarList("qaChartCommodity", groupSum(filtered, "commodity", "qty_cases"));
+  renderCommodityChart(
+  groupSum(filtered, "commodity", "qty_cases")
+);
   renderBarList("qaChartVariety", groupSum(filtered, "variety", "qty_cases"));
   renderBarList("qaChartGrower", groupSum(filtered, "grower", "qty_cases"));
 renderBarList("qaChartGrower", groupSum(filtered, "grower", "qty_cases"));
@@ -1604,6 +1606,44 @@ function renderBarList(id, items) {
       </div>
     `;
   }).join("");
+}
+
+let commodityChart;
+
+function renderCommodityChart(data) {
+  const canvas = document.getElementById("qaChartCommodity");
+  if (!canvas) return;
+
+  if (commodityChart) {
+    commodityChart.destroy();
+  }
+
+  commodityChart = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: data.map(x => x.label),
+      datasets: [{
+        data: data.map(x => x.value),
+        backgroundColor: "#d4a017",
+        borderRadius: 8
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
 }
 
 function qaSimpleDetailTable(list) {
