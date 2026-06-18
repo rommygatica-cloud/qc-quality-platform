@@ -1155,8 +1155,8 @@ function updateQADashboardCharts() {
 
   renderBarList("qaChartMonth", groupByMonth(filtered));
   renderBarList("qaChartCommodity", groupSum(filtered, "commodity", "qty_cases"));
-  renderBarList("qaChartVariety", groupCount(filtered, "variety"));
-  renderBarList("qaChartGrower", groupCount(filtered, "grower"));
+  renderBarList("qaChartVariety", groupSum(filtered, "variety", "qty_cases"));
+  renderBarList("qaChartGrower", groupSum(filtered, "grower", "qty_cases"));
   renderBarList("qaChartReason", groupCount(filtered, "reason"));
 
   const hasFilters =
