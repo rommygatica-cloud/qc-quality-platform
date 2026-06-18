@@ -916,7 +916,7 @@ async function importQARejectionsExcel() {
 
     reason: String(getExcelValue(row, ["REASON", "REJECTION REASON"]) || "").trim(),
 
-    po_wo: String(getExcelValue(row, ["PO", "WO", "PO/WO", "PO WO"]) || "").trim(),
+    po_wo: String(getExcelValue(row, ["WO/PO", "PO/WO", "PO", "WO", "PO WO"]) || "").trim(),
 
     lot: String(getExcelValue(row, ["LOT", "LOT#"]) || "").trim(),
 
@@ -946,7 +946,10 @@ async function importQARejectionsExcel() {
 
     status: "Open"
   }));
-
+console.log("Excel rows:", rows.length);
+console.log("Records generated:", records.length);
+console.log(records.slice(0, 10));
+  
   const { error } = await supabaseClient
     .from("qa_rejections")
     .insert(records);
@@ -1444,18 +1447,45 @@ function topValue(list, key) {
 }
 
 function getRecordMonth(record) {
-  const raw = record.return_date || record.created_at || "";
+  const raw = record.ship_date || record.return_date || record.created_at || "";
+  const text = String(raw).trim();
 
-  if (!raw) return "Unknown";
+  const monthMap = {
+    Jan: "January",
+    Feb: "February",
+    Mar: "March",
+    Apr: "April",
+    May: "May",
+    Jun: "June",
+    Jul: "July",
+    Aug: "August",
+    Sep: "September",
+    Oct: "October",
+    Nov: "November",
+    Dec: "December"
+  };
 
-  return String(raw);
+  const foundMonth = Object.keys(monthMap).find(m => text.includes(m));
+
+  if (foundMonth) return monthMap[foundMonth];
+
+  return "Unknown";
 }
 
 function monthOptions(list) {
-  return uniqueValues(
-    list.map(r => ({ month: getRecordMonth(r) })),
-    "month"
-  ).map(month => `<option value="${month}">${month}</option>`).join("");
+  const monthOrder = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const months = [...new Set(
+    list.map(r => getRecordMonth(r)).filter(m => m && m !== "Unknown")
+  )];
+
+  return months
+    .sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b))
+    .map(month => `<option value="${month}">${month}</option>`)
+    .join("");
 }
 
 function getFilteredQAData(filters = {}) {
@@ -1616,26 +1646,7 @@ function qaSimpleDetailTable(list) {
 }
 
 function getRecordYear(record) {
-  const value = record.ship_date;
-
-  if (!value) return null;
-
-  const num = Number(value);
-
-  if (!isNaN(num) && num > 30000) {
-    const excelDate = XLSX.SSF.parse_date_code(num);
-
-    if (excelDate) {
-      return excelDate.y;
-    }
-  }
-
-  const text = String(value);
-  const match = text.match(/20\d{2}/);
-
-  if (match) return Number(match[0]);
-
-  return null;
+  return 2026;
 }
 
 function getGrowerSummaryByCommodity(list) {
