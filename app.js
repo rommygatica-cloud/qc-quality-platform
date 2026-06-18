@@ -1446,32 +1446,6 @@ function topValue(list, key) {
   return first ? first.label : "";
 }
 
-function getRecordMonth(record) {
-  const raw = record.ship_date || record.return_date || record.created_at || "";
-  const text = String(raw).trim();
-
-  const monthMap = {
-    Jan: "January",
-    Feb: "February",
-    Mar: "March",
-    Apr: "April",
-    May: "May",
-    Jun: "June",
-    Jul: "July",
-    Aug: "August",
-    Sep: "September",
-    Oct: "October",
-    Nov: "November",
-    Dec: "December"
-  };
-
-  const foundMonth = Object.keys(monthMap).find(m => text.includes(m));
-
-  if (foundMonth) return monthMap[foundMonth];
-
-  return "Unknown";
-}
-
 function monthOptions(list) {
   const monthOrder = [
     "January", "February", "March", "April", "May", "June",
@@ -1645,7 +1619,18 @@ function qaSimpleDetailTable(list) {
   `;
 }
 
-ffunction getRecordMonth(record) {
+function getRecordYear(record) {
+  const raw = record.ship_date || record.return_date || record.created_at || "";
+  const parsed = new Date(String(raw).trim());
+
+  if (!isNaN(parsed)) {
+    return parsed.getFullYear();
+  }
+
+  return null;
+}
+
+function getRecordMonth(record) {
   const raw = record.ship_date || record.return_date || record.created_at || "";
   const parsed = new Date(String(raw).trim());
 
