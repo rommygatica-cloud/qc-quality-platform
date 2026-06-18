@@ -1729,5 +1729,35 @@ function getGrowerSummaryByCommodity(list) {
     .map(r => `${r.commodity}: ${r.count} growers`)
     .join("<br>");
 }
+let qcClicks = 0;
+
+$("qcLogoTitle")?.addEventListener("click", () => {
+  qcClicks++;
+
+  if (qcClicks >= 5) {
+    qcClicks = 0;
+
+    alert(`
+QC OPERATIONS HUB
+
+The QC Manager who got tired of Excel.
+
+Developed by a QC Specialist with advanced Excel fatigue.
+Created after one too many Excel files.
+
+Powered by coffee, containers and frustration.
+
+If you found this message,
+you have discovered the first hidden feature
+of QC Operations Hub🎉🍇📊☕💛.
+
+Version 1.0
+`);
+  }
+
+  setTimeout(() => {
+    qcClicks = 0;
+  }, 3000);
+});
 
 load();
