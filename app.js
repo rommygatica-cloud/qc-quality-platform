@@ -1103,7 +1103,7 @@ function renderQARejectionDashboard() {
         </div>
 
         <div class="qaChartBox">
-          <h3>Rejections by Commodity</h3>
+          <h3>Cases Rejected by Commodity</h3>
           <div id="qaChartCommodity"></div>
         </div>
 
@@ -1154,7 +1154,7 @@ function updateQADashboardCharts() {
   });
 
   renderBarList("qaChartMonth", groupByMonth(filtered));
-  renderBarList("qaChartCommodity", groupCount(filtered, "commodity"));
+  renderBarList("qaChartCommodity", groupCount(filtered, "commodity", "qty_cases"));
   renderBarList("qaChartVariety", groupCount(filtered, "variety"));
   renderBarList("qaChartGrower", groupCount(filtered, "grower"));
   renderBarList("qaChartReason", groupCount(filtered, "reason"));
