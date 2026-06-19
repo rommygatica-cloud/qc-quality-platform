@@ -1672,9 +1672,9 @@ function renderHorizontalChart(canvasId, data, label) {
     type: "bar",
     data: {
       labels: data.map(x => {
-  const pct = ((x.value / total) * 100).toFixed(1);
-  return `${x.label} (${pct}%)`;
-}),
+        const pct = total ? ((x.value / total) * 100).toFixed(1) : "0.0";
+        return `${x.label} (${pct}%)`;
+      }),
       datasets: [{
         label,
         data: data.map(x => x.value),
@@ -1690,10 +1690,11 @@ function renderHorizontalChart(canvasId, data, label) {
       plugins: {
         legend: { display: false },
         tooltip: {
-  callbacks: {
-    label: ctx => {
-      const pct = ((ctx.raw / total) * 100).toFixed(1);
-      return `${Number(ctx.raw).toLocaleString()} cases (${pct}%)`;
+          callbacks: {
+            label: ctx => {
+              const pct = total ? ((ctx.raw / total) * 100).toFixed(1) : "0.0";
+              return `${Number(ctx.raw).toLocaleString()} cases (${pct}%)`;
+            }
           }
         }
       },
