@@ -243,6 +243,27 @@ header input,
   background:var(--primary-dark);
 }
 
+.secondaryBtn{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--text);
+  border-radius:13px;
+  padding:13px 20px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.secondaryBtn:hover{
+  border-color:var(--primary);
+  color:var(--primary-dark);
+}
+
+.qaToolbar{
+  display:flex;
+  gap:10px;
+  margin-bottom:20px;
+}
+
 #barcodeResult{
   margin-top:18px;
   padding:16px;
