@@ -1749,22 +1749,41 @@ function qaSimpleDetailTable(list) {
 }
 
 function getRecordYear(record) {
-  const raw = record.ship_date || record.return_date || record.created_at || "";
-  const parsed = new Date(String(raw).trim());
+  const raw = String(
+    record.ship_date ||
+    record.return_date ||
+    record.created_at ||
+    ""
+  ).trim();
 
-  if (!isNaN(parsed)) {
-    return parsed.getFullYear();
+  const match = raw.match(/(\d{4})$/);
+
+  if (match) {
+    return Number(match[1]);
   }
 
   return null;
 }
 
 function getRecordMonth(record) {
-  const raw = record.ship_date || record.return_date || record.created_at || "";
-  const parsed = new Date(String(raw).trim());
+  const raw = String(
+    record.ship_date ||
+    record.return_date ||
+    record.created_at ||
+    ""
+  ).trim();
 
-  if (!isNaN(parsed)) {
-    return parsed.toLocaleString("en-US", { month: "long" });
+  const parts = raw.split("-");
+
+  if (parts.length >= 2) {
+    const monthNum = Number(parts[0]);
+
+    const months = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ];
+
+    return months[monthNum - 1] || "Unknown";
   }
 
   return "Unknown";
