@@ -617,6 +617,15 @@ dialog{
 .qaForm .full{
   grid-column:1/-1;
 }
+#qaChartCommodity,
+#qaChartVariety,
+#qaChartGrower{
+  height:250px !important;
+  max-height:250px !important;
+}
+canvas{
+  max-width:100%;
+}
 
 @media(max-width:850px){
   body{
@@ -706,15 +715,21 @@ dialog{
   }
 
   .qaChartBox{
-    min-height:260px;
-    overflow:visible;
-  }
+  min-height:auto;
+  height:auto;
+  overflow:visible;
+}
 
-  #qaChartCommodity,
-  #qaChartVariety,
-  #qaChartGrower{
-    height:260px !important;
-  }
+#qaChartCommodity{
+  height:180px !important;
+  max-height:180px !important;
+}
+
+#qaChartVariety,
+#qaChartGrower{
+  height:320px !important;
+  max-height:320px !important;
+}
 
   .qaToolbar{
   justify-content:center;

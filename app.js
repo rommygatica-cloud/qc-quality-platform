@@ -1104,7 +1104,7 @@ function renderQARejectionDashboard() {
 
         <div class="qaChartBox">
           <h3>Rejected Cases by Commodity</h3>
-          <canvas id="qaChartCommodity"></canvas>
+          <div id="qaChartCommodity"></div>
         </div>
 
         <div class="qaChartBox">
@@ -1153,11 +1153,9 @@ function updateQADashboardCharts() {
     lots: getSelectedValues("qaDashLotFilter")
   });
 
-  renderBarList("qaChartMonth", groupByMonth(filtered));
 
-renderCommodityChart(
-  groupSum(filtered, "commodity", "qty_cases")
-);
+renderBarList("qaChartMonth", groupByMonth(filtered));
+renderBarList("qaChartCommodity", groupSum(filtered, "commodity", "qty_cases"));
 
 renderHorizontalChart(
   "qaChartVariety",
@@ -1623,6 +1621,8 @@ let commodityChart;
 function renderCommodityChart(data) {
   const canvas = document.getElementById("qaChartCommodity");
   if (!canvas) return;
+canvas.style.height = "250px";
+canvas.height = 250;
 
   if (commodityChart) {
     commodityChart.destroy();
@@ -1641,7 +1641,8 @@ function renderCommodityChart(data) {
     options: {
       indexAxis: "y",
       responsive: true,
-      maintainAspectRatio: false,
+maintainAspectRatio: false,
+resizeDelay: 200,
       plugins: {
         legend: {
           display: false
