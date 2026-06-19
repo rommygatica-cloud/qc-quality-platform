@@ -1666,10 +1666,15 @@ function renderHorizontalChart(canvasId, data, label) {
     qaCharts[canvasId].destroy();
   }
 
+  const total = data.reduce((sum, x) => sum + x.value, 0);
+
   qaCharts[canvasId] = new Chart(canvas, {
     type: "bar",
     data: {
-      labels: data.map(x => x.label),
+      labels: data.map(x => {
+  const pct = ((x.value / total) * 100).toFixed(1);
+  return `${x.label} (${pct}%)`;
+}),
       datasets: [{
         label,
         data: data.map(x => x.value),
@@ -1685,8 +1690,10 @@ function renderHorizontalChart(canvasId, data, label) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          callbacks: {
-            label: ctx => `${Number(ctx.raw).toLocaleString()} cases`
+  callbacks: {
+    label: ctx => {
+      const pct = ((ctx.raw / total) * 100).toFixed(1);
+      return `${Number(ctx.raw).toLocaleString()} cases (${pct}%)`;
           }
         }
       },
