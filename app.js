@@ -1676,7 +1676,7 @@ function renderHorizontalChart(canvasId, data, label) {
         return `${x.label} (${pct}%)`;
       }),
       datasets: [{
-        label,
+        label: label,
         data: data.map(x => x.value),
         backgroundColor: "#d4a017",
         borderRadius: 8,
@@ -1688,22 +1688,21 @@ function renderHorizontalChart(canvasId, data, label) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: false
+        },
         tooltip: {
           callbacks: {
-            label: ctx => {
+            label: function(ctx) {
               const pct = total ? ((ctx.raw / total) * 100).toFixed(1) : "0.0";
-              return `${Number(ctx.raw).toLocaleString()} cases (${pct}%)`;
+              return Number(ctx.raw).toLocaleString() + " cases (" + pct + "%)";
             }
           }
         }
       },
       scales: {
         x: {
-          beginAtZero: true,
-          ticks: {
-            callback: value => Number(value).toLocaleString()
-          }
+          beginAtZero: true
         },
         y: {
           grid: {
