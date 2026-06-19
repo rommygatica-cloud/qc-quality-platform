@@ -1359,13 +1359,13 @@ function renderQAEntryForm() {
     <section class="qaPanel">
       <div class="qaPanelHeader">
         <div>
-          <h2>Enter Rejection Data</h2>
-          <p>Mobile-friendly form for new rejection records.</p>
+          <h2>New Rejection Record</h2>
+          <p>Create and save a new rejection record.</p>
         </div>
 
-        <button class="primaryBtn" onclick="openQAModule('records')">
-          View Records
-        </button>
+        <button class="secondaryBtn" onclick="openQAModule('records')">
+  Records
+</button>
       </div>
 
       <form id="qaEntryForm" class="qaForm">
@@ -1389,8 +1389,8 @@ function renderQAEntryForm() {
         <textarea id="qaEntryReason" class="full" placeholder="Reason"></textarea>
 
         <button type="submit" class="primaryBtn full">
-          Save Rejection Record
-        </button>
+  Create Rejection
+</button>
       </form>
 
       <div id="qaEntryResult" style="margin-top:16px;"></div>
