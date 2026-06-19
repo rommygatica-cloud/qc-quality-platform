@@ -671,9 +671,10 @@ dialog{
   }
 
   .filters,
-  .qaFilters{
-    display:grid;
-  }
+.qaFilters{
+  display:grid;
+  grid-template-columns:1fr;
+}
 
   .scannerCard button{
     margin-left:0;
@@ -716,139 +717,16 @@ dialog{
   }
 
   .qaToolbar{
-    justify-content:center;
-    gap:8px;
-  }
-
-  .qaToolbar button{
-    font-size:12px;
-    padding:8px 10px;
-  }
-
-  .summaryTitle{
-    font-size:16px;
-  }
-}
-.qaToolbar{
-  display:flex;
-  justify-content:flex-end;
-  gap:12px;
-  margin-bottom:20px;
+  justify-content:center;
+  gap:8px;
 }
 
-.secondaryBtn{
-  border:1px solid var(--line);
-  background:white;
-  padding:10px 16px;
-  border-radius:12px;
-  cursor:pointer;
-  font-weight:600;
+.qaToolbar button{
+  font-size:12px;
+  padding:8px 10px;
 }
 
-.secondaryBtn:hover{
-  border-color:var(--primary);
-  color:var(--primary-dark);
-}
 .summaryTitle{
-  margin:0 0 10px;
-  font-size:20px;
-  font-weight:700;
-  color:#111827;
-  line-height:1.2;
+  font-size:16px;
 }
-
-.summaryCard span{
-  display:block;
-  color:var(--muted);
-  font-size:14px;
-  line-height:1.4;
-}
-.qaChartGrid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(280px,1fr));
-  gap:16px;
-  margin-top:18px;
-}
-
-.qaChartBox{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:18px;
-  padding:16px;
-  min-height:180px;
-}
-
-.qaChartBox h3{
-  margin:0 0 14px;
-  font-size:17px;
-}
-
-#qaDashboardDetail{
-  margin-top:20px;
-}
-
-#qaDashboardDetail h3{
-  font-size:18px;
-  margin-bottom:12px;
-}
-
-.qaTable{
-  font-size:13px;
-}
-
-.qaTable th,
-.qaTable td{
-  padding:10px 12px;
-}
-.qaFilters{
-  display:grid;
-  grid-template-columns:repeat(5,minmax(190px,1fr));
-  gap:16px;
-  margin:22px 0 26px;
-}
-
-.qaFilters select,
-.qaFilters input{
-  width:100%;
-  border:1px solid #e5e7eb;
-  border-radius:18px;
-  background:#ffffff;
-  padding:12px 14px;
-  font-size:13px;
-  color:#111827;
-  box-shadow:0 8px 20px rgba(17,24,39,.05);
-}
-
-.qaFilters select[multiple]{
-  height:118px;
-  overflow:auto;
-}
-
-.qaFilters select:focus,
-.qaFilters input:focus{
-  outline:none;
-  border-color:var(--primary);
-  box-shadow:0 0 0 3px rgba(212,160,23,.18);
-}
-.qaChartBox{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:20px;
-  padding:18px;
-  min-height:210px;
-  box-shadow:0 8px 20px rgba(17,24,39,.04);
-}
-
-.qaChartBox h3{
-  margin:0 0 16px;
-  font-size:17px;
-  font-weight:700;
-}
-#qaChartCommodity{
-  height:250px !important;
-}
-#qaChartCommodity,
-#qaChartVariety,
-#qaChartGrower{
-  height:250px !important;
 }
