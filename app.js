@@ -1858,18 +1858,22 @@ function openInboundModule(module) {
           <table class="qaTable">
             <thead>
               <tr>
-                <th>ETA</th>
-                <th>Arrival</th>
-                <th>PO</th>
-                <th>Grower</th>
-                <th>Status</th>
-                <th>Priority</th>
+               <th>ETA</th>
+<th>Ref</th>
+<th>PO</th>
+<th>Lot</th>
+<th>Grower</th>
+<th>Commodity</th>
+<th>Variety</th>
+<th>Origin</th>
+<th>Status</th>
+<th>Priority</th> 
               </tr>
             </thead>
 
             <tbody>
               <tr>
-                <td colspan="6">Ready to import arrivals.</td>
+                <td colspan="10">Ready to import inbound records.</td>
               </tr>
             </tbody>
           </table>
