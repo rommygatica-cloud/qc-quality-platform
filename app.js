@@ -113,6 +113,11 @@ function show(id) {
   };
 
   $("pageTitle").textContent = names[id] || "Dashboard";
+
+if (id === "qa") {
+  openQAModule("dashboard");
+  window.scrollTo(0, 0);
+}
 }
 
 function renderDashboard() {
