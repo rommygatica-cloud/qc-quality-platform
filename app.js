@@ -1877,6 +1877,25 @@ const manifestRows = rows.slice(headerRowIndex + 1);
 console.log("Manifest Rows:", manifestRows.length);
 
 console.log("First Line:", manifestRows[0]);
+const firstLine = manifestRows[0];
+
+const sampleRecord = {
+  po,
+  grower,
+  container,
+
+  lot: firstLine[2],
+  commodity: firstLine[3],
+  variety: firstLine[4],
+  pack_style: firstLine[5],
+  size: firstLine[6],
+  ptf_code: firstLine[8],
+  boxes: firstLine[9],
+  subgrower: firstLine[10],
+  pack_date: firstLine[11]
+};
+
+console.log("Sample Record:", sampleRecord);
   alert("Manifest read successfully. Check console.");
 }
 
