@@ -1841,7 +1841,31 @@ async function importManifestExcel() {
   });
 
   console.log("Manifest file:", file.name);
-  console.log("Rows:", rows);
+  const po = String(rows[0]?.[1] || "")
+  .replace("PO#", "")
+  .trim();
+
+const growerRaw = String(rows[0]?.[2] || "").trim();
+
+let grower = "";
+
+if (growerRaw.includes("-")) {
+  grower = growerRaw.split("-")[0].trim();
+} else {
+  grower = growerRaw.split(" ")[0].trim();
+}
+
+const vessel = String(rows[1]?.[2] || "").trim();
+const eta = String(rows[3]?.[2] || "").trim();
+const container = String(rows[6]?.[2] || "").trim();
+
+console.log({
+  po,
+  grower,
+  vessel,
+  eta,
+  container
+});
 
   alert("Manifest read successfully. Check console.");
 }
