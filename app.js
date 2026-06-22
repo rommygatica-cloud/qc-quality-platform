@@ -1867,6 +1867,11 @@ console.log({
   container
 });
 
+const headerRowIndex = rows.findIndex(r =>
+  String(r[0]).trim() === "Line"
+);
+
+console.log("Header Row:", headerRowIndex);
   alert("Manifest read successfully. Check console.");
 }
 
