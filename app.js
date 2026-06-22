@@ -1822,6 +1822,11 @@ function getGrowerSummaryByCommodity(list) {
     .map(r => `${r.commodity}: ${r.count} growers`)
     .join("<br>");
 }
+
+async function importManifestExcel() {
+  alert("Manifest upload connected!");
+}
+
 function openInboundModule(module) {
   const home = $("inboundHomeGrid");
   const content = $("inboundModuleContent");
@@ -1849,9 +1854,16 @@ function openInboundModule(module) {
             Upload JK Fresh
           </button>
 
-          <button class="secondaryBtn">
-            Upload Manifest
-          </button>
+          <label class="secondaryBtn" style="display:inline-block;">
+  Upload Manifest
+  <input
+    type="file"
+    id="manifestFile"
+    accept=".xlsx"
+    style="display:none;"
+    onchange="importManifestExcel()"
+  />
+</label>
         </div>
 
         <div class="qaTableWrap">
