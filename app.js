@@ -105,7 +105,7 @@ function show(id) {
     tolerances: "Tolerances",
     specs: "Specifications",
     sops: "SOPs",
-    daily: "Daily Work",
+    daily: "Inbound Management",
     barcode: "Barcode Verification",
     traceability: "Traceability Search",
     qa: "QA Control",

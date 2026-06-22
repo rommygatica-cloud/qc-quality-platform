@@ -24,7 +24,7 @@
       <button class="nav" data-view="tolerances">Tolerances</button>
       <button class="nav" data-view="specs">Specifications</button>
       <button class="nav" data-view="sops">SOPs</button>
-      <button class="nav" data-view="daily">Arrival Control</button>
+      <button class="nav" data-view="daily">Inbound Management</button>
       <button class="nav" data-view="barcode">Barcode Verification</button>
       <button class="nav" data-view="traceability">Traceability Search</button>
       <button class="nav" data-view="qa">QA Control</button>
@@ -59,7 +59,7 @@
         <button data-view="tolerances">Tolerances</button>
         <button data-view="specs">Specifications</button>
         <button data-view="sops">SOPs</button>
-        <button data-view="daily">Arrival Control</button>
+        <button data-view="daily">Inbound Management</button>
         <button data-view="barcode">Barcode Verification</button>
         <button data-view="traceability">Traceability Search</button>
         <button data-view="qa">QA Control</button>
@@ -155,30 +155,38 @@
     </section>
 
     <section id="daily" class="view">
-      <h2>Daily Work</h2>
+  <div class="pageIntro">
+    <h2>Inbound Management</h2>
+    <p>
+      Track arrivals, manifests, inspections, and operational status.
+    </p>
+  </div>
 
-      <div class="cards">
-        <article class="stat">
-          <b>Weekly Arrivals</b>
-          <span>Vessels and containers</span>
-        </article>
+     <div class="qaHomeGrid">
 
-        <article class="stat">
-          <b>Inspections</b>
-          <span>Status tracking</span>
-        </article>
+  <article class="stat qaHomeCard">
+    <b>🚢 Arrivals</b>
+    <span>Manage arrivals, manifests, and priorities.</span>
+  </article>
 
-        <article class="stat">
-          <b>Discrepancies</b>
-          <span>Log issues and mismatches</span>
-        </article>
+  <article class="stat qaHomeCard">
+    <b>🔍 Inspections</b>
+    <span>Track inspection progress and status.</span>
+  </article>
 
-        <article class="stat">
-          <b>Reports</b>
-          <span>Pending and sent reports</span>
-        </article>
-      </div>
-    </section>
+  <article class="stat qaHomeCard">
+    <b>⚠️ Discrepancies</b>
+    <span>Monitor mismatches and operational issues.</span>
+  </article>
+
+  <article class="stat qaHomeCard">
+    <b>📧 Reports</b>
+    <span>Daily summaries and reporting tools.</span>
+  </article>
+
+</div>
+
+<div id="inboundModuleContent" style="margin-top:28px;"></div>
 
     <section id="barcode" class="view">
       <div class="scannerCard">
