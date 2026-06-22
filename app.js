@@ -1824,7 +1824,26 @@ function getGrowerSummaryByCommodity(list) {
 }
 
 async function importManifestExcel() {
-  alert("Manifest upload connected!");
+  const file = $("manifestFile")?.files[0];
+
+  if (!file) {
+    alert("Please select a manifest file.");
+    return;
+  }
+
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    defval: ""
+  });
+
+  console.log("Manifest file:", file.name);
+  console.log("Rows:", rows);
+
+  alert("Manifest read successfully. Check console.");
 }
 
 function openInboundModule(module) {
