@@ -1822,6 +1822,88 @@ function getGrowerSummaryByCommodity(list) {
     .map(r => `${r.commodity}: ${r.count} growers`)
     .join("<br>");
 }
+function openInboundModule(module) {
+  const home = $("inboundHomeGrid");
+  const content = $("inboundModuleContent");
+
+  if (!home || !content) return;
+
+  home.style.display = "none";
+
+  if (module === "arrivals") {
+    content.innerHTML = `
+      <section class="qaPanel">
+        <button class="secondaryBtn" onclick="backToInboundHome()">
+          ← Back
+        </button>
+
+        <div class="qaPanelHeader" style="margin-top:18px;">
+          <div>
+            <h2>🚢 Arrivals</h2>
+            <p>Upload JK Fresh status files and manifest details.</p>
+          </div>
+        </div>
+
+        <div class="qaToolbar">
+          <button class="primaryBtn">
+            Upload JK Fresh
+          </button>
+
+          <button class="secondaryBtn">
+            Upload Manifest
+          </button>
+        </div>
+
+        <div class="qaTableWrap">
+          <table class="qaTable">
+            <thead>
+              <tr>
+                <th>ETA</th>
+                <th>Arrival</th>
+                <th>PO</th>
+                <th>Grower</th>
+                <th>Status</th>
+                <th>Priority</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td colspan="6">Ready to import arrivals.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    `;
+    return;
+  }
+
+  content.innerHTML = `
+    <section class="qaPanel">
+      <button class="secondaryBtn" onclick="backToInboundHome()">
+        ← Back
+      </button>
+
+      <div class="qaPanelHeader" style="margin-top:18px;">
+        <div>
+          <h2>${module}</h2>
+          <p>This section will be built next.</p>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function backToInboundHome() {
+  const home = $("inboundHomeGrid");
+  const content = $("inboundModuleContent");
+
+  if (!home || !content) return;
+
+  home.style.display = "grid";
+  content.innerHTML = "";
+}
 let qcClicks = 0;
 
 $("qcLogoTitle")?.addEventListener("click", () => {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QC Operations Hub</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css?v=108">
+  <link rel="stylesheet" href="styles.css?v=109">
 </head>
 
 <body>
@@ -162,24 +162,24 @@
     </p>
   </div>
 
-     <div class="qaHomeGrid">
+<div id="inboundHomeGrid" class="qaHomeGrid">
 
-  <article class="stat qaHomeCard">
+  <article class="stat qaHomeCard" onclick="openInboundModule('arrivals')">
     <b>🚢 Arrivals</b>
     <span>Manage arrivals, manifests, and priorities.</span>
   </article>
 
-  <article class="stat qaHomeCard">
+  <article class="stat qaHomeCard" onclick="openInboundModule('inspections')">
     <b>🔍 Inspections</b>
     <span>Track inspection progress and status.</span>
   </article>
 
-  <article class="stat qaHomeCard">
+  <article class="stat qaHomeCard" onclick="openInboundModule('discrepancies')">
     <b>⚠️ Discrepancies</b>
     <span>Monitor mismatches and operational issues.</span>
   </article>
 
-  <article class="stat qaHomeCard">
+  <article class="stat qaHomeCard" onclick="openInboundModule('reports')">
     <b>📧 Reports</b>
     <span>Daily summaries and reporting tools.</span>
   </article>
@@ -361,6 +361,6 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="auth.js"></script>
-  <script src="app.js?v=qa-control-108"></script>
+  <script src="app.js?v=qa-control-110"></script>
 </body>
 </html>
