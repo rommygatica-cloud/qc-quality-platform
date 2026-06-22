@@ -1872,6 +1872,11 @@ const headerRowIndex = rows.findIndex(r =>
 );
 
 console.log("Header Row:", headerRowIndex);
+const manifestRows = rows.slice(headerRowIndex + 1);
+
+console.log("Manifest Rows:", manifestRows.length);
+
+console.log("First Line:", manifestRows[0]);
   alert("Manifest read successfully. Check console.");
 }
 
