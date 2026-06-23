@@ -862,7 +862,8 @@ function formatExcelDate(value) {
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ];
 
-    return `${date.d}-${months[date.m - 1]}`;
+    const year = String(date.y).slice(-2);
+    return `${date.d}-${months[date.m - 1]}-${year}`;
   }
 
   return String(value).trim();
