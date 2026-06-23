@@ -1920,7 +1920,7 @@ const records = manifestRows
 console.log("Records:", records);
 console.log("Total Records:", records.length);
 
-await saveManifestToDatabase({
+const saved = await saveManifestToDatabase({
   eta,
   po,
   grower,
@@ -1929,9 +1929,11 @@ await saveManifestToDatabase({
   records
 });
 
+if (!saved) return;
+
 renderInboundPreview(records);
 
-alert("Manifest read successfully. Check console.");
+alert("Manifest saved successfully.");
 }
 
 async function saveManifestToDatabase(data) {
@@ -1947,16 +1949,26 @@ async function saveManifestToDatabase(data) {
       .in("lot", lots);
 
   if (checkError) {
-    console.error("Duplicate Check Error:", checkError);
-  }
+  console.error("Duplicate Check Error:", checkError);
+
+  alert(
+    "Error checking duplicate lots:\n\n" +
+    checkError.message
+  );
+
+  return false;
+}
 
   if (existingLots && existingLots.length > 0) {
-    alert(
-      "This manifest contains lots that already exist:\n\n" +
-      existingLots.map(x => x.lot).join(", ")
-    );
-    return;
-  }
+  const duplicatedLots = [...new Set(existingLots.map(x => x.lot))];
+
+  alert(
+    "This manifest was not imported because these lots already exist:\n\n" +
+    duplicatedLots.join(", ")
+  );
+
+  return false;
+}
   const { data: containerRow, error: containerError } =
     await supabaseClient
       .from("arrival_containers")
@@ -2014,6 +2026,8 @@ async function saveManifestToDatabase(data) {
   }
 
   console.log("Manifest saved:", containerRow.container, lines.length, "lines");
+  
+  return true;
 }
 
 function renderInboundPreview(records) {
