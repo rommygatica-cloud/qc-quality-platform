@@ -1896,7 +1896,57 @@ const sampleRecord = {
 };
 
 console.log("Sample Record:", sampleRecord);
-  alert("Manifest read successfully. Check console.");
+const records = manifestRows
+  .filter(row => row[2]) // lot existe
+  .map(row => ({
+    eta,
+    po,
+    grower,
+    container,
+    vessel,
+
+    lot: row[2],
+    commodity: row[3],
+    variety: row[4],
+    pack_style: row[5],
+    size: row[6],
+    ptf_code: row[8],
+    boxes: row[9],
+    subgrower: row[10],
+    pack_date: row[11]
+  }));
+
+console.log("Records:", records);
+console.log("Total Records:", records.length);
+
+renderInboundPreview(records);
+
+alert("Manifest read successfully. Check console.");
+}
+
+function renderInboundPreview(records) {
+
+  const tbody = $("inboundTableBody");
+
+  console.log("TBODY:", tbody);
+  console.log("Records received:", records.length);
+
+  if (!tbody) return;
+
+  tbody.innerHTML = records.map(r => `
+    <tr>
+    <td>${r.eta || "-"}</td>
+           <td>${r.container || "-"}</td>
+      <td>${r.po || "-"}</td>
+      <td>${r.lot || "-"}</td>
+      <td>${r.grower || "-"}</td>
+      <td>${r.commodity || "-"}</td>
+      <td>${r.variety || "-"}</td>
+      <td>${r.origin || "-"}</td>
+      <td>🟢 At Door</td>
+      <td>Normal</td>
+    </tr>
+  `).join("");
 }
 
 function openInboundModule(module) {
@@ -1943,6 +1993,7 @@ function openInboundModule(module) {
             <thead>
               <tr>
                <th>ETA</th>
+<th>ETA</th>
 <th>Ref</th>
 <th>PO</th>
 <th>Lot</th>
@@ -1951,15 +2002,15 @@ function openInboundModule(module) {
 <th>Variety</th>
 <th>Origin</th>
 <th>Status</th>
-<th>Priority</th> 
+<th>Priority</th>
               </tr>
             </thead>
 
-            <tbody>
-              <tr>
-                <td colspan="10">Ready to import inbound records.</td>
-              </tr>
-            </tbody>
+            <tbody id="inboundTableBody">
+  <tr>
+    <td colspan="10">Ready to import inbound records.</td>
+  </tr>
+</tbody>
           </table>
         </div>
       </section>
