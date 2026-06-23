@@ -1936,7 +1936,27 @@ alert("Manifest read successfully. Check console.");
 
 async function saveManifestToDatabase(data) {
   const fileName = $("manifestFile")?.files[0]?.name || "";
+  const lots = [...new Set(
+    data.records.map(r => String(r.lot || "").trim())
+  )];
 
+  const { data: existingLots, error: checkError } =
+    await supabaseClient
+      .from("arrival_manifest_lines")
+      .select("lot")
+      .in("lot", lots);
+
+  if (checkError) {
+    console.error("Duplicate Check Error:", checkError);
+  }
+
+  if (existingLots && existingLots.length > 0) {
+    alert(
+      "This manifest contains lots that already exist:\n\n" +
+      existingLots.map(x => x.lot).join(", ")
+    );
+    return;
+  }
   const { data: containerRow, error: containerError } =
     await supabaseClient
       .from("arrival_containers")
