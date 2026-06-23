@@ -2260,11 +2260,17 @@ window.importJKFreshExcel = async function importJKFreshExcel() {
 
   console.log("JK Fresh Records:", records);
 
+  const uniqueRecords = Array.from(
+  new Map(records.map(r => [r.arrival_key, r])).values()
+);
+
+console.log("Unique JK Fresh Records:", uniqueRecords);
+
   const { error } = await supabaseClient
   .from("arrival_containers")
-  .upsert(records, {
-    onConflict: "arrival_key"
-  });
+  .upsert(uniqueRecords, {
+  onConflict: "arrival_key"
+});
 
   if (error) {
     console.error(error);
@@ -2272,7 +2278,7 @@ window.importJKFreshExcel = async function importJKFreshExcel() {
     return;
   }
 
-  alert(`${records.length} JK Fresh records imported successfully.`);
+  alert(`${uniqueRecords.length} JK Fresh records imported successfully.`);
 }
 function normalizeOrigin(value) {
   const code = String(value || "").trim().toUpperCase();
