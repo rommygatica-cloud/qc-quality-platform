@@ -1934,8 +1934,9 @@ renderInboundPreview(records);
 alert("Manifest read successfully. Check console.");
 }
 
-
 async function saveManifestToDatabase(data) {
+  const fileName = $("manifestFile")?.files[0]?.name || "";
+
   const { data: containerRow, error: containerError } =
     await supabaseClient
       .from("arrival_containers")
@@ -1945,10 +1946,14 @@ async function saveManifestToDatabase(data) {
         grower: data.grower,
         vessel: data.vessel,
         container: data.container,
-        manifest_name: $("manifestFile")?.files[0]?.name || "",
+        recorder_status: "Unknown",
+        manifest_name: fileName,
         status: "Pending",
+        last_manifest_import: new Date().toISOString(),
+        origin: "",
+        priority: "",
         active: true,
-        last_manifest_import: new Date().toISOString()
+        notes: ""
       })
       .select()
       .single();
@@ -1961,9 +1966,9 @@ async function saveManifestToDatabase(data) {
 
   const lines = data.records.map(r => ({
     container_id: containerRow.id,
-    po: r.po,
+    po: data.po,
     lot: String(r.lot || ""),
-    grower: r.grower,
+    grower: data.grower,
     commodity: r.commodity,
     variety: r.variety,
     size: r.size,
@@ -1971,10 +1976,10 @@ async function saveManifestToDatabase(data) {
     boxes: Number(r.boxes || 0),
     subgrower: r.subgrower,
     pack_date: formatExcelDate(r.pack_date),
-    recorder_code: r.recorder_code || "",
+    recorder_code: "",
     ptf_code: r.ptf_code,
     label: r.label || "",
-    vessel: r.vessel
+    vessel: data.vessel
   }));
 
   const { error: linesError } =
