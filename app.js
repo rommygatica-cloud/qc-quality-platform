@@ -1856,7 +1856,7 @@ if (growerRaw.includes("-")) {
 }
 
 const vessel = String(rows[1]?.[2] || "").trim();
-const eta = String(rows[3]?.[2] || "").trim();
+const eta = formatExcelDate(rows[3]?.[2]);
 const container = String(rows[6]?.[2] || "").trim();
 
 console.log({
@@ -1941,36 +1941,38 @@ function renderInboundPreview(records) {
   const commodities = [...new Set(records.map(r => r.commodity).filter(Boolean))].join(", ");
   const varieties = [...new Set(records.map(r => r.variety).filter(Boolean))].join(", ");
 
-  tbody.innerHTML = `
-    <tr>
-      <td>${first.eta || "-"}</td>
-      <td>${first.container || "-"}</td>
-      <td>${first.po || "-"}</td>
-      <td>${first.lot || "-"}</td>
-      <td>${first.grower || "-"}</td>
-      <td>${commodities || "-"}</td>
-      <td>${varieties || "-"}</td>
-      <td>${first.origin || "-"}</td>
-      <td>
-        <select>
-          <option value="">Select Status</option>
-          <option>🟢 At Door</option>
-          <option>🟡 Sampling</option>
-          <option>🔵 Inspection Started</option>
-          <option>✅ Inspection Finished</option>
-          <option>📧 Report Sent</option>
-          <option>🚫 Cancelled / Diverted</option>
-        </select>
-      </td>
-      <td>
-        <select>
-          <option>Normal</option>
-          <option>Medium</option>
-          <option>High</option>
-        </select>
-      </td>
-    </tr>
-  `;
+  tbody.innerHTML = records.map(r => `
+  <tr>
+    <td>${r.eta || "-"}</td>
+    <td>${r.container || "-"}</td>
+    <td>${r.po || "-"}</td>
+    <td>${r.lot || "-"}</td>
+    <td>${r.grower || "-"}</td>
+    <td>${r.commodity || "-"}</td>
+    <td>${r.variety || "-"}</td>
+    <td>${r.origin || "-"}</td>
+    <td>
+      <select>
+        <option value="">Select Status</option>
+        <option>🟢 At Door</option>
+        <option>🟡 Sampling</option>
+        <option>🔵 Inspection Started</option>
+        <option>✅ Inspection Finished</option>
+        <option>📧 Report Sent</option>
+        <option>🚫 Cancelled / Diverted</option>
+      </select>
+    </td>
+    <td>
+      <select>
+        <option value="">Select Priority</option>
+        <option>Low</option>
+        <option>Normal</option>
+        <option>High</option>
+        <option>Critical</option>
+      </select>
+    </td>
+  </tr>
+`).join("");
 
   console.log("Inbound Summary:", {
     eta: first.eta,
