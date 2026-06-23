@@ -1925,28 +1925,64 @@ alert("Manifest read successfully. Check console.");
 }
 
 function renderInboundPreview(records) {
-
   const tbody = $("inboundTableBody");
 
   console.log("TBODY:", tbody);
   console.log("Records received:", records.length);
 
-  if (!tbody) return;
+  if (!tbody || !records.length) return;
 
-  tbody.innerHTML = records.map(r => `
+  const first = records[0];
+
+  const totalBoxes = records.reduce((sum, r) => {
+    return sum + (Number(r.boxes) || 0);
+  }, 0);
+
+  const commodities = [...new Set(records.map(r => r.commodity).filter(Boolean))].join(", ");
+  const varieties = [...new Set(records.map(r => r.variety).filter(Boolean))].join(", ");
+
+  tbody.innerHTML = `
     <tr>
-    <td>${r.eta || "-"}</td>
-           <td>${r.container || "-"}</td>
-      <td>${r.po || "-"}</td>
-      <td>${r.lot || "-"}</td>
-      <td>${r.grower || "-"}</td>
-      <td>${r.commodity || "-"}</td>
-      <td>${r.variety || "-"}</td>
-      <td>${r.origin || "-"}</td>
-      <td>🟢 At Door</td>
-      <td>Normal</td>
+      <td>${first.eta || "-"}</td>
+      <td>${first.container || "-"}</td>
+      <td>${first.po || "-"}</td>
+      <td>${first.lot || "-"}</td>
+      <td>${first.grower || "-"}</td>
+      <td>${commodities || "-"}</td>
+      <td>${varieties || "-"}</td>
+      <td>${first.origin || "-"}</td>
+      <td>
+        <select>
+          <option value="">Select Status</option>
+          <option>🟢 At Door</option>
+          <option>🟡 Sampling</option>
+          <option>🔵 Inspection Started</option>
+          <option>✅ Inspection Finished</option>
+          <option>📧 Report Sent</option>
+          <option>🚫 Cancelled / Diverted</option>
+        </select>
+      </td>
+      <td>
+        <select>
+          <option>Normal</option>
+          <option>Medium</option>
+          <option>High</option>
+        </select>
+      </td>
     </tr>
-  `).join("");
+  `;
+
+  console.log("Inbound Summary:", {
+    eta: first.eta,
+    ref: first.container,
+    po: first.po,
+    lot: first.lot,
+    grower: first.grower,
+    commodity: commodities,
+    variety: varieties,
+    origin: first.origin,
+    totalBoxes
+  });
 }
 
 function openInboundModule(module) {
@@ -1992,7 +2028,6 @@ function openInboundModule(module) {
           <table class="qaTable">
             <thead>
               <tr>
-               <th>ETA</th>
 <th>ETA</th>
 <th>Ref</th>
 <th>PO</th>
