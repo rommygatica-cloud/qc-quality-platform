@@ -1920,9 +1920,131 @@ const records = manifestRows
 console.log("Records:", records);
 console.log("Total Records:", records.length);
 
+await saveManifestToDatabase({
+  eta,
+  po,
+  grower,
+  vessel,
+  container,
+  records
+});
+
 renderInboundPreview(records);
 
 alert("Manifest read successfully. Check console.");
+}
+
+
+async function saveManifestToDatabase(data) {
+  const { data: containerRow, error: containerError } =
+    await supabaseClient
+      .from("arrival_containers")
+      .insert({
+        eta: data.eta,
+        po: data.po,
+        grower: data.grower,
+        vessel: data.vessel,
+        container: data.container,
+        manifest_name: $("manifestFile")?.files[0]?.name || "",
+        status: "Pending",
+        active: true,
+        last_manifest_import: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+  if (containerError) {
+    console.error("Container Error:", containerError);
+    alert("Container save error: " + containerError.message);
+    return;
+  }
+
+  const lines = data.records.map(r => ({
+    container_id: containerRow.id,
+    po: r.po,
+    lot: String(r.lot || ""),
+    grower: r.grower,
+    commodity: r.commodity,
+    variety: r.variety,
+    size: r.size,
+    pack_style: r.pack_style,
+    boxes: Number(r.boxes || 0),
+    subgrower: r.subgrower,
+    pack_date: formatExcelDate(r.pack_date),
+    recorder_code: r.recorder_code || "",
+    ptf_code: r.ptf_code,
+    label: r.label || "",
+    vessel: r.vessel
+  }));
+
+  const { error: linesError } =
+    await supabaseClient
+      .from("arrival_manifest_lines")
+      .insert(lines);
+
+  if (linesError) {
+    console.error("Manifest Lines Error:", linesError);
+    alert("Manifest lines save error: " + linesError.message);
+    return;
+  }
+
+  console.log("Manifest saved:", containerRow.container, lines.length, "lines");
+}
+
+async function saveManifestToDatabase(data) {
+
+  const { data: containerRow, error: containerError } =
+    await supabaseClient
+      .from("arrival_containers")
+      .insert({
+        eta: data.eta,
+        po: data.po,
+        grower: data.grower,
+        vessel: data.vessel,
+        container_number: data.container,
+        status: "Pending"
+      })
+      .select()
+      .single();
+
+  if (containerError) {
+    console.error("Container Error:", containerError);
+    return;
+  }
+
+  const lines = data.records.map(r => ({
+    container_id: containerRow.id,
+
+    lot: r.lot,
+    commodity: r.commodity,
+    variety: r.variety,
+
+    pack_style: r.pack_style,
+    size: r.size,
+
+    ptf_code: r.ptf_code,
+    boxes: Number(r.boxes || 0),
+
+    subgrower: r.subgrower,
+    pack_date: r.pack_date
+  }));
+
+  const { error: linesError } =
+    await supabaseClient
+      .from("arrival_manifest_lines")
+      .insert(lines);
+
+  if (linesError) {
+    console.error("Manifest Lines Error:", linesError);
+    return;
+  }
+
+  console.log(
+    "Manifest saved:",
+    containerRow.container_number,
+    lines.length,
+    "lines"
+  );
 }
 
 function renderInboundPreview(records) {
