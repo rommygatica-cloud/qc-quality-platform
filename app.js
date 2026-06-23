@@ -2116,9 +2116,16 @@ function openInboundModule(module) {
         </div>
 
         <div class="qaToolbar">
-          <button class="primaryBtn">
-            Upload JK Fresh
-          </button>
+        <label class="primaryBtn" style="display:inline-block;">
+        Upload JK Fresh
+        <input
+        type="file"
+        id="jkFreshFile"
+        accept=".xlsx"
+        style="display:none;"
+        onchange="importJKFreshExcel()"
+        />
+        </label>
 
           <label class="secondaryBtn" style="display:inline-block;">
   Upload Manifest
@@ -2216,5 +2223,77 @@ Version 1.0
     qcClicks = 0;
   }, 3000);
 });
+
+window.importJKFreshExcel = async function importJKFreshExcel() {
+  const file = $("jkFreshFile")?.files[0];
+
+  if (!file) {
+    alert("Please select a JK Fresh file.");
+    return;
+  };
+
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+    defval: ""
+  });
+
+  console.log("JK Fresh Rows:", rows);
+
+  const records = rows.map(row => ({
+  arrival_key: `${String(row["Container"] || "").trim()}-${String(row["ETA"] || "").trim()}`,
+
+  vessel: row["Vessel"] || "",
+  po: row["Vessel#"] || "",
+  container: row["Container"] || "",
+  eta: formatExcelDate(row["ETA"] || ""),
+  recorder_status: row["Status"] || "Pending",
+  commodity: row["Commodity"] || "",
+  origin: normalizeOrigin(row["Origin"] || ""),
+  manifest_name: file.name,
+  last_manifest_import: new Date().toISOString(),
+  active: true,
+  status: "Expected"
+}));
+
+  console.log("JK Fresh Records:", records);
+
+  const { error } = await supabaseClient
+  .from("arrival_containers")
+  .upsert(records, {
+    onConflict: "arrival_key"
+  });
+
+  if (error) {
+    console.error(error);
+    alert("JK Fresh import error: " + error.message);
+    return;
+  }
+
+  alert(`${records.length} JK Fresh records imported successfully.`);
+}
+function normalizeOrigin(value) {
+  const code = String(value || "").trim().toUpperCase();
+
+  const origins = {
+  PE: "Peru",
+  CL: "Chile",
+  BR: "Brazil",
+  UY: "Uruguay",
+  ZA: "South Africa",
+  MX: "Mexico",
+  US: "United States",
+  AR: "Argentina",
+  ES: "Spain",
+  IT: "Italy",
+  EG: "Egypt",
+  MA: "Morocco",
+  IN: "India"
+};
+
+  return origins[code] || code;
+}
 
 load();
