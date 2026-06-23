@@ -2001,7 +2001,7 @@ async function saveManifestToDatabase(data) {
         po: data.po,
         grower: data.grower,
         vessel: data.vessel,
-        container_number: data.container,
+        container: data.container,
         status: "Pending"
       })
       .select()
@@ -2041,7 +2041,7 @@ async function saveManifestToDatabase(data) {
 
   console.log(
     "Manifest saved:",
-    containerRow.container_number,
+    containerRow.container,
     lines.length,
     "lines"
   );
