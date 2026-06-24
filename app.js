@@ -2165,6 +2165,7 @@ function openInboundModule(module) {
         </div>
       </section>
     `;
+    loadInboundArrivals();
     return;
   }
 
@@ -2279,7 +2280,8 @@ console.log("Unique JK Fresh Records:", uniqueRecords);
   }
 
   alert(`${uniqueRecords.length} JK Fresh records imported successfully.`);
-}
+    await loadInboundArrivals();
+};
 function normalizeOrigin(value) {
   const code = String(value || "").trim().toUpperCase();
 
@@ -2300,6 +2302,43 @@ function normalizeOrigin(value) {
 };
 
   return origins[code] || code;
+}
+
+async function loadInboundArrivals() {
+  const tbody = $("inboundTableBody");
+  if (!tbody) return;
+
+  const { data, error } = await supabaseClient
+    .from("arrival_containers")
+    .select("*")
+    .eq("active", true)
+    .order("eta", { ascending: true });
+
+  if (error) {
+    console.error("Load arrivals error:", error);
+    tbody.innerHTML = `<tr><td colspan="10">Error loading arrivals.</td></tr>`;
+    return;
+  }
+
+  if (!data || !data.length) {
+    tbody.innerHTML = `<tr><td colspan="10">No active arrivals found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td>${r.eta || "-"}</td>
+      <td>${r.container || "-"}</td>
+      <td>${r.po || "-"}</td>
+      <td>-</td>
+      <td>${r.grower || "-"}</td>
+      <td>${r.commodity || "-"}</td>
+      <td>-</td>
+      <td>${r.origin || "-"}</td>
+      <td>${r.recorder_status || r.status || "-"}</td>
+      <td>${r.priority || "-"}</td>
+    </tr>
+  `).join("");
 }
 
 load();
