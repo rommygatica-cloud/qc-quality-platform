@@ -584,7 +584,10 @@ async function importBarcodeExcel() {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+  defval: "",
+  range: 1
+});
 
   if (!rows.length) {
     resultBox.innerHTML = "No rows found in this file.";
@@ -2238,26 +2241,40 @@ window.importJKFreshExcel = async function importJKFreshExcel() {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
   const rows = XLSX.utils.sheet_to_json(sheet, {
-    defval: ""
-  });
+  defval: "",
+  range: 1
+});
 
   console.log("JK Fresh Rows:", rows);
 
-  const records = rows.map(row => ({
-  arrival_key: `${String(row["Container"] || "").trim()}-${String(row["ETA"] || "").trim()}`,
+console.log("First JK Fresh Row:", rows[0]);
+console.log("JK Fresh Headers:", Object.keys(rows[0] || {}));
 
-  vessel: row["Vessel"] || "",
-  po: row["Vessel#"] || "",
-  container: row["Container"] || "",
-  eta: formatExcelDate(row["ETA"] || ""),
-  recorder_status: row["Status"] || "Pending",
-  commodity: row["Commodity"] || "",
-  origin: normalizeOrigin(row["Origin"] || ""),
-  manifest_name: file.name,
-  last_manifest_import: new Date().toISOString(),
-  active: true,
-  status: "Expected"
-}));
+  const records = rows
+  .filter(row =>
+    row["Container"] &&
+    String(row["Container"]).trim() !== "" &&
+    String(row["Port/Terminal"] || "").trim() !== "-->"
+  )
+  .map(row => ({
+    arrival_key: `${String(row["Container"]).trim()}-${formatExcelDate(row["ETA"])}`,
+
+    vessel: row["Vessel"] || "",
+    po: row["Vessel #"] || "",
+    container: row["Container"] || "",
+    eta: formatExcelDate(row["ETA"]),
+    recorder_status: row["Status"] || "Pending",
+    commodity: row["Commodity"] || "",
+    origin: normalizeOrigin(row["Origin"] || ""),
+
+    shipper_name: row["Shipper"] || "",
+    grower: "",
+
+    manifest_name: file.name,
+    last_manifest_import: new Date().toISOString(),
+    active: true,
+    status: "Expected"
+  }));
 
   console.log("JK Fresh Records:", records);
 
@@ -2305,6 +2322,8 @@ function normalizeOrigin(value) {
 }
 
 async function loadInboundArrivals() {
+  console.log("Loading arrivals...");
+
   const tbody = $("inboundTableBody");
   if (!tbody) return;
 
@@ -2313,6 +2332,9 @@ async function loadInboundArrivals() {
     .select("*")
     .eq("active", true)
     .order("eta", { ascending: true });
+
+    console.log("Supabase returned:", data);
+    console.log("Supabase error:", error);
 
   if (error) {
     console.error("Load arrivals error:", error);
@@ -2335,8 +2357,28 @@ async function loadInboundArrivals() {
       <td>${r.commodity || "-"}</td>
       <td>-</td>
       <td>${r.origin || "-"}</td>
-      <td>${r.recorder_status || r.status || "-"}</td>
-      <td>${r.priority || "-"}</td>
+      <td>
+  <select>
+    <option value="">Select Status</option>
+    <option ${r.status === "Expected" ? "selected" : ""}>Expected</option>
+    <option ${r.status === "At Door" ? "selected" : ""}>🟢 At Door</option>
+    <option ${r.status === "Sampling" ? "selected" : ""}>🟡 Sampling</option>
+    <option ${r.status === "Inspection Started" ? "selected" : ""}>🔵 Inspection Started</option>
+    <option ${r.status === "Inspection Finished" ? "selected" : ""}>✅ Inspection Finished</option>
+    <option ${r.status === "Report Sent" ? "selected" : ""}>📧 Report Sent</option>
+    <option ${r.status === "Cancelled / Diverted" ? "selected" : ""}>🚫 Cancelled / Diverted</option>
+  </select>
+</td>
+
+<td>
+  <select>
+    <option value="">Select Priority</option>
+    <option ${r.priority === "Low" ? "selected" : ""}>Low</option>
+    <option ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
+    <option ${r.priority === "High" ? "selected" : ""}>High</option>
+    <option ${r.priority === "Critical" ? "selected" : ""}>Critical</option>
+  </select>
+</td>
     </tr>
   `).join("");
 }
