@@ -2228,6 +2228,27 @@ Version 1.0
   }, 3000);
 });
 
+function splitPoLot(value) {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    return { po: "", lot: "" };
+  }
+
+  if (text.includes("_")) {
+    const parts = text.split("_");
+    return {
+      po: parts[0] || "",
+      lot: parts[1] || ""
+    };
+  }
+
+  return {
+    po: text,
+    lot: ""
+  };
+}
+
 window.importJKFreshExcel = async function importJKFreshExcel() {
   const file = $("jkFreshFile")?.files[0];
 
@@ -2256,11 +2277,15 @@ console.log("JK Fresh Headers:", Object.keys(rows[0] || {}));
     String(row["Container"]).trim() !== "" &&
     String(row["Port/Terminal"] || "").trim() !== "-->"
   )
-  .map(row => ({
+  .map(row => {
+    const poLot = splitPoLot(row["Vessel #"]);
+
+    return {
     arrival_key: `${String(row["Container"]).trim()}-${formatExcelDate(row["ETA"])}`,
 
     vessel: row["Vessel"] || "",
-    po: row["Vessel #"] || "",
+    po: poLot.po,
+    lot: poLot.lot,
     container: row["Container"] || "",
     eta: formatExcelDate(row["ETA"]),
     recorder_status: row["Status"] || "Pending",
@@ -2330,7 +2355,6 @@ async function loadInboundArrivals() {
   const { data, error } = await supabaseClient
     .from("arrival_containers")
     .select("*")
-    .eq("active", true)
     .order("eta", { ascending: true });
 
     console.log("Supabase returned:", data);
