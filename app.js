@@ -2266,12 +2266,12 @@ window.importJKFreshExcel = async function importJKFreshExcel() {
   range: 1
 });
 
-  console.log("JK Fresh Rows:", rows);
+console.log("JK Fresh Rows:", rows);
 
 console.log("First JK Fresh Row:", rows[0]);
 console.log("JK Fresh Headers:", Object.keys(rows[0] || {}));
 
-  const records = rows
+const records = rows
   .filter(row =>
     row["Container"] &&
     String(row["Container"]).trim() !== "" &&
@@ -2281,29 +2281,27 @@ console.log("JK Fresh Headers:", Object.keys(rows[0] || {}));
     const poLot = splitPoLot(row["Vessel #"]);
 
     return {
-    arrival_key: `${String(row["Container"]).trim()}-${formatExcelDate(row["ETA"])}`,
+      arrival_key: `${String(row["Container"]).trim()}-${formatExcelDate(row["ETA"])}`,
+      vessel: row["Vessel"] || "",
+      po: poLot.po,
+      lot: poLot.lot,
+      container: row["Container"] || "",
+      eta: formatExcelDate(row["ETA"]),
+      recorder_status: row["Status"] || "Pending",
+      commodity: row["Commodity"] || "",
+      origin: normalizeOrigin(row["Origin"] || ""),
+      shipper_name: row["Shipper"] || "",
+      grower: "",
+      manifest_name: file.name,
+      last_manifest_import: new Date().toISOString(),
+      active: true,
+      status: "Expected"
+    };
+  });
 
-    vessel: row["Vessel"] || "",
-    po: poLot.po,
-    lot: poLot.lot,
-    container: row["Container"] || "",
-    eta: formatExcelDate(row["ETA"]),
-    recorder_status: row["Status"] || "Pending",
-    commodity: row["Commodity"] || "",
-    origin: normalizeOrigin(row["Origin"] || ""),
+console.log("JK Fresh Records:", records);
 
-    shipper_name: row["Shipper"] || "",
-    grower: "",
-
-    manifest_name: file.name,
-    last_manifest_import: new Date().toISOString(),
-    active: true,
-    status: "Expected"
-  }));
-
-  console.log("JK Fresh Records:", records);
-
-  const uniqueRecords = Array.from(
+const uniqueRecords = Array.from(
   new Map(records.map(r => [r.arrival_key, r])).values()
 );
 
@@ -2376,7 +2374,7 @@ async function loadInboundArrivals() {
       <td>${r.eta || "-"}</td>
       <td>${r.container || "-"}</td>
       <td>${r.po || "-"}</td>
-      <td>-</td>
+      <td>${r.lot || "-"}</td>
       <td>${r.grower || "-"}</td>
       <td>${r.commodity || "-"}</td>
       <td>-</td>
