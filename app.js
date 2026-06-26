@@ -2409,10 +2409,13 @@ async function loadInboundArrivals() {
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
+const startDate = new Date(today);
+startDate.setDate(startDate.getDate() - 7);
+
 const sortedData = data
   .filter(r => {
     const etaDate = parseEtaDate(r.eta);
-    return etaDate && etaDate >= today;
+    return etaDate && etaDate >= startDate;
   })
   .sort((a, b) => {
     return parseEtaDate(a.eta) - parseEtaDate(b.eta);
