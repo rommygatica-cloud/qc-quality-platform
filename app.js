@@ -2389,7 +2389,8 @@ async function loadInboundArrivals() {
 
   const { data, error } = await supabaseClient
   .from("arrival_containers")
-  .select("*");
+  .select("*")
+  .eq("active", true);
 
     console.log("Supabase returned:", data);
     console.log("Supabase error:", error);
@@ -2433,7 +2434,7 @@ const sortedData = data
       <td>${r.variety || "-"}</td>
       <td>${r.origin || "-"}</td>
       <td>
-  <select>
+  <select onchange="updateArrivalField('${r.id}', 'status', this.value)">
     <option value="">Select Status</option>
     <option ${r.status === "Expected" ? "selected" : ""}>Expected</option>
     <option ${r.status === "At Door" ? "selected" : ""}>🟢 At Door</option>
@@ -2446,7 +2447,7 @@ const sortedData = data
 </td>
 
 <td>
-  <select>
+  <select onchange="updateArrivalField('${r.id}', 'priority', this.value)">
     <option value="">Select Priority</option>
     <option ${r.priority === "Low" ? "selected" : ""}>Low</option>
     <option ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
@@ -2456,6 +2457,33 @@ const sortedData = data
 </td>
     </tr>
   `).join("");
+}
+
+async function updateArrivalField(id, field, value) {
+  const updates = {
+    [field]: value
+  };
+
+  if (
+    field === "status" &&
+    (value === "Report Sent" || value === "Cancelled / Diverted")
+  ) {
+    updates.active = false;
+    updates.closed_at = new Date().toISOString();
+  }
+
+  const { error } = await supabaseClient
+    .from("arrival_containers")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+    alert("Unable to save change.");
+    return;
+  }
+
+  await loadInboundArrivals();
 }
 
 load();
