@@ -1914,6 +1914,7 @@ const records = manifestRows
     variety: row[4],
     pack_style: row[5],
     size: row[6],
+    label: row[7],
     ptf_code: row[8],
     boxes: row[9],
     subgrower: row[10],
@@ -1934,7 +1935,7 @@ const saved = await saveManifestToDatabase({
 
 if (!saved) return;
 
-renderInboundPreview(records);
+await loadInboundArrivals();
 
 alert("Manifest saved successfully.");
 }
@@ -1978,9 +1979,12 @@ async function saveManifestToDatabase(data) {
       .insert({
         eta: data.eta,
         po: data.po,
+        lot: [...new Set(data.records.map(r => r.lot).filter(Boolean))].join(", "),
         grower: data.grower,
         vessel: data.vessel,
         container: data.container,
+        commodity: [...new Set(data.records.map(r => r.commodity).filter(Boolean))].join(", "),
+        variety: [...new Set(data.records.map(r => r.variety).filter(Boolean))].join(", "),
         recorder_status: "Unknown",
         manifest_name: fileName,
         status: "Pending",
@@ -2344,6 +2348,39 @@ function normalizeOrigin(value) {
   return origins[code] || code;
 }
 
+function parseEtaDate(value) {
+  const text = String(value || "").trim();
+
+  if (!text) return null;
+
+  const parts = text.split("-");
+  if (parts.length < 3) return null;
+
+  const day = Number(parts[0]);
+
+  const months = {
+    Jan: 0,
+    Feb: 1,
+    Mar: 2,
+    Apr: 3,
+    May: 4,
+    Jun: 5,
+    Jul: 6,
+    Aug: 7,
+    Sep: 8,
+    Oct: 9,
+    Nov: 10,
+    Dec: 11
+  };
+
+  const month = months[parts[1]];
+  const year = 2000 + Number(parts[2]);
+
+  if (!day || month === undefined || !year) return null;
+
+  return new Date(year, month, day);
+}
+
 async function loadInboundArrivals() {
   console.log("Loading arrivals...");
 
@@ -2351,9 +2388,8 @@ async function loadInboundArrivals() {
   if (!tbody) return;
 
   const { data, error } = await supabaseClient
-    .from("arrival_containers")
-    .select("*")
-    .order("eta", { ascending: true });
+  .from("arrival_containers")
+  .select("*");
 
     console.log("Supabase returned:", data);
     console.log("Supabase error:", error);
@@ -2365,11 +2401,28 @@ async function loadInboundArrivals() {
   }
 
   if (!data || !data.length) {
-    tbody.innerHTML = `<tr><td colspan="10">No active arrivals found.</td></tr>`;
-    return;
-  }
+  tbody.innerHTML = `<tr><td colspan="10">No arrivals found.</td></tr>`;
+  return;
+}
 
-  tbody.innerHTML = data.map(r => `
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const sortedData = data
+  .filter(r => {
+    const etaDate = parseEtaDate(r.eta);
+    return etaDate && etaDate >= today;
+  })
+  .sort((a, b) => {
+    return parseEtaDate(a.eta) - parseEtaDate(b.eta);
+  });
+
+  if (!sortedData.length) {
+  tbody.innerHTML = `<tr><td colspan="10">No upcoming arrivals found.</td></tr>`;
+  return;
+}
+
+  tbody.innerHTML = sortedData.map(r => `
     <tr>
       <td>${r.eta || "-"}</td>
       <td>${r.container || "-"}</td>
@@ -2377,7 +2430,7 @@ async function loadInboundArrivals() {
       <td>${r.lot || "-"}</td>
       <td>${r.grower || "-"}</td>
       <td>${r.commodity || "-"}</td>
-      <td>-</td>
+      <td>${r.variety || "-"}</td>
       <td>${r.origin || "-"}</td>
       <td>
   <select>
