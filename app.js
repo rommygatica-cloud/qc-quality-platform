@@ -2434,32 +2434,34 @@ const sortedData = data
       <td>${r.variety || "-"}</td>
       <td>${r.origin || "-"}</td>
       <td>
-  <select onchange="updateArrivalField('${r.id}', 'status', this.value)">
+  <select data-id="${r.id}" onchange="window.updateArrivalField(this.dataset.id, 'status', this.value)">
     <option value="">Select Status</option>
-    <option ${r.status === "Expected" ? "selected" : ""}>Expected</option>
-    <option ${r.status === "At Door" ? "selected" : ""}>🟢 At Door</option>
-    <option ${r.status === "Sampling" ? "selected" : ""}>🟡 Sampling</option>
-    <option ${r.status === "Inspection Started" ? "selected" : ""}>🔵 Inspection Started</option>
-    <option ${r.status === "Inspection Finished" ? "selected" : ""}>✅ Inspection Finished</option>
-    <option ${r.status === "Report Sent" ? "selected" : ""}>📧 Report Sent</option>
-    <option ${r.status === "Cancelled / Diverted" ? "selected" : ""}>🚫 Cancelled / Diverted</option>
+<option value="Expected" ${r.status === "Expected" ? "selected" : ""}>Expected</option>
+<option value="At Door" ${r.status === "At Door" ? "selected" : ""}>🟢 At Door</option>
+<option value="Sampling" ${r.status === "Sampling" ? "selected" : ""}>🟡 Sampling</option>
+<option value="Inspection Started" ${r.status === "Inspection Started" ? "selected" : ""}>🔵 Inspection Started</option>
+<option value="Inspection Finished" ${r.status === "Inspection Finished" ? "selected" : ""}>✅ Inspection Finished</option>
+<option value="Report Sent" ${r.status === "Report Sent" ? "selected" : ""}>📧 Report Sent</option>
+<option value="Cancelled / Diverted" ${r.status === "Cancelled / Diverted" ? "selected" : ""}>🚫 Cancelled / Diverted</option>
   </select>
 </td>
 
 <td>
-  <select onchange="updateArrivalField('${r.id}', 'priority', this.value)">
+  <select data-id="${r.id}" onchange="window.updateArrivalField(this.dataset.id, 'priority', this.value)">
     <option value="">Select Priority</option>
-    <option ${r.priority === "Low" ? "selected" : ""}>Low</option>
-    <option ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
-    <option ${r.priority === "High" ? "selected" : ""}>High</option>
-    <option ${r.priority === "Critical" ? "selected" : ""}>Critical</option>
+<option value="Low" ${r.priority === "Low" ? "selected" : ""}>Low</option>
+<option value="Normal" ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
+<option value="High" ${r.priority === "High" ? "selected" : ""}>High</option>
+<option value="Critical" ${r.priority === "Critical" ? "selected" : ""}>Critical</option>
   </select>
 </td>
     </tr>
   `).join("");
 }
 
-async function updateArrivalField(id, field, value) {
+window.updateArrivalField = async function updateArrivalField(id, field, value) {
+  console.log("Updating:", id, field, value);
+
   const updates = {
     [field]: value
   };
