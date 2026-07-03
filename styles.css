@@ -921,3 +921,21 @@ canvas{
   font-size:13px;
   color:#6b7280;
 }
+
+.arrivalHealthCard{
+  cursor:pointer;
+}
+
+.arrivalHealthCard.active{
+  transform:translateY(-2px);
+  box-shadow:0 8px 18px rgba(0,0,0,.12);
+  background:#fffdf7;
+}
+
+.arrivalHealthCard b{
+  transition:.2s ease;
+}
+
+.arrivalHealthCard:hover b{
+  transform:scale(1.08);
+}

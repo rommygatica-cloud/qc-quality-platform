@@ -7,6 +7,7 @@ let currentSpecSection = "";
 let currentSpecCommodity = "";
 let currentSopSection = "";
 let currentQCLibraryCommodity = "";
+let currentArrivalHealthFilter = "all";
 
 const $ = id => document.getElementById(id);
 
@@ -2414,41 +2415,50 @@ function renderArrivalHealthSummary(list) {
 
   list.forEach(r => {
     const health = getEtaHealth(r.eta);
-    if (counts[health] !== undefined) {
-      counts[health]++;
-    }
+    if (counts[health] !== undefined) counts[health]++;
   });
 
   box.innerHTML = `
-  <article class="arrivalHealthCard attention">
-    <div>
-      <b>${counts.delayed}</b>
-      <span>Need Attention</span>
-    </div>
-  </article>
+    <article class="arrivalHealthCard attention ${currentArrivalHealthFilter === "delayed" ? "active" : ""}"
+      onclick="setArrivalHealthFilter('delayed')">
+      <div>
+        <b>${counts.delayed}</b>
+        <span>Need Attention</span>
+      </div>
+    </article>
 
-  <article class="arrivalHealthCard today">
-    <div>
-      <b>${counts.today}</b>
-      <span>Today</span>
-    </div>
-  </article>
+    <article class="arrivalHealthCard today ${currentArrivalHealthFilter === "today" ? "active" : ""}"
+      onclick="setArrivalHealthFilter('today')">
+      <div>
+        <b>${counts.today}</b>
+        <span>Today</span>
+      </div>
+    </article>
 
-  <article class="arrivalHealthCard tomorrow">
-    <div>
-      <b>${counts.tomorrow}</b>
-      <span>Tomorrow</span>
-    </div>
-  </article>
+    <article class="arrivalHealthCard tomorrow ${currentArrivalHealthFilter === "tomorrow" ? "active" : ""}"
+      onclick="setArrivalHealthFilter('tomorrow')">
+      <div>
+        <b>${counts.tomorrow}</b>
+        <span>Tomorrow</span>
+      </div>
+    </article>
 
-  <article class="arrivalHealthCard upcoming">
-    <div>
-      <b>${counts.upcoming}</b>
-      <span>Upcoming</span>
-    </div>
-  </article>
-`;
+    <article class="arrivalHealthCard upcoming ${currentArrivalHealthFilter === "upcoming" ? "active" : ""}"
+      onclick="setArrivalHealthFilter('upcoming')">
+      <div>
+        <b>${counts.upcoming}</b>
+        <span>Upcoming</span>
+      </div>
+    </article>
+  `;
 }
+
+window.setArrivalHealthFilter = function setArrivalHealthFilter(filter) {
+  currentArrivalHealthFilter =
+    currentArrivalHealthFilter === filter ? "all" : filter;
+
+  loadInboundArrivals();
+};
 
 async function loadInboundArrivals() {
   console.log("Loading arrivals...");
@@ -2492,12 +2502,17 @@ const sortedData = data
 
 renderArrivalHealthSummary(sortedData);
 
-  if (!sortedData.length) {
-  tbody.innerHTML = `<tr><td colspan="10">No upcoming arrivals found.</td></tr>`;
+const tableData =
+  currentArrivalHealthFilter === "all"
+    ? sortedData
+    : sortedData.filter(r => getEtaHealth(r.eta) === currentArrivalHealthFilter);
+
+  if (!tableData.length) {
+  tbody.innerHTML = `<tr><td colspan="10">No arrivals in this category.</td></tr>`;
   return;
 }
 
-  tbody.innerHTML = sortedData.map(r => `
+  tbody.innerHTML = tableData.map(r => `
     <tr>
       <td>${r.eta || "-"}</td>
       <td>${r.container || "-"}</td>
