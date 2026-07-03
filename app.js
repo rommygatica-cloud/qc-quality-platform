@@ -1985,7 +1985,6 @@ async function saveManifestToDatabase(data) {
         vessel: data.vessel,
         container: data.container,
         commodity: [...new Set(data.records.map(r => r.commodity).filter(Boolean))].join(", "),
-        variety: [...new Set(data.records.map(r => r.variety).filter(Boolean))].join(", "),
         recorder_status: "Unknown",
         manifest_name: fileName,
         status: "Pending",
@@ -2070,7 +2069,6 @@ function renderInboundPreview(records) {
         <option value="">Select Status</option>
         <option>🟢 At Door</option>
         <option>🟡 Sampling</option>
-        <option>🔵 Inspection Started</option>
         <option>✅ Inspection Finished</option>
         <option>📧 Report Sent</option>
         <option>🚫 Cancelled / Diverted</option>
@@ -2528,7 +2526,6 @@ const tableData =
 <option value="Expected" ${r.status === "Expected" ? "selected" : ""}>Expected</option>
 <option value="At Door" ${r.status === "At Door" ? "selected" : ""}>🟢 At Door</option>
 <option value="Sampling" ${r.status === "Sampling" ? "selected" : ""}>🟡 Sampling</option>
-<option value="Inspection Started" ${r.status === "Inspection Started" ? "selected" : ""}>🔵 Inspection Started</option>
 <option value="Inspection Finished" ${r.status === "Inspection Finished" ? "selected" : ""}>✅ Inspection Finished</option>
 <option value="Report Sent" ${r.status === "Report Sent" ? "selected" : ""}>📧 Report Sent</option>
 <option value="Cancelled / Diverted" ${r.status === "Cancelled / Diverted" ? "selected" : ""}>🚫 Cancelled / Diverted</option>
