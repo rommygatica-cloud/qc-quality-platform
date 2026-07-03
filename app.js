@@ -1863,6 +1863,7 @@ if (growerRaw.includes("-")) {
 const vessel = String(rows[1]?.[2] || "").trim();
 const eta = formatExcelDate(rows[3]?.[2]);
 const container = String(rows[6]?.[2] || "").trim();
+const recorderCode = String(rows[5]?.[2] || "").trim();
 
 console.log({
   po,
@@ -1920,6 +1921,9 @@ const records = manifestRows
     boxes: row[9],
     subgrower: row[10],
     pack_date: row[11]
+
+    recorder_code: recorderCode || row[12] || "",
+    temp_rec_loc: row[12] || ""
   }));
 
 console.log("Records:", records);
@@ -2015,7 +2019,8 @@ async function saveManifestToDatabase(data) {
     boxes: Number(r.boxes || 0),
     subgrower: r.subgrower,
     pack_date: formatExcelDate(r.pack_date),
-    recorder_code: "",
+    recorder_code: r.recorder_code || "",
+    temp_rec_loc: r.temp_rec_loc || "",
     ptf_code: r.ptf_code,
     label: r.label || "",
     vessel: data.vessel
