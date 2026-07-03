@@ -2145,7 +2145,7 @@ function openInboundModule(module) {
   />
 </label>
         </div>
-
+<div id="arrivalHealthSummary" class="qaKpiGrid" style="margin-bottom:18px;"></div>
         <div class="qaTableWrap">
           <table class="qaTable">
             <thead>
@@ -2172,6 +2172,7 @@ function openInboundModule(module) {
         </div>
       </section>
     `;
+    
     loadInboundArrivals();
     return;
   }
@@ -2381,6 +2382,66 @@ function parseEtaDate(value) {
   return new Date(year, month, day);
 }
 
+function getEtaHealth(eta) {
+  const etaDate = parseEtaDate(eta);
+
+  if (!etaDate) return "unknown";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  etaDate.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.round((etaDate - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "delayed";
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "tomorrow";
+
+  return "upcoming";
+}
+
+function renderArrivalHealthSummary(list) {
+  const box = $("arrivalHealthSummary");
+  if (!box) return;
+
+  const counts = {
+    delayed: 0,
+    today: 0,
+    tomorrow: 0,
+    upcoming: 0
+  };
+
+  list.forEach(r => {
+    const health = getEtaHealth(r.eta);
+    if (counts[health] !== undefined) {
+      counts[health]++;
+    }
+  });
+
+  box.innerHTML = `
+    <article class="stat">
+      <b>🔴 ${counts.delayed}</b>
+      <span>Delayed</span>
+    </article>
+
+    <article class="stat">
+      <b>🟡 ${counts.today}</b>
+      <span>Today</span>
+    </article>
+
+    <article class="stat">
+      <b>🟢 ${counts.tomorrow}</b>
+      <span>Tomorrow</span>
+    </article>
+
+    <article class="stat">
+      <b>🔵 ${counts.upcoming}</b>
+      <span>Upcoming</span>
+    </article>
+  `;
+}
+
 async function loadInboundArrivals() {
   console.log("Loading arrivals...");
 
@@ -2420,6 +2481,8 @@ const sortedData = data
   .sort((a, b) => {
     return parseEtaDate(a.eta) - parseEtaDate(b.eta);
   });
+
+renderArrivalHealthSummary(sortedData);
 
   if (!sortedData.length) {
   tbody.innerHTML = `<tr><td colspan="10">No upcoming arrivals found.</td></tr>`;
