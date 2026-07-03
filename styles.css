@@ -520,9 +520,32 @@ dialog{
 
 .qaKpiGrid{
   display:grid;
-  grid-template-columns:repeat(4,minmax(130px,1fr));
-  gap:16px;
-  margin:18px 0 22px;
+  grid-template-columns:repeat(4,minmax(160px,1fr));
+  gap:12px;
+  margin:14px 0 18px;
+}
+
+.qaKpiGrid .stat{
+  padding:10px 14px;
+  min-height:64px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+
+  box-shadow:0 3px 10px rgba(0,0,0,.04);
+}
+
+.qaKpiGrid .stat b{
+  font-size:18px;
+  min-width:44px;
+  margin:0;
+}
+
+.qaKpiGrid .stat span{
+  margin:0;
+  font-size:13px;
+  color:#6b7280;
 }
 
 .qaChartGrid{
@@ -765,4 +788,25 @@ canvas{
 .summaryTitle{
   font-size:16px;
 }
+}
+
+#qa.view.active{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+
+#qa.view.active .pageIntro,
+#qa.view.active #qaModuleContent{
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  height:auto !important;
+}
+
+#qa.view.active .qaHomeGrid{
+  display:grid !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  height:auto !important;
 }
