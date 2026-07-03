@@ -1346,10 +1346,10 @@ function updateQARecordsTable() {
               <td>${r.loc || "-"}</td>
               <td>${r.order_number || "-"}</td>
               <td>${r.po_wo || "-"}</td>
-              <td>${r.lot || "-"}</td>
+              <td>${lotSummary}</td>
               <td>${r.customer || "-"}</td>
-              <td>${r.commodity || "-"}</td>
-              <td>${r.variety || "-"}</td>
+              <td>${commoditySummary}</td>
+              <td>${varietySummary}</td>
               <td>${r.grower || "-"}</td>
               <td>${Number(r.qty_cases || 0).toLocaleString()}</td>
               <td>${r.reason || "-"}</td>
@@ -2469,6 +2469,14 @@ async function loadInboundArrivals() {
   .select("*")
   .eq("active", true);
 
+  const { data: manifestLines, error: manifestError } = await supabaseClient
+  .from("arrival_manifest_lines")
+  .select("*");
+
+if (manifestError) {
+  console.error("Manifest lines error:", manifestError);
+}
+
     console.log("Supabase returned:", data);
     console.log("Supabase error:", error);
 
@@ -2482,6 +2490,18 @@ async function loadInboundArrivals() {
   tbody.innerHTML = `<tr><td colspan="10">No arrivals found.</td></tr>`;
   return;
 }
+
+const linesByContainerId = {};
+
+(manifestLines || []).forEach(line => {
+  if (!line.container_id) return;
+
+  if (!linesByContainerId[line.container_id]) {
+    linesByContainerId[line.container_id] = [];
+  }
+
+  linesByContainerId[line.container_id].push(line);
+});
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
@@ -2510,7 +2530,25 @@ const tableData =
   return;
 }
 
-  tbody.innerHTML = tableData.map(r => `
+  tbody.innerHTML = tableData.map(r => {
+  const lines = linesByContainerId[r.id] || [];
+
+  const lotSummary =
+    [...new Set(lines.map(x => x.lot).filter(Boolean))].join(", ") ||
+    r.lot ||
+    "-";
+
+  const commoditySummary =
+    [...new Set(lines.map(x => x.commodity).filter(Boolean))].join(", ") ||
+    r.commodity ||
+    "-";
+
+  const varietySummary =
+    [...new Set(lines.map(x => x.variety).filter(Boolean))].join(", ") ||
+    r.variety ||
+    "-";
+
+  return `
     <tr>
       <td>${r.eta || "-"}</td>
       <td>${r.container || "-"}</td>
@@ -2542,7 +2580,8 @@ const tableData =
   </select>
 </td>
     </tr>
-  `).join("");
+    `;
+}).join("");
 }
 
 window.updateArrivalField = async function updateArrivalField(id, field, value) {
