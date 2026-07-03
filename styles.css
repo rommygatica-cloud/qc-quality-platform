@@ -526,26 +526,31 @@ dialog{
 }
 
 .qaKpiGrid .stat{
-  padding:10px 14px;
-  min-height:64px;
+  background:#fff;
+  border:1px solid var(--line);
   border-radius:14px;
+
+  padding:10px 14px;
+  min-height:58px;
+
   display:flex;
   align-items:center;
+  justify-content:flex-start;
   gap:10px;
 
-  box-shadow:0 3px 10px rgba(0,0,0,.04);
+  box-shadow:0 2px 6px rgba(0,0,0,.04);
 }
 
 .qaKpiGrid .stat b{
   font-size:18px;
-  min-width:44px;
   margin:0;
+  min-width:36px;
 }
 
 .qaKpiGrid .stat span{
-  margin:0;
   font-size:13px;
   color:#6b7280;
+  margin:0;
 }
 
 .qaChartGrid{
@@ -809,4 +814,110 @@ canvas{
   visibility:visible !important;
   opacity:1 !important;
   height:auto !important;
+}
+
+.arrivalHealthCard{
+  background:#fff;
+  border:1px solid var(--line);
+  border-left:6px solid #d1d5db;
+  border-radius:12px;
+  padding:12px 16px;
+  min-height:60px;
+
+  display:flex;
+  align-items:center;
+
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+
+  transition:.2s;
+}
+
+.arrivalHealthCard:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(0,0,0,.08);
+}
+
+.arrivalHealthIcon{
+  font-size:18px;
+  width:24px;
+  text-align:center;
+  flex-shrink:0;
+}
+
+.arrivalHealthCard b{
+  display:block;
+  font-size:24px;
+  line-height:1;
+  color:#111827;
+}
+
+.arrivalHealthCard span{
+  display:block;
+  margin-top:4px;
+  font-size:13px;
+  color:#6b7280;
+}
+
+.arrivalHealthCard.attention{
+  border-left-color:#dc2626;
+}
+
+.arrivalHealthCard.today{
+  border-left-color:#f59e0b;
+}
+
+.arrivalHealthCard.tomorrow{
+  border-left-color:#16a34a;
+}
+
+.arrivalHealthCard.upcoming{
+  border-left-color:#2563eb;
+}
+
+.arrivalHealthCard{
+  background:#fff;
+  border:1px solid var(--line);
+  border-left:6px solid #d1d5db;
+  border-radius:12px;
+  padding:12px 16px;
+  min-height:60px;
+  display:flex;
+  align-items:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+  transition:.2s;
+}
+
+.arrivalHealthCard:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(0,0,0,.08);
+}
+
+.arrivalHealthCard.attention{
+  border-left-color:#dc2626;
+}
+
+.arrivalHealthCard.today{
+  border-left-color:#f59e0b;
+}
+
+.arrivalHealthCard.tomorrow{
+  border-left-color:#16a34a;
+}
+
+.arrivalHealthCard.upcoming{
+  border-left-color:#2563eb;
+}
+
+.arrivalHealthCard b{
+  display:block;
+  font-size:24px;
+  line-height:1;
+  color:#111827;
+}
+
+.arrivalHealthCard span{
+  display:block;
+  margin-top:4px;
+  font-size:13px;
+  color:#6b7280;
 }

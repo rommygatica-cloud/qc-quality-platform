@@ -2420,26 +2420,34 @@ function renderArrivalHealthSummary(list) {
   });
 
   box.innerHTML = `
-    <article class="stat">
-      <b>🔴 ${counts.delayed}</b>
-      <span>Delayed</span>
-    </article>
+  <article class="arrivalHealthCard attention">
+    <div>
+      <b>${counts.delayed}</b>
+      <span>Need Attention</span>
+    </div>
+  </article>
 
-    <article class="stat">
-      <b>🟡 ${counts.today}</b>
+  <article class="arrivalHealthCard today">
+    <div>
+      <b>${counts.today}</b>
       <span>Today</span>
-    </article>
+    </div>
+  </article>
 
-    <article class="stat">
-      <b>🟢 ${counts.tomorrow}</b>
+  <article class="arrivalHealthCard tomorrow">
+    <div>
+      <b>${counts.tomorrow}</b>
       <span>Tomorrow</span>
-    </article>
+    </div>
+  </article>
 
-    <article class="stat">
-      <b>🔵 ${counts.upcoming}</b>
+  <article class="arrivalHealthCard upcoming">
+    <div>
+      <b>${counts.upcoming}</b>
       <span>Upcoming</span>
-    </article>
-  `;
+    </div>
+  </article>
+`;
 }
 
 async function loadInboundArrivals() {
