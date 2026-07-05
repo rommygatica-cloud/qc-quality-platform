@@ -2465,6 +2465,78 @@ window.setArrivalHealthFilter = function setArrivalHealthFilter(filter) {
   loadInboundArrivals();
 };
 
+function renderArrivalDetails(lines) {
+  if (!lines.length) {
+    return `
+      <tr class="arrivalDetailRow">
+        <td colspan="11">
+          <div class="arrivalDetailBox">
+            <h3>📦 Container Composition</h3>
+            <p>No manifest details found for this container.</p>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  const uniqueLots = [...new Set(lines.map(x => x.lot).filter(Boolean))];
+  const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
+  const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
+  const totalBoxes = lines.reduce((sum, x) => sum + (Number(x.boxes) || 0), 0);
+
+  return `
+    <tr class="arrivalDetailRow">
+      <td colspan="11">
+        <div class="arrivalDetailBox">
+          <h3>📦 Container Composition</h3>
+
+          <div class="arrivalDetailSummary">
+            <span>${uniqueLots.length} Lots</span>
+            <span>${uniqueSubgrowers.length} Subgrowers</span>
+            <span>${uniquePackDates.length} Pack Dates</span>
+            <span>${totalBoxes.toLocaleString()} Boxes</span>
+          </div>
+
+          <table class="arrivalDetailTable">
+            <thead>
+              <tr>
+                <th>Lot</th>
+                <th>Commodity</th>
+                <th>Variety</th>
+                <th>Subgrower</th>
+                <th>Pack Date</th>
+                <th>Pack</th>
+                <th>Size</th>
+                <th>Boxes</th>
+                <th>Label</th>
+                <th>Recorder</th>
+                <th>Temp Rec Loc</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lines.map(x => `
+                <tr>
+                  <td>${x.lot || "-"}</td>
+                  <td>${x.commodity || "-"}</td>
+                  <td>${x.variety || "-"}</td>
+                  <td>${x.subgrower || "-"}</td>
+                  <td>${x.pack_date || "-"}</td>
+                  <td>${x.pack_style || "-"}</td>
+                  <td>${x.size || "-"}</td>
+                  <td>${Number(x.boxes || 0).toLocaleString()}</td>
+                  <td>${x.label || "-"}</td>
+                  <td>${x.recorder_code || "-"}</td>
+                  <td>${x.temp_rec_loc || "-"}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
 async function loadInboundArrivals() {
   console.log("Loading arrivals...");
 
@@ -2555,6 +2627,8 @@ const tableData =
     r.variety ||
     "-";
 
+console.log("Expanded:", expandedArrivalId, "Current:", r.id);
+
     return `
       <tr>
       <td>
@@ -2593,8 +2667,15 @@ const tableData =
 <option value="High" ${r.priority === "High" ? "selected" : ""}>High</option>
 <option value="Critical" ${r.priority === "Critical" ? "selected" : ""}>Critical</option>
   </select>
-</td>
+     </td>
     </tr>
+    ${(() => {
+    console.log("Comparing:", expandedArrivalId, r.id);
+    return expandedArrivalId === r.id
+        ? renderArrivalDetails(lines)
+        : "";
+})()}
+
     `;
 }).join("");
 }
