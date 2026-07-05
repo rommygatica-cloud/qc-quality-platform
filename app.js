@@ -1920,7 +1920,7 @@ const records = manifestRows
     ptf_code: row[8],
     boxes: row[9],
     subgrower: row[10],
-    pack_date: row[11]
+    pack_date: row[11],
 
     recorder_code: recorderCode || row[12] || "",
     temp_rec_loc: row[12] || ""
@@ -2558,10 +2558,10 @@ const tableData =
       <td>${r.eta || "-"}</td>
       <td>${r.container || "-"}</td>
       <td>${r.po || "-"}</td>
-      <td>${r.lot || "-"}</td>
+      <td>${lotSummary}</td>
       <td>${r.grower || "-"}</td>
-      <td>${r.commodity || "-"}</td>
-      <td>${r.variety || "-"}</td>
+      <td>${commoditySummary}</td>
+      <td>${varietySummary}</td>
       <td>${r.origin || "-"}</td>
       <td>
   <select data-id="${r.id}" onchange="window.updateArrivalField(this.dataset.id, 'status', this.value)">
