@@ -2484,6 +2484,43 @@ function renderArrivalDetails(lines) {
   const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
   const totalBoxes = lines.reduce((sum, x) => sum + (Number(x.boxes) || 0), 0);
 
+const groupedLines = Object.values(
+  lines.reduce((acc, x) => {
+    const key = [
+      x.lot,
+      x.commodity,
+      x.variety,
+      x.subgrower,
+      x.pack_date,
+      x.pack_style,
+      x.size,
+      x.label
+    ].join("|");
+
+    if (!acc[key]) {
+      acc[key] = {
+        lot: x.lot,
+        commodity: x.commodity,
+        variety: x.variety,
+        subgrower: x.subgrower,
+        pack_date: x.pack_date,
+        pack_style: x.pack_style,
+        size: x.size,
+        label: x.label,
+        recorder_code: x.recorder_code,
+        temp_rec_loc: x.temp_rec_loc,
+        pallets: 0,
+        boxes: 0
+      };
+    }
+
+    acc[key].pallets += 1;
+    acc[key].boxes += Number(x.boxes || 0);
+
+    return acc;
+  }, {})
+);
+
   return `
     <tr class="arrivalDetailRow">
       <td colspan="11">
@@ -2507,14 +2544,15 @@ function renderArrivalDetails(lines) {
                 <th>Pack Date</th>
                 <th>Pack</th>
                 <th>Size</th>
-                <th>Boxes</th>
+                <th>Pallets</th>
+                <th>Cases</th>
                 <th>Label</th>
                 <th>Recorder</th>
                 <th>Temp Rec Loc</th>
               </tr>
             </thead>
             <tbody>
-              ${lines.map(x => `
+              ${groupedLines.map(x => `
                 <tr>
                   <td>${x.lot || "-"}</td>
                   <td>${x.commodity || "-"}</td>
@@ -2523,6 +2561,7 @@ function renderArrivalDetails(lines) {
                   <td>${x.pack_date || "-"}</td>
                   <td>${x.pack_style || "-"}</td>
                   <td>${x.size || "-"}</td>
+                  <td>${x.pallets}</td>
                   <td>${Number(x.boxes || 0).toLocaleString()}</td>
                   <td>${x.label || "-"}</td>
                   <td>${x.recorder_code || "-"}</td>
