@@ -8,6 +8,7 @@ let currentSpecCommodity = "";
 let currentSopSection = "";
 let currentQCLibraryCommodity = "";
 let currentArrivalHealthFilter = "all";
+let expandedArrivalId = null;
 
 const $ = id => document.getElementById(id);
 
@@ -2154,6 +2155,7 @@ function openInboundModule(module) {
           <table class="qaTable">
             <thead>
               <tr>
+               <th style="width:40px;"></th>
 <th>ETA</th>
 <th>Ref</th>
 <th>PO</th>
@@ -2169,7 +2171,7 @@ function openInboundModule(module) {
 
             <tbody id="inboundTableBody">
   <tr>
-    <td colspan="10">Ready to import inbound records.</td>
+    <td colspan="11">Ready to import inbound records.</td>
   </tr>
 </tbody>
           </table>
@@ -2487,12 +2489,12 @@ if (manifestError) {
 
   if (error) {
     console.error("Load arrivals error:", error);
-    tbody.innerHTML = `<tr><td colspan="10">Error loading arrivals.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11">Error loading arrivals.</td></tr>`;
     return;
   }
 
   if (!data || !data.length) {
-  tbody.innerHTML = `<tr><td colspan="10">No arrivals found.</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="11">No arrivals found.</td></tr>`;
   return;
 }
 
@@ -2531,7 +2533,7 @@ const tableData =
     : sortedData.filter(r => getEtaHealth(r.eta) === currentArrivalHealthFilter);
 
   if (!tableData.length) {
-  tbody.innerHTML = `<tr><td colspan="10">No arrivals in this category.</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="11">No arrivals in this category.</td></tr>`;
   return;
 }
 
@@ -2553,8 +2555,16 @@ const tableData =
     r.variety ||
     "-";
 
-  return `
-    <tr>
+    return `
+      <tr>
+      <td>
+      <button
+      class="expandBtn"
+      onclick="toggleArrivalDetails('${r.id}')">
+      ${expandedArrivalId === r.id ? "▼" : "▶"}
+      </button>
+      </td>
+
       <td>${r.eta || "-"}</td>
       <td>${r.container || "-"}</td>
       <td>${r.po || "-"}</td>
@@ -2616,6 +2626,18 @@ window.updateArrivalField = async function updateArrivalField(id, field, value) 
   }
 
   await loadInboundArrivals();
+}
+
+window.toggleArrivalDetails = function(id){
+
+    if(expandedArrivalId === id){
+        expandedArrivalId = null;
+    }else{
+        expandedArrivalId = id;
+    }
+
+    loadInboundArrivals();
+
 }
 
 load();
