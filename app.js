@@ -8,6 +8,7 @@ let currentSpecCommodity = "";
 let currentSopSection = "";
 let currentQCLibraryCommodity = "";
 let currentArrivalHealthFilter = "all";
+let currentArrivalView = "live";
 let expandedArrivalId = null;
 
 const $ = id => document.getElementById(id);
@@ -1912,6 +1913,7 @@ const records = manifestRows
     container,
     vessel,
 
+    pallet_number: row[1],
     lot: row[2],
     commodity: row[3],
     variety: row[4],
@@ -2011,6 +2013,7 @@ async function saveManifestToDatabase(data) {
   const lines = data.records.map(r => ({
     container_id: containerRow.id,
     po: data.po,
+    pallet_number: r.pallet_number || "",
     lot: String(r.lot || ""),
     grower: data.grower,
     commodity: r.commodity,
@@ -2150,8 +2153,22 @@ function openInboundModule(module) {
   />
 </label>
         </div>
-<div id="arrivalHealthSummary" class="qaKpiGrid" style="margin-bottom:18px;"></div>
-        <div class="qaTableWrap">
+<div id="arrivalHealthSummary"
+     class="qaKpiGrid"
+     style="margin-bottom:18px;">
+     </div>
+
+<div class="arrivalToolbar">
+
+    <input
+    id="arrivalSearch"
+    class="arrivalSearch"
+    placeholder="🔍 Search container, PO, lot, grower, commodity..."
+    oninput="loadInboundArrivals()">
+
+    </div>
+
+<div class="qaTableWrap">
           <table class="qaTable">
             <thead>
               <tr>
@@ -2509,6 +2526,7 @@ const groupedLines = Object.values(
         label: x.label,
         recorder_code: x.recorder_code,
         temp_rec_loc: x.temp_rec_loc,
+        pallet_numbers: [],
         pallets: 0,
         boxes: 0
       };
@@ -2516,6 +2534,9 @@ const groupedLines = Object.values(
 
     acc[key].pallets += 1;
     acc[key].boxes += Number(x.boxes || 0);
+    if (x.pallet_number) {
+  acc[key].pallet_numbers.push(x.pallet_number);
+}
 
     return acc;
   }, {})
@@ -2537,20 +2558,23 @@ const groupedLines = Object.values(
           <table class="arrivalDetailTable">
             <thead>
               <tr>
-                <th>Lot</th>
-                <th>Commodity</th>
-                <th>Variety</th>
-                <th>Subgrower</th>
-                <th>Pack Date</th>
-                <th>Pack</th>
-                <th>Size</th>
-                <th>Pallets</th>
-                <th>Cases</th>
-                <th>Label</th>
-                <th>Recorder</th>
-                <th>Temp Rec Loc</th>
+                <thead>
+                <tr>
+              <th>Lot</th>
+              <th>Commodity</th>
+              <th>Variety</th>
+              <th>Subgrower</th>
+              <th>Pack Date</th>
+              <th>Pack</th>
+              <th>Size</th>
+              <th>Pallets</th>
+              <th>Cases</th>
+              <th>Pallet Numbers</th>
+              <th>Label</th>
+              <th>Recorder</th>
+              <th>Temp Rec Loc</th>
               </tr>
-            </thead>
+              </thead>
             <tbody>
               ${groupedLines.map(x => `
                 <tr>
@@ -2563,6 +2587,7 @@ const groupedLines = Object.values(
                   <td>${x.size || "-"}</td>
                   <td>${x.pallets}</td>
                   <td>${Number(x.boxes || 0).toLocaleString()}</td>
+                  <td>${[...new Set(x.pallet_numbers)].join(", ") || "-"}</td>
                   <td>${x.label || "-"}</td>
                   <td>${x.recorder_code || "-"}</td>
                   <td>${x.temp_rec_loc || "-"}</td>
@@ -2582,10 +2607,22 @@ async function loadInboundArrivals() {
   const tbody = $("inboundTableBody");
   if (!tbody) return;
 
-  const { data, error } = await supabaseClient
+  let arrivalsQuery = supabaseClient
   .from("arrival_containers")
-  .select("*")
-  .eq("active", true);
+  .select("*");
+
+if (currentArrivalView === "live") {
+  arrivalsQuery = arrivalsQuery
+    .eq("active", true)
+    .eq("data_type", "live");
+}
+
+if (currentArrivalView === "historical") {
+  arrivalsQuery = arrivalsQuery
+    .eq("data_type", "historical");
+}
+
+const { data, error } = await arrivalsQuery;
 
   const { data: manifestLines, error: manifestError } = await supabaseClient
   .from("arrival_manifest_lines")
