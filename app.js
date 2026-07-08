@@ -2164,7 +2164,7 @@ function openInboundModule(module) {
     id="arrivalSearch"
     class="arrivalSearch"
     placeholder="🔍 Search container, PO, lot, grower, commodity..."
-    oninput="loadInboundArrivals()">
+    >
 
     </div>
 
@@ -2197,7 +2197,13 @@ function openInboundModule(module) {
     `;
     
     loadInboundArrivals();
-    return;
+
+$("arrivalSearch")?.addEventListener("input", () => {
+  console.log("Typing search:", $("arrivalSearch").value);
+  loadInboundArrivals();
+});
+
+return;
   }
 
   content.innerHTML = `
@@ -2675,10 +2681,42 @@ const sortedData = data
 
 renderArrivalHealthSummary(sortedData);
 
-const tableData =
+const healthFilteredData =
   currentArrivalHealthFilter === "all"
     ? sortedData
     : sortedData.filter(r => getEtaHealth(r.eta) === currentArrivalHealthFilter);
+
+const searchValue = ($("arrivalSearch")?.value || "").toLowerCase().trim();
+
+console.log("Search value inside load:", searchValue);
+
+console.log("Arrival search:", searchValue);
+
+const tableData = healthFilteredData.filter(r => {
+  const lines = linesByContainerId[r.id] || [];
+
+const text = [
+  r.container,
+  r.po,
+  r.grower,
+  r.origin,
+  r.status,
+  r.priority,
+
+  ...lines.map(x => x.lot),
+  ...lines.map(x => x.commodity),
+  ...lines.map(x => x.variety),
+  ...lines.map(x => x.subgrower),
+  ...lines.map(x => x.label),
+  ...lines.map(x => x.pack_date),
+  ...lines.map(x => x.pallet_number)
+]
+  .filter(Boolean)
+  .join(" ")
+  .toLowerCase();
+
+return !searchValue || text.includes(searchValue);
+});
 
   if (!tableData.length) {
   tbody.innerHTML = `<tr><td colspan="11">No arrivals in this category.</td></tr>`;
