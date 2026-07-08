@@ -2688,10 +2688,6 @@ const healthFilteredData =
 
 const searchValue = ($("arrivalSearch")?.value || "").toLowerCase().trim();
 
-console.log("Search value inside load:", searchValue);
-
-console.log("Arrival search:", searchValue);
-
 const tableData = healthFilteredData.filter(r => {
   const lines = linesByContainerId[r.id] || [];
 
@@ -2741,8 +2737,6 @@ return !searchValue || text.includes(searchValue);
     r.variety ||
     "-";
 
-console.log("Expanded:", expandedArrivalId, "Current:", r.id);
-
     return `
       <tr>
       <td>
@@ -2784,7 +2778,7 @@ console.log("Expanded:", expandedArrivalId, "Current:", r.id);
      </td>
     </tr>
     ${(() => {
-    console.log("Comparing:", expandedArrivalId, r.id);
+  
     return expandedArrivalId === r.id
         ? renderArrivalDetails(lines)
         : "";
