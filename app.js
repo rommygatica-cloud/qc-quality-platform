@@ -2126,37 +2126,70 @@ function openInboundModule(module) {
         <div class="qaPanelHeader" style="margin-top:18px;">
           <div>
             <h2>🚢 Arrivals</h2>
-            <p>Upload JK Fresh status files and manifest details.</p>
+            <p>Import arrival schedules and manifest details.</p>
           </div>
         </div>
 
-        <div class="qaToolbar">
-        <label class="primaryBtn" style="display:inline-block;">
-        Upload JK Fresh
-        <input
-        type="file"
-        id="jkFreshFile"
-        accept=".xlsx"
-        style="display:none;"
-        onchange="importJKFreshExcel()"
-        />
-        </label>
+       <div class="qaToolbar">
 
-          <label class="secondaryBtn" style="display:inline-block;">
-  Upload Manifest
-  <input
-    type="file"
-    id="manifestFile"
-    accept=".xlsx"
-    style="display:none;"
-    onchange="importManifestExcel()"
-  />
-</label>
-        </div>
+  <div class="arrivalImportBox">
+    <label for="arrivalImportMode">Import Type</label>
+
+    <select id="arrivalImportMode">
+      <option value="live">Daily Import</option>
+      <option value="historical">Historical Import</option>
+    </select>
+  </div>
+
+  <label class="primaryBtn" style="display:inline-block;">
+    Upload Arrivals
+    <input
+      type="file"
+      id="arrivalImportFile"
+      accept=".xlsx"
+      style="display:none;"
+      onchange="importArrivalsExcel()"
+    />
+  </label>
+
+  <label class="secondaryBtn" style="display:inline-block;">
+    Upload Manifest
+    <input
+      type="file"
+      id="manifestFile"
+      accept=".xlsx"
+      style="display:none;"
+      onchange="importManifestExcel()"
+    />
+  </label>
+
+</div>
 <div id="arrivalHealthSummary"
      class="qaKpiGrid"
      style="margin-bottom:18px;">
-     </div>
+</div>
+
+<div class="arrivalViewSwitch">
+
+  <button
+    class="${currentArrivalView==="live"?"active":""}"
+    onclick="setArrivalView('live')">
+    Live
+  </button>
+
+  <button
+    class="${currentArrivalView==="historical"?"active":""}"
+    onclick="setArrivalView('historical')">
+    Historical
+  </button>
+
+  <button
+    class="${currentArrivalView==="all"?"active":""}"
+    onclick="setArrivalView('all')">
+    All
+  </button>
+
+</div>
 
 <div class="arrivalToolbar">
 
@@ -2283,11 +2316,12 @@ function splitPoLot(value) {
   };
 }
 
-window.importJKFreshExcel = async function importJKFreshExcel() {
-  const file = $("jkFreshFile")?.files[0];
+window.importArrivalsExcel = async function importArrivalsExcel() {
+  const file = $("arrivalImportFile")?.files[0];
+  const importMode = $("arrivalImportMode").value;
 
   if (!file) {
-    alert("Please select a JK Fresh file.");
+    alert("Please select an arrivals file.");
     return;
   };
 
@@ -2300,10 +2334,10 @@ window.importJKFreshExcel = async function importJKFreshExcel() {
   range: 1
 });
 
-console.log("JK Fresh Rows:", rows);
+console.log("Arrival Rows:", rows);
 
-console.log("First JK Fresh Row:", rows[0]);
-console.log("JK Fresh Headers:", Object.keys(rows[0] || {}));
+console.log("First Arrival Row:", rows[0]);
+console.log("Arrival Headers:", Object.keys(rows[0] || {}));
 
 const records = rows
   .filter(row =>
@@ -2328,18 +2362,22 @@ const records = rows
       grower: "",
       manifest_name: file.name,
       last_manifest_import: new Date().toISOString(),
-      active: true,
-      status: "Expected"
+      data_type: importMode,
+      active: importMode === "live",
+      status:
+        importMode === "live"
+        ? "Expected"
+        : "Historical"
     };
   });
 
-console.log("JK Fresh Records:", records);
+console.log("Arrival Records:", records);
 
 const uniqueRecords = Array.from(
   new Map(records.map(r => [r.arrival_key, r])).values()
 );
 
-console.log("Unique JK Fresh Records:", uniqueRecords);
+console.log("Unique Arrival Records:", uniqueRecords);
 
   const { error } = await supabaseClient
   .from("arrival_containers")
@@ -2349,13 +2387,21 @@ console.log("Unique JK Fresh Records:", uniqueRecords);
 
   if (error) {
     console.error(error);
-    alert("JK Fresh import error: " + error.message);
+    alert("Arrival import error: " + error.message);
     return;
   }
 
-  alert(`${uniqueRecords.length} JK Fresh records imported successfully.`);
-    await loadInboundArrivals();
+  alert(
+    `${uniqueRecords.length} arrival records imported successfully.`
+);
+currentArrivalView =
+  importMode === "historical"
+    ? "historical"
+    : "live";
+
+openInboundModule("arrivals");
 };
+
 function normalizeOrigin(value) {
   const code = String(value || "").trim().toUpperCase();
 
@@ -2628,6 +2674,10 @@ if (currentArrivalView === "historical") {
     .eq("data_type", "historical");
 }
 
+if (currentArrivalView === "all") {
+  // show all arrival records
+}
+
 const { data, error } = await arrivalsQuery;
 
   const { data: manifestLines, error: manifestError } = await supabaseClient
@@ -2673,10 +2723,17 @@ startDate.setDate(startDate.getDate() - 7);
 const sortedData = data
   .filter(r => {
     const etaDate = parseEtaDate(r.eta);
-    return etaDate && etaDate >= startDate;
+
+    if (!etaDate) return false;
+
+    if (currentArrivalView === "live") {
+      return etaDate >= startDate;
+    }
+
+    return true;
   })
   .sort((a, b) => {
-    return parseEtaDate(a.eta) - parseEtaDate(b.eta);
+    return parseEtaDate(b.eta) - parseEtaDate(a.eta);
   });
 
 renderArrivalHealthSummary(sortedData);
@@ -2738,9 +2795,9 @@ return !searchValue || text.includes(searchValue);
     "-";
 
     return `
-      <tr>
-      <td>
-      <button
+<tr class="arrivalRow priority-${String(r.priority || "Normal").toLowerCase()}">
+  <td>
+    <button
       class="expandBtn"
       onclick="toggleArrivalDetails('${r.id}')">
       ${expandedArrivalId === r.id ? "▼" : "▶"}
