@@ -1843,69 +1843,31 @@ async function importManifestExcel() {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
   const rows = XLSX.utils.sheet_to_json(sheet, {
-    header: 1,
-    defval: ""
-  });
-
-  console.log("Manifest file:", file.name);
-  const po = String(rows[0]?.[1] || "")
-  .replace("PO#", "")
-  .trim();
-
-const growerRaw = String(rows[0]?.[2] || "").trim();
-
-let grower = "";
-
-if (growerRaw.includes("-")) {
-  grower = growerRaw.split("-")[0].trim();
-} else {
-  grower = growerRaw.split(" ")[0].trim();
-}
-
-const vessel = String(rows[1]?.[2] || "").trim();
-const eta = formatExcelDate(rows[3]?.[2]);
-const container = String(rows[6]?.[2] || "").trim();
-const recorderCode = String(rows[5]?.[2] || "").trim();
-
-console.log({
-  po,
-  grower,
-  vessel,
-  eta,
-  container
+  defval: ""
 });
 
-const headerRowIndex = rows.findIndex(r =>
-  String(r[0]).trim() === "Line"
-);
+console.log("NEW Manifest Rows:", rows);
+console.log("NEW Manifest Headers:", Object.keys(rows[0] || {}));
+console.log("NEW First Manifest Row:", rows[0]);
 
-console.log("Header Row:", headerRowIndex);
-const manifestRows = rows.slice(headerRowIndex + 1);
+ console.log("Manifest file:", file.name);
 
-console.log("Manifest Rows:", manifestRows.length);
+const firstRow = rows[0] || {};
 
-console.log("First Line:", manifestRows[0]);
-const firstLine = manifestRows[0];
+const po = String(firstRow.lotid || "").trim();
+const grower = String(firstRow.growerid || "").trim();
+const container = String(firstRow.poolid || "").trim();
 
-const sampleRecord = {
-  po,
-  grower,
-  container,
+const receiveDate = formatExcelDate(firstRow.receivedate || "");
+const eta = receiveDate;
 
-  lot: firstLine[2],
-  commodity: firstLine[3],
-  variety: firstLine[4],
-  pack_style: firstLine[5],
-  size: firstLine[6],
-  ptf_code: firstLine[8],
-  boxes: firstLine[9],
-  subgrower: firstLine[10],
-  pack_date: firstLine[11]
-};
+const vessel = "";
 
-console.log("Sample Record:", sampleRecord);
-const records = manifestRows
-  .filter(row => row[2]) // lot existe
+const records = rows
+  .filter(row =>
+    row.tagid &&
+    String(row.tagid).trim() !== ""
+  )
   .map(row => ({
     eta,
     po,
@@ -1913,24 +1875,82 @@ const records = manifestRows
     container,
     vessel,
 
-    pallet_number: row[1],
-    lot: row[2],
-    commodity: row[3],
-    variety: row[4],
-    pack_style: row[5],
-    size: row[6],
-    label: row[7],
-    ptf_code: row[8],
-    boxes: row[9],
-    subgrower: row[10],
-    pack_date: row[11],
+    pallet_number: String(row.tagid || "").trim(),
 
-    recorder_code: recorderCode || row[12] || "",
-    temp_rec_loc: row[12] || ""
+    // Lot real todavía no viene en el manifest
+    lot: "",
+
+    commodity: String(row.commodity || "").trim(),
+    variety: String(row.variety || "").trim(),
+
+    pack_style:
+      String(
+        row.styleiddescription ||
+        row.styleid ||
+        ""
+      ).trim(),
+
+    size: String(row.packid || "").trim(),
+
+    label: String(row.label || "").trim(),
+
+    boxes: Number(row.recvqnt || 0),
+
+    subgrower: String(row.subgrower || "").trim(),
+
+    pack_date: formatExcelDate(row.packdate || ""),
+
+    receive_date: formatExcelDate(row.receivedate || ""),
+
+    warehouse_name: String(row.warehousename || "").trim(),
+
+    product_name: String(row.productname || "").trim(),
+
+    lot_source: "pending",
+
+    recorder_code: "",
+    temp_rec_loc: "",
+
+    ptf_code: ""
   }));
 
 console.log("Records:", records);
 console.log("Total Records:", records.length);
+console.table(records.slice(0, 10));
+
+const validation = {
+  totalRows: rows.length,
+  totalRecords: records.length,
+  po,
+  container,
+  grower,
+  eta,
+  commodities: [...new Set(records.map(r => r.commodity).filter(Boolean))],
+  varieties: [...new Set(records.map(r => r.variety).filter(Boolean))],
+  pallets: [...new Set(records.map(r => r.pallet_number).filter(Boolean))].length,
+  totalCases: records.reduce((sum, r) => sum + (Number(r.boxes) || 0), 0)
+};
+
+console.log("MANIFEST VALIDATION:", validation);
+
+if (!po || !container || !records.length) {
+  console.error("Manifest validation failed:", validation);
+  alert("Manifest validation failed. Check console.");
+  return;
+}
+
+// TEMPORARY DRY RUN — DO NOT SAVE YET
+alert(
+  `Manifest read successfully.\n\n` +
+  `PO: ${po}\n` +
+  `Container: ${container}\n` +
+  `Pallets: ${validation.pallets}\n` +
+  `Cases: ${validation.totalCases}\n` +
+  `Commodity: ${validation.commodities.join(", ")}\n` +
+  `Variety: ${validation.varieties.join(", ")}`
+);
+
+return;
 
 const saved = await saveManifestToDatabase({
   eta,
@@ -1950,48 +1970,84 @@ alert("Manifest saved successfully.");
 
 async function saveManifestToDatabase(data) {
   const fileName = $("manifestFile")?.files[0]?.name || "";
-  const lots = [...new Set(
-    data.records.map(r => String(r.lot || "").trim())
-  )];
+  const palletNumbers = [...new Set(
+  data.records
+    .map(r => String(r.pallet_number || "").trim())
+    .filter(Boolean)
+)];
 
-  const { data: existingLots, error: checkError } =
-    await supabaseClient
-      .from("arrival_manifest_lines")
-      .select("lot")
-      .in("lot", lots);
+const { data: existingPallets, error: checkError } =
+  await supabaseClient
+    .from("arrival_manifest_lines")
+    .select("container_id, pallet_number")
+    .in("pallet_number", palletNumbers);
 
-  if (checkError) {
+if (checkError) {
   console.error("Duplicate Check Error:", checkError);
 
   alert(
-    "Error checking duplicate lots:\n\n" +
+    "Error checking existing pallets:\n\n" +
     checkError.message
   );
 
   return false;
 }
+  let containerRow = null;
 
-  if (existingLots && existingLots.length > 0) {
-  const duplicatedLots = [...new Set(existingLots.map(x => x.lot))];
+const { data: existingContainer, error: findContainerError } =
+  await supabaseClient
+    .from("arrival_containers")
+    .select("*")
+    .eq("container", data.container)
+    .maybeSingle();
 
-  alert(
-    "This manifest was not imported because these lots already exist:\n\n" +
-    duplicatedLots.join(", ")
-  );
-
+if (findContainerError) {
+  console.error("Container Lookup Error:", findContainerError);
+  alert("Container lookup error: " + findContainerError.message);
   return false;
 }
-  const { data: containerRow, error: containerError } =
+
+if (existingContainer) {
+
+  const { data: updatedContainer, error: updateContainerError } =
+    await supabaseClient
+      .from("arrival_containers")
+      .update({
+        po: data.po,
+        grower: data.grower,
+        commodity: [...new Set(
+          data.records.map(r => r.commodity).filter(Boolean)
+        )].join(", "),
+        manifest_name: fileName,
+        last_manifest_import: new Date().toISOString()
+      })
+      .eq("id", existingContainer.id)
+      .select()
+      .single();
+
+  if (updateContainerError) {
+    console.error("Container Update Error:", updateContainerError);
+    alert("Container update error: " + updateContainerError.message);
+    return false;
+  }
+
+  containerRow = updatedContainer;
+
+} else {
+
+  const { data: newContainer, error: insertContainerError } =
     await supabaseClient
       .from("arrival_containers")
       .insert({
         eta: data.eta,
         po: data.po,
-        lot: [...new Set(data.records.map(r => r.lot).filter(Boolean))].join(", "),
+        lot: "",
         grower: data.grower,
         vessel: data.vessel,
         container: data.container,
-        commodity: [...new Set(data.records.map(r => r.commodity).filter(Boolean))].join(", "),
+        commodity: [...new Set(
+          data.records.map(r => r.commodity).filter(Boolean)
+        )].join(", "),
         recorder_status: "Unknown",
         manifest_name: fileName,
         status: "Pending",
@@ -2004,17 +2060,37 @@ async function saveManifestToDatabase(data) {
       .select()
       .single();
 
-  if (containerError) {
-    console.error("Container Error:", containerError);
-    alert("Container save error: " + containerError.message);
-    return;
+  if (insertContainerError) {
+    console.error("Container Insert Error:", insertContainerError);
+    alert("Container save error: " + insertContainerError.message);
+    return false;
   }
 
-  const lines = data.records.map(r => ({
+  containerRow = newContainer;
+}
+
+  const existingForThisContainer = new Set(
+  (existingPallets || [])
+    .filter(p => p.container_id === containerRow.id)
+    .map(p => String(p.pallet_number || "").trim())
+);
+
+const newLines = [];
+const updateLines = [];
+
+data.records.forEach(r => {
+
+  const palletNumber = String(r.pallet_number || "").trim();
+
+  const lineData = {
     container_id: containerRow.id,
     po: data.po,
-    pallet_number: r.pallet_number || "",
-    lot: String(r.lot || ""),
+    pallet_number: palletNumber,
+
+    // IMPORTANTE:
+    // NO incluimos "lot" aquí.
+    // Así nunca borramos un lot asignado manualmente.
+
     grower: data.grower,
     commodity: r.commodity,
     variety: r.variety,
@@ -2023,27 +2099,103 @@ async function saveManifestToDatabase(data) {
     boxes: Number(r.boxes || 0),
     subgrower: r.subgrower,
     pack_date: formatExcelDate(r.pack_date),
+
+    label: r.label || "",
+    ptf_code: r.ptf_code || "",
+
     recorder_code: r.recorder_code || "",
     temp_rec_loc: r.temp_rec_loc || "",
-    ptf_code: r.ptf_code,
-    label: r.label || "",
-    vessel: data.vessel
-  }));
 
-  const { error: linesError } =
+    vessel: data.vessel,
+
+    receive_date: r.receive_date || "",
+    warehouse_name: r.warehouse_name || "",
+    product_name: r.product_name || ""
+  };
+
+  if (existingForThisContainer.has(palletNumber)) {
+    updateLines.push(lineData);
+  } else {
+    newLines.push({
+      ...lineData,
+
+      // Los pallets nuevos nacen sin Lot.
+      lot: "",
+      lot_source: "pending"
+    });
+  }
+});
+
+for (const line of updateLines) {
+
+  const { error: updateError } =
     await supabaseClient
       .from("arrival_manifest_lines")
-      .insert(lines);
+      .update({
+        po: line.po,
+        grower: line.grower,
+        commodity: line.commodity,
+        variety: line.variety,
+        size: line.size,
+        pack_style: line.pack_style,
+        boxes: line.boxes,
+        subgrower: line.subgrower,
+        pack_date: line.pack_date,
+        label: line.label,
+        ptf_code: line.ptf_code,
+        recorder_code: line.recorder_code,
+        temp_rec_loc: line.temp_rec_loc,
+        vessel: line.vessel,
+        receive_date: line.receive_date,
+        warehouse_name: line.warehouse_name,
+        product_name: line.product_name
+      })
+      .eq("container_id", containerRow.id)
+      .eq("pallet_number", line.pallet_number);
 
-  if (linesError) {
-    console.error("Manifest Lines Error:", linesError);
-    alert("Manifest lines save error: " + linesError.message);
-    return;
+  if (updateError) {
+    console.error(
+      "Manifest pallet update error:",
+      line.pallet_number,
+      updateError
+    );
+
+    alert(
+      `Error updating pallet ${line.pallet_number}: ` +
+      updateError.message
+    );
+
+    return false;
   }
+}
 
-  console.log("Manifest saved:", containerRow.container, lines.length, "lines");
-  
-  return true;
+if (newLines.length) {
+
+  const { error: insertLinesError } =
+    await supabaseClient
+      .from("arrival_manifest_lines")
+      .insert(newLines);
+
+  if (insertLinesError) {
+    console.error("Manifest Lines Insert Error:", insertLinesError);
+
+    alert(
+      "Manifest lines save error: " +
+      insertLinesError.message
+    );
+
+    return false;
+  }
+}
+
+ console.log("Manifest saved:", {
+  container: containerRow.container,
+  totalLines: data.records.length,
+  newPallets: newLines.length,
+  updatedPallets: updateLines.length
+});
+
+return true;
 }
 
 function renderInboundPreview(records) {
@@ -2335,7 +2487,6 @@ window.importArrivalsExcel = async function importArrivalsExcel() {
 });
 
 console.log("Arrival Rows:", rows);
-
 console.log("First Arrival Row:", rows[0]);
 console.log("Arrival Headers:", Object.keys(rows[0] || {}));
 
@@ -2553,6 +2704,31 @@ function renderArrivalDetails(lines) {
   const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
   const totalBoxes = lines.reduce((sum, x) => sum + (Number(x.boxes) || 0), 0);
 
+const pendingLotGroups = Object.values(
+  lines
+    .filter(x => !String(x.lot || "").trim())
+    .reduce((acc, x) => {
+      const key = [
+        x.commodity || "",
+        x.variety || ""
+      ].join("|");
+
+      if (!acc[key]) {
+        acc[key] = {
+          commodity: x.commodity || "",
+          variety: x.variety || "",
+          pallets: 0,
+          boxes: 0
+        };
+      }
+
+      acc[key].pallets += 1;
+      acc[key].boxes += Number(x.boxes || 0);
+
+      return acc;
+    }, {})
+);
+
 const groupedLines = Object.values(
   lines.reduce((acc, x) => {
     const key = [
@@ -2600,7 +2776,39 @@ const groupedLines = Object.values(
         <div class="arrivalDetailBox">
           <h3>📦 Container Composition</h3>
 
-          <div class="arrivalDetailSummary">
+${pendingLotGroups.length ? `
+  <div class="lotPendingBox">
+    <strong>⚠ Lot Pending Assignment</strong>
+
+    ${pendingLotGroups.map(g => `
+      <div class="lotPendingRow">
+        <span>
+          ${g.commodity || "-"} / ${g.variety || "-"}
+          · ${g.pallets} pallets
+          · ${g.boxes.toLocaleString()} cases
+        </span>
+
+        <input
+          type="text"
+          placeholder="Enter Lot"
+          id="lot-${lines[0]?.container_id}-${g.commodity}-${g.variety}"
+        />
+
+        <button
+          class="secondaryBtn"
+          onclick="assignManifestLot(
+            '${lines[0]?.container_id}',
+            '${String(g.commodity).replace(/'/g, "\\'")}',
+            '${String(g.variety).replace(/'/g, "\\'")}'
+          )">
+          Assign Lot
+        </button>
+      </div>
+    `).join("")}
+  </div>
+` : ""}
+
+<div class="arrivalDetailSummary">
             <span>${uniqueLots.length} Lots</span>
             <span>${uniqueSubgrowers.length} Subgrowers</span>
             <span>${uniquePackDates.length} Pack Dates</span>
@@ -2652,6 +2860,106 @@ const groupedLines = Object.values(
     </tr>
   `;
 }
+
+window.assignManifestLot = async function assignManifestLot(
+  containerId,
+  commodity,
+  variety
+) {
+  const inputId = `lot-${containerId}-${commodity}-${variety}`;
+  const input = document.getElementById(inputId);
+
+  if (!input) {
+    alert("Lot input not found.");
+    return;
+  }
+
+  const newLot = String(input.value || "").trim();
+
+  if (!newLot) {
+    alert("Please enter a Lot number.");
+    return;
+  }
+
+  const { data: affectedLines, error: lookupError } =
+    await supabaseClient
+      .from("arrival_manifest_lines")
+      .select("id, lot")
+      .eq("container_id", containerId)
+      .eq("commodity", commodity)
+      .eq("variety", variety);
+
+  if (lookupError) {
+    console.error("Lot lookup error:", lookupError);
+    alert("Unable to find manifest lines.");
+    return;
+  }
+
+  if (!affectedLines?.length) {
+    alert("No matching manifest lines found.");
+    return;
+  }
+
+  const previousLots = [
+    ...new Set(
+      affectedLines
+        .map(x => String(x.lot || "").trim())
+        .filter(Boolean)
+    )
+  ];
+
+  const { error: updateError } =
+    await supabaseClient
+      .from("arrival_manifest_lines")
+      .update({
+        lot: newLot,
+        lot_source: "manual",
+        lot_updated_at: new Date().toISOString()
+      })
+      .eq("container_id", containerId)
+      .eq("commodity", commodity)
+      .eq("variety", variety);
+
+  if (updateError) {
+    console.error("Lot assignment error:", updateError);
+    alert("Unable to assign Lot: " + updateError.message);
+    return;
+  }
+
+  const { data: allLines, error: allLinesError } =
+    await supabaseClient
+      .from("arrival_manifest_lines")
+      .select("lot")
+      .eq("container_id", containerId);
+
+  if (!allLinesError) {
+    const lots = [
+      ...new Set(
+        (allLines || [])
+          .map(x => String(x.lot || "").trim())
+          .filter(Boolean)
+      )
+    ];
+
+    await supabaseClient
+      .from("arrival_containers")
+      .update({
+        lot: lots.join(", ")
+      })
+      .eq("id", containerId);
+  }
+
+  if (previousLots.length) {
+    alert(
+      `Lot updated successfully.\n\n` +
+      `${previousLots.join(", ")} → ${newLot}`
+    );
+  } else {
+    alert(`Lot ${newLot} assigned successfully.`);
+  }
+
+  await loadInboundArrivals();
+};
 
 async function loadInboundArrivals() {
   console.log("Loading arrivals...");
