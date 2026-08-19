@@ -2694,9 +2694,7 @@ function renderArrivalDetails(lines, container) {
   const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
   const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
   const totalBoxes = lines.reduce((sum, x) => sum + (Number(x.boxes) || 0), 0);
-  const totalBoxes = lines.reduce((sum, x) => sum + (Number(x.boxes) || 0), 0);
-
-const pendingLotGroups = Object.values(
+  const pendingLotGroups = Object.values(
   lines
     .filter(x => !String(x.lot || "").trim())
     .reduce((acc, x) => {
@@ -2862,12 +2860,12 @@ const groupedLines = Object.values(
                   <td>${[...new Set(x.pallet_numbers)].join(", ") || "-"}</td>
                   <td>${x.label || "-"}</td>
                   <td>
-                  ${
-                    String(x.condition || "").trim().toLowerCase() === "temp recorder"
-                    ? `<span class="tempRecorderBadge">🌡 Temp Recorder</span>`
-                    : (x.condition || "-")
-                  }
-                  </td>
+  ${
+    String(x.condition || "").trim().toLowerCase() === "temp recorder"
+      ? `<span class="tempRecorderBadge">🌡 Temp Recorder</span>`
+      : (x.condition || "-")
+  }
+</td>
                   </tr>
               `).join("")}
             </tbody>
