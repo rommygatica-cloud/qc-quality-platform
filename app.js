@@ -1830,6 +1830,31 @@ function getGrowerSummaryByCommodity(list) {
     .join("<br>");
 }
 
+function extractOriginFromProductName(value) {
+  const text = String(value || "").trim();
+
+  const knownOrigins = [
+    "South Africa",
+    "United States",
+    "New Zealand",
+    "Chile",
+    "Peru",
+    "Brazil",
+    "Mexico",
+    "Uruguay",
+    "Spain",
+    "Morocco",
+    "Argentina",
+    "Australia",
+    "Italy",
+    "Greece"
+  ];
+
+  return knownOrigins.find(origin =>
+    text.toLowerCase().endsWith(origin.toLowerCase())
+  ) || "";
+}
+
 async function importManifestExcel() {
   const file = $("manifestFile")?.files[0];
 
@@ -1862,6 +1887,30 @@ const receiveDate = formatExcelDate(firstRow.receivedate || "");
 const eta = receiveDate;
 
 const vessel = "";
+
+function extractOriginFromProductName(value) {
+  const text = String(value || "").trim();
+
+  const knownOrigins = [
+    "Chile",
+    "Peru",
+    "Uruguay",
+    "Brazil",
+    "South Africa",
+    "Mexico",
+    "United States",
+    "Argentina",
+    "Spain",
+    "Italy",
+    "Egypt",
+    "Morocco",
+    "India"
+  ];
+
+  return knownOrigins.find(origin =>
+    text.toLowerCase().endsWith(origin.toLowerCase())
+  ) || "";
+}
 
 const records = rows
   .filter(row =>
@@ -1905,6 +1954,8 @@ const records = rows
     warehouse_name: String(row.warehousename || "").trim(),
 
     product_name: String(row.productname || "").trim(),
+
+    origin: extractOriginFromProductName(row.productname),
 
     condition: String(row.condition || "").trim(),
 
@@ -2004,6 +2055,7 @@ if (existingContainer) {
       .update({
         po: data.po,
         grower: data.grower,
+        origin: data.records.find(r => r.origin)?.origin || "",
         commodity: [...new Set(
           data.records.map(r => r.commodity).filter(Boolean)
         )].join(", "),
@@ -2041,7 +2093,7 @@ if (existingContainer) {
         manifest_name: fileName,
         status: "Pending",
         last_manifest_import: new Date().toISOString(),
-        origin: "",
+        origin: data.records.find(r => r.origin)?.origin || "",
         priority: "",
         active: true,
         notes: ""
@@ -2095,6 +2147,8 @@ data.records.forEach(r => {
     recorder_code: r.recorder_code || "",
     temp_rec_loc: r.temp_rec_loc || "",
 
+    origin: r.origin || "",
+
     vessel: data.vessel,
 
     receive_date: r.receive_date || "",
@@ -2135,6 +2189,7 @@ for (const line of updateLines) {
         ptf_code: line.ptf_code,
         recorder_code: line.recorder_code,
         temp_rec_loc: line.temp_rec_loc,
+        origin: line.origin,
         vessel: line.vessel,
         receive_date: line.receive_date,
         warehouse_name: line.warehouse_name,
