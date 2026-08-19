@@ -2691,10 +2691,19 @@ function renderArrivalDetails(lines, container) {
   }
 
   const uniqueLots = [...new Set(lines.map(x => x.lot).filter(Boolean))];
-  const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
-  const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
-  const totalBoxes = lines.reduce((sum, x) => sum + (Number(x.boxes) || 0), 0);
-  const pendingLotGroups = Object.values(
+const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
+const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
+
+const totalBoxes = lines.reduce(
+  (sum, x) => sum + (Number(x.boxes) || 0),
+  0
+);
+
+const tempRecorderCount = lines.filter(
+  x => String(x.condition || "").trim().toLowerCase() === "temp recorder"
+).length;
+
+const pendingLotGroups = Object.values(
   lines
     .filter(x => !String(x.lot || "").trim())
     .reduce((acc, x) => {
