@@ -2841,7 +2841,6 @@ const groupedLines = Object.values(
               <th>Pallet Numbers</th>
               <th>Label</th>
               <th>Condition</th>
-              <th>Set Temp</th>
               </tr>
               </thead>
             <tbody>
@@ -2859,15 +2858,7 @@ const groupedLines = Object.values(
                   <td>${[...new Set(x.pallet_numbers)].join(", ") || "-"}</td>
                   <td>${x.label || "-"}</td>
                   <td>${x.condition || "-"}</td>
-                  <td>
-                  <input
-                  type="text"
-                  value="${x.set_temperature || ""}"
-                  placeholder="e.g. 34°F"
-                  onchange="updateManifestLineField('${x.id}', 'set_temperature', this.value)"
-                  />
-                 </td>
-                </tr>
+                  </tr>
               `).join("")}
             </tbody>
           </table>
