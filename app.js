@@ -1939,19 +1939,6 @@ if (!po || !container || !records.length) {
   return;
 }
 
-// TEMPORARY DRY RUN — DO NOT SAVE YET
-alert(
-  `Manifest read successfully.\n\n` +
-  `PO: ${po}\n` +
-  `Container: ${container}\n` +
-  `Pallets: ${validation.pallets}\n` +
-  `Cases: ${validation.totalCases}\n` +
-  `Commodity: ${validation.commodities.join(", ")}\n` +
-  `Variety: ${validation.varieties.join(", ")}`
-);
-
-return;
-
 const saved = await saveManifestToDatabase({
   eta,
   po,
