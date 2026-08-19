@@ -1906,6 +1906,8 @@ const records = rows
 
     product_name: String(row.productname || "").trim(),
 
+    condition: String(row.condition || "").trim(),
+
     lot_source: "pending",
 
     recorder_code: "",
@@ -2097,7 +2099,8 @@ data.records.forEach(r => {
 
     receive_date: r.receive_date || "",
     warehouse_name: r.warehouse_name || "",
-    product_name: r.product_name || ""
+    product_name: r.product_name || "",
+    condition: r.condition || ""
   };
 
   if (existingForThisContainer.has(palletNumber)) {
@@ -2135,7 +2138,8 @@ for (const line of updateLines) {
         vessel: line.vessel,
         receive_date: line.receive_date,
         warehouse_name: line.warehouse_name,
-        product_name: line.product_name
+        product_name: line.product_name,
+        condition: line.condition
       })
       .eq("container_id", containerRow.id)
       .eq("pallet_number", line.pallet_number);
@@ -2672,7 +2676,7 @@ window.setArrivalHealthFilter = function setArrivalHealthFilter(filter) {
   loadInboundArrivals();
 };
 
-function renderArrivalDetails(lines) {
+function renderArrivalDetails(lines, container) {
   if (!lines.length) {
     return `
       <tr class="arrivalDetailRow">
@@ -2741,6 +2745,7 @@ const groupedLines = Object.values(
         label: x.label,
         recorder_code: x.recorder_code,
         temp_rec_loc: x.temp_rec_loc,
+        condition: x.condition,
         pallet_numbers: [],
         pallets: 0,
         boxes: 0
@@ -2763,17 +2768,34 @@ const groupedLines = Object.values(
         <div class="arrivalDetailBox">
           <h3>📦 Container Composition</h3>
 
-${pendingLotGroups.length ? `
-  <div class="lotPendingBox">
-    <strong>⚠ Lot Pending Assignment</strong>
+          <div class="containerTempRow">
+          <span><strong>🌡 Set Temperature</strong></span>
 
-    ${pendingLotGroups.map(g => `
-      <div class="lotPendingRow">
-        <span>
+          <input
+          type="text"
+          id="set-temp-${container.id}"
+          value="${container.set_temperature || ""}"
+          placeholder="e.g. 34°F"
+          />
+
+          <button
+          class="secondaryBtn"
+          onclick="saveContainerSetTemperature('${container.id}')">
+          Save
+         </button>
+         </div>
+
+         ${pendingLotGroups.length ? `
+         <div class="lotPendingBox">
+         <strong>⚠ Lot Pending Assignment</strong>
+
+         ${pendingLotGroups.map(g => `
+         <div class="lotPendingRow">
+         <span>
           ${g.commodity || "-"} / ${g.variety || "-"}
           · ${g.pallets} pallets
           · ${g.boxes.toLocaleString()} cases
-        </span>
+         </span>
 
         <input
           type="text"
@@ -2818,8 +2840,8 @@ ${pendingLotGroups.length ? `
               <th>Cases</th>
               <th>Pallet Numbers</th>
               <th>Label</th>
-              <th>Recorder</th>
-              <th>Temp Rec Loc</th>
+              <th>Condition</th>
+              <th>Set Temp</th>
               </tr>
               </thead>
             <tbody>
@@ -2836,8 +2858,15 @@ ${pendingLotGroups.length ? `
                   <td>${Number(x.boxes || 0).toLocaleString()}</td>
                   <td>${[...new Set(x.pallet_numbers)].join(", ") || "-"}</td>
                   <td>${x.label || "-"}</td>
-                  <td>${x.recorder_code || "-"}</td>
-                  <td>${x.temp_rec_loc || "-"}</td>
+                  <td>${x.condition || "-"}</td>
+                  <td>
+                  <input
+                  type="text"
+                  value="${x.set_temperature || ""}"
+                  placeholder="e.g. 34°F"
+                  onchange="updateManifestLineField('${x.id}', 'set_temperature', this.value)"
+                  />
+                 </td>
                 </tr>
               `).join("")}
             </tbody>
@@ -2944,6 +2973,38 @@ window.assignManifestLot = async function assignManifestLot(
   } else {
     alert(`Lot ${newLot} assigned successfully.`);
   }
+
+  await loadInboundArrivals();
+};
+
+window.saveContainerSetTemperature = async function saveContainerSetTemperature(containerId) {
+  const input = document.getElementById(`set-temp-${containerId}`);
+
+  if (!input) {
+    alert("Set temperature input not found.");
+    return;
+  }
+
+  const value = String(input.value || "").trim();
+
+  const { error } = await supabaseClient
+    .from("arrival_containers")
+    .update({
+      set_temperature: value
+    })
+    .eq("id", containerId);
+
+  if (error) {
+    console.error("Set temperature save error:", error);
+    alert("Unable to save set temperature: " + error.message);
+    return;
+  }
+
+  alert(
+    value
+      ? `Set Temperature saved: ${value}`
+      : "Set Temperature cleared."
+  );
 
   await loadInboundArrivals();
 };
@@ -3132,7 +3193,7 @@ return !searchValue || text.includes(searchValue);
     ${(() => {
   
     return expandedArrivalId === r.id
-        ? renderArrivalDetails(lines)
+        ? renderArrivalDetails(lines, r)
         : "";
 })()}
 
