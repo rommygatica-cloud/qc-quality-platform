@@ -3264,6 +3264,24 @@ return !searchValue || text.includes(searchValue);
 }
 
 window.updateArrivalField = async function updateArrivalField(id, field, value) {
+  let previousStatus = null;
+
+if (field === "status") {
+  const { data: currentStatusRow, error: currentStatusError } =
+    await supabaseClient
+      .from("arrival_containers")
+      .select("status")
+      .eq("id", id)
+      .single();
+
+  if (currentStatusError) {
+    console.error("Error reading current arrival status:", currentStatusError);
+    alert("Unable to read current arrival status.");
+    return;
+  }
+
+  previousStatus = currentStatusRow?.status || "";
+}
   console.log("Updating:", id, field, value);
 
   const updates = {
@@ -3307,6 +3325,25 @@ window.updateArrivalField = async function updateArrivalField(id, field, value) 
     return;
   }
 
+  if (
+  field === "status" &&
+  previousStatus !== value
+) {
+  const { error: historyError } =
+    await supabaseClient
+      .from("arrival_status_history")
+      .insert({
+        container_id: id,
+        previous_status: previousStatus,
+        new_status: value,
+        changed_by: "romy",
+        is_correction: false
+      });
+
+  if (historyError) {
+    console.error("Status history error:", historyError);
+  }
+}
   await loadInboundArrivals();
 }
 
