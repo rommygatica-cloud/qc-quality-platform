@@ -2147,13 +2147,12 @@ data.records.forEach(r => {
     recorder_code: r.recorder_code || "",
     temp_rec_loc: r.temp_rec_loc || "",
 
-    origin: r.origin || "",
-
     vessel: data.vessel,
 
     receive_date: r.receive_date || "",
     warehouse_name: r.warehouse_name || "",
     product_name: r.product_name || "",
+    origin: r.origin || "",
     condition: r.condition || ""
   };
 
@@ -2189,11 +2188,11 @@ for (const line of updateLines) {
         ptf_code: line.ptf_code,
         recorder_code: line.recorder_code,
         temp_rec_loc: line.temp_rec_loc,
-        origin: line.origin,
         vessel: line.vessel,
         receive_date: line.receive_date,
         warehouse_name: line.warehouse_name,
         product_name: line.product_name,
+        origin: line.origin,
         condition: line.condition
       })
       .eq("container_id", containerRow.id)
@@ -3270,6 +3269,24 @@ window.updateArrivalField = async function updateArrivalField(id, field, value) 
   const updates = {
     [field]: value
   };
+
+  if (
+  field === "status" &&
+  value === "At Door"
+) {
+  const { data: currentArrival, error: arrivalCheckError } =
+    await supabaseClient
+      .from("arrival_containers")
+      .select("actual_arrival_date")
+      .eq("id", id)
+      .single();
+
+  if (arrivalCheckError) {
+    console.error("Error checking actual arrival date:", arrivalCheckError);
+  } else if (!currentArrival?.actual_arrival_date) {
+    updates.actual_arrival_date = new Date().toISOString();
+  }
+}
 
   if (
     field === "status" &&
