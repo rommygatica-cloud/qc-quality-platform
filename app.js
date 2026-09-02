@@ -3264,6 +3264,16 @@ return !searchValue || text.includes(searchValue);
 }
 
 window.updateArrivalField = async function updateArrivalField(id, field, value) {
+  const {
+  data: { user },
+  error: userError
+} = await supabaseClient.auth.getUser();
+
+if (userError) {
+  console.error("Unable to read authenticated user:", userError);
+}
+
+const changedBy = user?.email || "unknown";
   let previousStatus = null;
 
 if (field === "status") {
@@ -3336,7 +3346,7 @@ if (field === "status") {
         container_id: id,
         previous_status: previousStatus,
         new_status: value,
-        changed_by: "romy",
+        changed_by: changedBy,
         is_correction: false
       });
 
