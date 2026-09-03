@@ -2552,8 +2552,10 @@ const records = rows
       container: row["Container"] || "",
       eta: formatExcelDate(row["ETA"]),
       recorder_status: row["Status"] || "Pending",
+      source_status: String(row["Status"] || "").trim(),
       commodity: row["Commodity"] || "",
       origin: normalizeOrigin(row["Origin"] || ""),
+      treatment: String(row["Treatment"] || "").trim(),
       shipper_name: row["Shipper"] || "",
       grower: "",
       manifest_name: file.name,
@@ -2575,17 +2577,86 @@ const uniqueRecords = Array.from(
 
 console.log("Unique Arrival Records:", uniqueRecords);
 
-  const { error } = await supabaseClient
-  .from("arrival_containers")
-  .upsert(uniqueRecords, {
-  onConflict: "arrival_key"
-});
+  const arrivalKeys = uniqueRecords.map(r => r.arrival_key);
 
-  if (error) {
-    console.error(error);
-    alert("Arrival import error: " + error.message);
+const { data: existingArrivals, error: existingError } =
+  await supabaseClient
+    .from("arrival_containers")
+    .select("id, arrival_key")
+    .in("arrival_key", arrivalKeys);
+
+if (existingError) {
+  console.error("Existing arrivals lookup error:", existingError);
+  alert("Unable to check existing arrivals.");
+  return;
+}
+
+const existingKeys = new Set(
+  (existingArrivals || []).map(r => r.arrival_key)
+);
+
+const newArrivals = uniqueRecords.filter(
+  r => !existingKeys.has(r.arrival_key)
+);
+
+const updateArrivals = uniqueRecords.filter(
+  r => existingKeys.has(r.arrival_key)
+);
+
+// INSERT nuevos arrivals
+if (newArrivals.length) {
+  const { error: insertError } =
+    await supabaseClient
+      .from("arrival_containers")
+      .insert(newArrivals);
+
+  if (insertError) {
+    console.error("Arrival insert error:", insertError);
+    alert("Arrival import error: " + insertError.message);
     return;
   }
+}
+
+// UPDATE arrivals existentes sin pisar datos operativos QC
+for (const record of updateArrivals) {
+  const { error: updateError } =
+    await supabaseClient
+      .from("arrival_containers")
+      .update({
+        vessel: record.vessel,
+        po: record.po,
+        lot: record.lot,
+        container: record.container,
+        eta: record.eta,
+
+        recorder_status: record.recorder_status,
+        source_status: record.source_status,
+        treatment: record.treatment,
+
+        commodity: record.commodity,
+        origin: record.origin,
+        shipper_name: record.shipper_name,
+        manifest_name: record.manifest_name,
+        last_manifest_import: record.last_manifest_import,
+        data_type: record.data_type
+      })
+      .eq("arrival_key", record.arrival_key);
+
+  if (updateError) {
+    console.error(
+      "Arrival update error:",
+      record.arrival_key,
+      updateError
+    );
+
+    alert(
+      `Unable to update arrival ${record.container}: ` +
+      updateError.message
+    );
+
+    return;
+  }
+}
 
   alert(
     `${uniqueRecords.length} arrival records imported successfully.`
@@ -3173,7 +3244,9 @@ const text = [
   r.origin,
   r.status,
   r.priority,
-
+  r.treatment,
+  r.source_status,
+  
   ...lines.map(x => x.lot),
   ...lines.map(x => x.commodity),
   ...lines.map(x => x.variety),
