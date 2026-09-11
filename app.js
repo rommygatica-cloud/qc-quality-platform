@@ -2743,6 +2743,16 @@ function getEtaHealth(eta) {
   return "upcoming";
 }
 
+function isArrivalAttention(record) {
+
+  const treatmentAlert = getArrivalTreatmentAlert(record);
+
+  const treatmentNeedsAttention =
+    treatmentAlert?.level === "critical";
+
+  return etaNeedsAttention || treatmentNeedsAttention;
+}
+
 function renderArrivalHealthSummary(list) {
   const box = $("arrivalHealthSummary");
   if (!box) return;
@@ -2755,9 +2765,21 @@ function renderArrivalHealthSummary(list) {
   };
 
   list.forEach(r => {
-    const health = getEtaHealth(r.eta);
-    if (counts[health] !== undefined) counts[health]++;
-  });
+  if (isArrivalAttention(r)) {
+    counts.delayed++;
+    return;
+  }
+
+  const health = getEtaHealth(r.eta);
+
+  if (
+    health === "today" ||
+    health === "tomorrow" ||
+    health === "upcoming"
+  ) {
+    counts[health]++;
+  }
+});
 
   box.innerHTML = `
     <article class="arrivalHealthCard attention ${currentArrivalHealthFilter === "delayed" ? "active" : ""}"
@@ -3319,7 +3341,13 @@ renderArrivalHealthSummary(sortedData);
 const healthFilteredData =
   currentArrivalHealthFilter === "all"
     ? sortedData
-    : sortedData.filter(r => getEtaHealth(r.eta) === currentArrivalHealthFilter);
+    : sortedData.filter(r => {
+        if (currentArrivalHealthFilter === "delayed") {
+          return isArrivalAttention(r);
+        }
+
+        return getEtaHealth(r.eta) === currentArrivalHealthFilter;
+      });
 
 const searchValue = ($("arrivalSearch")?.value || "").toLowerCase().trim();
 
