@@ -2897,6 +2897,52 @@ function getArrivalTreatmentAlert(container) {
   return null;
 }
 
+function getArrivalReleaseDetails(container) {
+  const treatment = String(container?.treatment || "").trim();
+  const sourceStatus = String(container?.source_status || "").trim();
+  const upper = sourceStatus.toUpperCase();
+
+  const items = [];
+
+  if (treatment) {
+    items.push({
+      type: "treatment",
+      label: `Treatment: ${treatment}`
+    });
+  }
+
+  if (upper.includes("FAILED COLD TREATMENT")) {
+    items.push({
+      type: "critical",
+      label: "Cold Treatment: Failed"
+    });
+  } else if (upper.includes("PASSED COLD TREATMENT")) {
+    items.push({
+      type: "success",
+      label: "Cold Treatment: Passed"
+    });
+  }
+
+  if (upper.includes("PENDING INSPECTION")) {
+    items.push({
+      type: "warning",
+      label: "Inspection: Pending"
+    });
+  }
+
+  if (upper.includes("USDA") && upper.includes("PENDING")) {
+    items.push({
+      type: "warning",
+      label: "USDA: Pending"
+    });
+  }
+
+  return {
+    items,
+    sourceStatus
+  };
+}
+
 function renderArrivalDetails(lines, container) {
   if (!lines.length) {
     return `
@@ -2912,6 +2958,7 @@ function renderArrivalDetails(lines, container) {
   }
 
   const treatmentAlert = getArrivalTreatmentAlert(container);
+  const releaseDetails = getArrivalReleaseDetails(container);
 
   const uniqueLots = [...new Set(lines.map(x => x.lot).filter(Boolean))];
   const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
@@ -2998,6 +3045,32 @@ const groupedLines = Object.values(
       <td colspan="11">
         <div class="arrivalDetailBox">
           <h3>📦 Container Composition</h3>
+
+        ${releaseDetails.items.length || releaseDetails.sourceStatus ? `
+        <div class="arrivalReleaseBox">
+        <strong>Treatment & Release</strong>
+
+         <div class="arrivalReleaseItems">
+         ${releaseDetails.items.map(item => `
+         <span class="arrivalReleaseBadge ${item.type}">
+          ${
+            item.type === "critical" ? "🔴" :
+            item.type === "success" ? "🟢" :
+            item.type === "warning" ? "🟡" :
+            "❄️"
+          }
+          ${item.label}
+          </span>
+         `).join("")}
+         </div>
+
+         ${releaseDetails.sourceStatus ? `
+         <div class="arrivalReleaseSource">
+         JK Fresh Status: ${releaseDetails.sourceStatus}
+         </div>
+         ` : ""}
+          </div>
+         ` : ""}
 
           ${treatmentAlert ? `
           <div class="arrivalTreatmentAlert ${treatmentAlert.level}">
