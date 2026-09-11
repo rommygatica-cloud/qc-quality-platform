@@ -732,3 +732,255 @@ window.buildInspectionDryRun =
 
 window.groupInspectionDryRunBySheet =
   groupInspectionDryRunBySheet;
+
+  async function saveSingleInspectionGroup(group) {
+  if (!group || !group.sourceSheetId || !group.records?.length) {
+    throw new Error("Invalid inspection group.");
+  }
+
+  const first = group.records[0];
+
+  const sourceSheetId = group.sourceSheetId;
+  const inspectionType =
+    first.inspection.inspection_type || "";
+
+  // 1) Revisar si ya existe
+  const { data: existingInspection, error: existingError } =
+    await supabaseClient
+      .from("qc_inspections")
+      .select("id, source_sheet_id, inspection_type")
+      .eq("source_sheet_id", sourceSheetId)
+      .eq("inspection_type", inspectionType)
+      .maybeSingle();
+
+  if (existingError) {
+    console.error("Inspection duplicate check error:", existingError);
+    throw existingError;
+  }
+
+  if (existingInspection) {
+    return {
+      status: "skipped",
+      reason: "already_exists",
+      inspectionId: existingInspection.id,
+      sourceSheetId
+    };
+  }
+
+  // 2) Preparar cabecera
+  const inspectionRow = {
+    source: first.inspection.source || "Decofrut",
+    inspection_type: inspectionType,
+    source_sheet_id: sourceSheetId,
+
+    container:
+      group.containers.length === 1
+        ? group.containers[0]
+        : "",
+
+    po_number:
+      group.poNumbers.length === 1
+        ? group.poNumbers[0]
+        : "",
+
+    lot_number:
+      group.lots.length === 1
+        ? group.lots[0]
+        : "",
+
+    grower:
+      group.growers.length === 1
+        ? group.growers[0]
+        : "",
+
+    commodity:
+      group.commodities.length === 1
+        ? group.commodities[0]
+        : "",
+
+    variety:
+      group.varieties.length === 1
+        ? group.varieties[0]
+        : "",
+
+    origin:
+      first.inspection.origin || "",
+
+    location:
+      first.inspection.location || "",
+
+    inspection_date:
+      group.inspectionDates.length === 1
+        ? group.inspectionDates[0]
+        : null,
+
+    arrival_date:
+      first.inspection.arrival_date || null,
+
+    qc_grade: "",
+    quality: "",
+    condition: "",
+    comments: ""
+  };
+
+  // 3) Intentar enlazar con Arrival existente
+  if (inspectionRow.container) {
+    const { data: arrivalMatch, error: arrivalError } =
+      await supabaseClient
+        .from("arrival_containers")
+        .select("id")
+        .eq("container", inspectionRow.container)
+        .maybeSingle();
+
+    if (!arrivalError && arrivalMatch?.id) {
+      inspectionRow.arrival_container_id =
+        arrivalMatch.id;
+    }
+  }
+
+  // 4) Crear inspección
+  const { data: savedInspection, error: insertInspectionError } =
+    await supabaseClient
+      .from("qc_inspections")
+      .insert(inspectionRow)
+      .select()
+      .single();
+
+  if (insertInspectionError) {
+    console.error(
+      "Inspection insert error:",
+      insertInspectionError
+    );
+    throw insertInspectionError;
+  }
+
+  // 5) Crear samples
+  for (const record of group.records) {
+    const sampleRow = {
+      inspection_id: savedInspection.id,
+
+      sample_number:
+        record.sample.sample_number || "",
+
+      pallet_number:
+        record.sample.pallet_number || "",
+
+      grower:
+        record.sample.grower || "",
+
+      lot_number:
+        record.sample.lot_number || "",
+
+      origin:
+        record.sample.origin || "",
+
+      inspection_date:
+        record.sample.inspection_date || null,
+
+      commodity:
+        record.sample.commodity || "",
+
+      variety:
+        record.sample.variety || "",
+
+      size:
+        record.sample.size || "",
+
+      label:
+        record.sample.label || "",
+
+      pack_style:
+        record.sample.pack_style || "",
+
+      packing_date:
+        record.sample.packing_date || null,
+
+      cases_per_pallet:
+        record.sample.cases_per_pallet,
+
+      qc_grade:
+        record.sample.qc_grade || "",
+
+      quality:
+        record.sample.quality || "",
+
+      condition:
+        record.sample.condition || "",
+
+      opening:
+        record.sample.opening || "",
+
+      pulp_temperature:
+        record.sample.pulp_temperature,
+
+      brix:
+        record.sample.brix,
+
+      firmness:
+        record.sample.firmness,
+
+      comments:
+        record.sample.comments || "",
+
+      source_row_number:
+        record.sample.source_row_number
+    };
+
+    const { data: savedSample, error: sampleError } =
+      await supabaseClient
+        .from("qc_inspection_samples")
+        .insert(sampleRow)
+        .select()
+        .single();
+
+    if (sampleError) {
+      console.error(
+        "Sample insert error:",
+        sampleRow,
+        sampleError
+      );
+      throw sampleError;
+    }
+
+    // 6) Crear defectos del sample
+    const defectRows = (record.defects || []).map(defect => ({
+      sample_id: savedSample.id,
+      defect_name: defect.defect_name,
+      normalized_defect:
+        defect.normalized_defect || null,
+      defect_value:
+        defect.defect_value,
+      unit:
+        defect.unit || null,
+      defect_group:
+        defect.defect_group || null,
+      source_column:
+        defect.source_column || ""
+    }));
+
+    if (defectRows.length) {
+      const { error: defectsError } =
+        await supabaseClient
+          .from("qc_inspection_defects")
+          .insert(defectRows);
+
+      if (defectsError) {
+        console.error(
+          "Defects insert error:",
+          defectsError
+        );
+        throw defectsError;
+      }
+    }
+  }
+
+  return {
+    status: "inserted",
+    inspectionId: savedInspection.id,
+    sourceSheetId,
+    samplesInserted: group.records.length
+  };
+}
+
+window.saveSingleInspectionGroup =
+  saveSingleInspectionGroup;
