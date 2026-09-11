@@ -2842,7 +2842,7 @@ function getArrivalTreatmentAlert(container) {
   ) {
     return {
       level: "cold-treatment",
-      label: "❄️ Cold Treatment",
+      label: "❄️ CT",
       detail: sourceStatus
     };
   }
@@ -2871,7 +2871,7 @@ function getArrivalTreatmentAlert(container) {
   if (treatment) {
     return {
       level: "info",
-      label: `Treatment: ${container.treatment}`,
+      label: `${container.treatment}`,
       detail: sourceStatus
     };
   }
