@@ -2944,21 +2944,46 @@ function getArrivalReleaseDetails(container) {
 }
 
 function renderArrivalDetails(lines, container) {
+   const treatmentAlert = getArrivalTreatmentAlert(container);
+   const releaseDetails = getArrivalReleaseDetails(container);
+
   if (!lines.length) {
     return `
       <tr class="arrivalDetailRow">
         <td colspan="11">
           <div class="arrivalDetailBox">
             <h3>📦 Container Composition</h3>
-            <p>No manifest details found for this container.</p>
+            ${releaseDetails.items.length || releaseDetails.sourceStatus ? `
+    <div class="arrivalReleaseBox">
+    <strong>Treatment & Release</strong>
+    <div class="arrivalReleaseItems">
+      ${releaseDetails.items.map(item => `
+        <span class="arrivalReleaseBadge ${item.type}">
+          ${
+            item.type === "critical" ? "🔴" :
+            item.type === "success" ? "🟢" :
+            item.type === "warning" ? "🟡" :
+            "❄️"
+          }
+          ${item.label}
+        </span>
+      `).join("")}
+    </div>
+
+    ${releaseDetails.sourceStatus ? `
+    <div class="arrivalReleaseSource">
+        JK Fresh Status: ${releaseDetails.sourceStatus}
+    </div>
+    ` : ""}
+    </div>
+` : ""}
+
+<p>No manifest details found for this container.</p>
           </div>
         </td>
       </tr>
     `;
   }
-
-  const treatmentAlert = getArrivalTreatmentAlert(container);
-  const releaseDetails = getArrivalReleaseDetails(container);
 
   const uniqueLots = [...new Set(lines.map(x => x.lot).filter(Boolean))];
   const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
