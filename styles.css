@@ -1120,3 +1120,128 @@ canvas{
   font-size: 10px;
   padding: 2px 6px;
 }
+
+/* Treatment & Release detail */
+.arrivalReleaseBox {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.arrivalReleaseBox > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.arrivalReleaseItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.arrivalReleaseBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.arrivalReleaseBadge.treatment {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.arrivalReleaseBadge.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.arrivalReleaseBadge.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.arrivalReleaseBadge.critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.arrivalReleaseSource {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* =========================
+   ARRIVAL TREATMENT & RELEASE
+   ========================= */
+
+.arrivalReleaseBox {
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.arrivalReleaseBox > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.arrivalReleaseItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.arrivalReleaseBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Treatment / CT */
+.arrivalReleaseBadge.treatment {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Passed */
+.arrivalReleaseBadge.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Pending */
+.arrivalReleaseBadge.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Failed / Critical */
+.arrivalReleaseBadge.critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.arrivalReleaseSource {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #6b7280;
+}
