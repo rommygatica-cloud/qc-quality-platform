@@ -2801,6 +2801,84 @@ window.setArrivalHealthFilter = function setArrivalHealthFilter(filter) {
   loadInboundArrivals();
 };
 
+function getArrivalTreatmentAlert(container) {
+  const treatment = String(container?.treatment || "")
+    .trim()
+    .toUpperCase();
+
+  const sourceStatus = String(container?.source_status || "")
+    .trim();
+
+  const sourceStatusUpper = sourceStatus.toUpperCase();
+
+  if (
+    sourceStatusUpper.includes("CT FAILED") ||
+    sourceStatusUpper.includes("FAILED COLD TREATMENT") ||
+    (
+      sourceStatusUpper.includes("FAILED") &&
+      sourceStatusUpper.includes("COLD TREATMENT")
+    )
+  ) {
+    return {
+      level: "critical",
+      label: "🔴 CT Failed",
+      detail: sourceStatus
+    };
+  }
+
+  if (
+    sourceStatusUpper.includes("PASSED COLD TREATMENT")
+  ) {
+    return {
+      level: "success",
+      label: "🟢 CT Passed",
+      detail: sourceStatus
+    };
+  }
+
+  if (
+    treatment.includes("CTIT") ||
+    treatment.includes("COLD TREATMENT")
+  ) {
+    return {
+      level: "cold-treatment",
+      label: "❄️ Cold Treatment",
+      detail: sourceStatus
+    };
+  }
+
+  if (
+    sourceStatusUpper.includes("USDA") &&
+    sourceStatusUpper.includes("PENDING")
+  ) {
+    return {
+      level: "warning",
+      label: "🟡 USDA Pending",
+      detail: sourceStatus
+    };
+  }
+
+  if (
+    sourceStatusUpper.includes("PENDING")
+  ) {
+    return {
+      level: "warning",
+      label: "🟡 Release Pending",
+      detail: sourceStatus
+    };
+  }
+
+  if (treatment) {
+    return {
+      level: "info",
+      label: `Treatment: ${container.treatment}`,
+      detail: sourceStatus
+    };
+  }
+
+  return null;
+}
+
 function renderArrivalDetails(lines, container) {
   if (!lines.length) {
     return `
@@ -2815,9 +2893,11 @@ function renderArrivalDetails(lines, container) {
     `;
   }
 
+  const treatmentAlert = getArrivalTreatmentAlert(container);
+
   const uniqueLots = [...new Set(lines.map(x => x.lot).filter(Boolean))];
-const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
-const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
+  const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
+  const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
 
 const totalBoxes = lines.reduce(
   (sum, x) => sum + (Number(x.boxes) || 0),
@@ -2900,6 +2980,15 @@ const groupedLines = Object.values(
       <td colspan="11">
         <div class="arrivalDetailBox">
           <h3>📦 Container Composition</h3>
+
+          ${treatmentAlert ? `
+          <div class="arrivalTreatmentAlert ${treatmentAlert.level}">
+          <strong>${escapeHtml(treatmentAlert.label)}</strong>
+          ${treatmentAlert.detail
+          ? `<span>${escapeHtml(treatmentAlert.detail)}</span>`
+          : ""}
+          </div>
+          ` : ""}
 
           <div class="containerTempRow">
           <span><strong>🌡 Set Temperature</strong></span>
@@ -3246,7 +3335,7 @@ const text = [
   r.priority,
   r.treatment,
   r.source_status,
-  
+
   ...lines.map(x => x.lot),
   ...lines.map(x => x.commodity),
   ...lines.map(x => x.variety),
@@ -3269,6 +3358,8 @@ return !searchValue || text.includes(searchValue);
 
   tbody.innerHTML = tableData.map(r => {
   const lines = linesByContainerId[r.id] || [];
+
+  const treatmentAlert = getArrivalTreatmentAlert(r);
 
   const lotSummary =
     [...new Set(lines.map(x => x.lot).filter(Boolean))].join(", ") ||
@@ -3296,7 +3387,15 @@ return !searchValue || text.includes(searchValue);
       </td>
 
       <td>${r.eta || "-"}</td>
-      <td>${r.container || "-"}</td>
+      <td>
+      <div>${r.container || "-"}</div>
+
+      ${treatmentAlert ? `
+      <div class="arrivalTreatmentBadge ${treatmentAlert.level}">
+      ${treatmentAlert.label}
+      </div>
+      ` : ""}
+      </td>
       <td>${r.po || "-"}</td>
       <td>${lotSummary}</td>
       <td>${r.grower || "-"}</td>
