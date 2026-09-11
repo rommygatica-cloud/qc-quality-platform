@@ -189,13 +189,44 @@ function buildArrivalIntelligence(
     riskReasons.push("Manifest not loaded");
   }
 
-  const productAgeDays =
-    oldestPackDate
-      ? qiDaysBetween(
-          oldestPackDate,
-          new Date()
-        )
-      : null;
+  const actualArrivalDate =
+  arrival?.actual_arrival_date
+    ? new Date(arrival.actual_arrival_date)
+    : null;
+
+const currentDate = new Date();
+
+const ageAtArrivalMaxDays =
+  oldestPackDate && actualArrivalDate
+    ? qiDaysBetween(
+        oldestPackDate,
+        actualArrivalDate
+      )
+    : null;
+
+const ageAtArrivalMinDays =
+  newestPackDate && actualArrivalDate
+    ? qiDaysBetween(
+        newestPackDate,
+        actualArrivalDate
+      )
+    : null;
+
+const currentAgeMaxDays =
+  oldestPackDate
+    ? qiDaysBetween(
+        oldestPackDate,
+        currentDate
+      )
+    : null;
+
+const currentAgeMinDays =
+  newestPackDate
+    ? qiDaysBetween(
+        newestPackDate,
+        currentDate
+      )
+    : null;
 
   let riskLevel = "normal";
 
@@ -259,17 +290,28 @@ function buildArrivalIntelligence(
     },
 
     productAge: {
-      packDates,
-      oldestPackDate:
-        oldestPackDate
-          ? oldestPackDate.toISOString()
-          : null,
-      newestPackDate:
-        newestPackDate
-          ? newestPackDate.toISOString()
-          : null,
-      maxAgeDays: productAgeDays
-    },
+  packDates,
+
+  oldestPackDate:
+    oldestPackDate
+      ? oldestPackDate.toISOString()
+      : null,
+
+  newestPackDate:
+    newestPackDate
+      ? newestPackDate.toISOString()
+      : null,
+
+  ageAtArrival: {
+    minDays: ageAtArrivalMinDays,
+    maxDays: ageAtArrivalMaxDays
+  },
+
+  currentAge: {
+    minDays: currentAgeMinDays,
+    maxDays: currentAgeMaxDays
+  }
+},
 
     temperature: {
       setTemperature:
