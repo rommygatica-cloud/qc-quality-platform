@@ -566,3 +566,130 @@ async function buildInspectionDryRun(file) {
 
 window.buildInspectionDryRun =
   buildInspectionDryRun;
+
+  function groupInspectionDryRunBySheet(rows = []) {
+  const groups = {};
+
+  rows.forEach(row => {
+    const sheetId = row?.inspection?.source_sheet_id;
+
+    if (!sheetId) return;
+
+    if (!groups[sheetId]) {
+      groups[sheetId] = [];
+    }
+
+    groups[sheetId].push(row);
+  });
+
+  return Object.entries(groups).map(([sheetId, records]) => {
+    const unique = values =>
+      [...new Set(
+        values
+          .map(v => String(v ?? "").trim())
+          .filter(Boolean)
+      )];
+
+    const inspectionTypes = unique(
+      records.map(x => x.inspection.inspection_type)
+    );
+
+    const inspectionDates = unique(
+      records.map(x => x.inspection.inspection_date)
+    );
+
+    const containers = unique(
+      records.map(x => x.inspection.container)
+    );
+
+    const poNumbers = unique(
+      records.map(x => x.inspection.po_number)
+    );
+
+    const lots = unique(
+      records.map(x => x.inspection.lot_number)
+    );
+
+    const growers = unique(
+      records.map(x => x.inspection.grower)
+    );
+
+    const commodities = unique(
+      records.map(x => x.inspection.commodity)
+    );
+
+    const varieties = unique(
+      records.map(x => x.sample.variety)
+    );
+
+    const pallets = unique(
+      records.map(x => x.sample.pallet_number)
+    );
+
+    const grades = unique(
+      records.map(x => x.sample.qc_grade)
+    );
+
+    const defectNames = unique(
+      records.flatMap(x =>
+        (x.defects || []).map(d => d.defect_name)
+      )
+    );
+
+    const mixedFields = [];
+
+    if (inspectionTypes.length > 1)
+      mixedFields.push("inspection_type");
+
+    if (inspectionDates.length > 1)
+      mixedFields.push("inspection_date");
+
+    if (containers.length > 1)
+      mixedFields.push("container");
+
+    if (poNumbers.length > 1)
+      mixedFields.push("po");
+
+    if (lots.length > 1)
+      mixedFields.push("lot");
+
+    if (growers.length > 1)
+      mixedFields.push("grower");
+
+    if (commodities.length > 1)
+      mixedFields.push("commodity");
+
+    if (varieties.length > 1)
+      mixedFields.push("variety");
+
+    return {
+      sourceSheetId: sheetId,
+
+      classification:
+        mixedFields.length
+          ? "mixed"
+          : "simple",
+
+      mixedFields,
+
+      sampleCount: records.length,
+      palletCount: pallets.length,
+
+      inspectionTypes,
+      inspectionDates,
+      containers,
+      poNumbers,
+      lots,
+      growers,
+      commodities,
+      varieties,
+      grades,
+      defectNames,
+
+      records
+    };
+  });
+}
+
+window.groupInspectionDryRunBySheet =
+  groupInspectionDryRunBySheet;
