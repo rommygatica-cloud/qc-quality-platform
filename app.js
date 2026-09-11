@@ -2744,13 +2744,9 @@ function getEtaHealth(eta) {
 }
 
 function isArrivalAttention(record) {
-
   const treatmentAlert = getArrivalTreatmentAlert(record);
 
-  const treatmentNeedsAttention =
-    treatmentAlert?.level === "critical";
-
-  return etaNeedsAttention || treatmentNeedsAttention;
+  return treatmentAlert?.level === "critical";
 }
 
 function renderArrivalHealthSummary(list) {
