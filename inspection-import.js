@@ -174,10 +174,49 @@ function normalizeInboundInspectionRow(row, sourceRowNumber) {
           inspectionGet(row, ["Samples"])
         ),
 
+grower:
+  inspectionClean(
+    inspectionGet(row, ["Grower"])
+  ),
+
+lot_number:
+  inspectionClean(
+    inspectionGet(row, ["Lot Number"])
+  ),
+
+origin:
+  inspectionClean(
+    inspectionGet(row, ["COO"])
+  ),
+
+inspection_date:
+  inspectionDate(
+    inspectionGet(row, ["Inspection Date"])
+  ),
+
       pallet_number:
         inspectionClean(
           inspectionGet(row, ["Pallet No"])
         ),
+grower:
+  inspectionClean(
+    inspectionGet(row, ["Grower"])
+  ),
+
+lot_number:
+  inspectionClean(
+    inspectionGet(row, ["Lot Number"])
+  ),
+
+origin:
+  inspectionClean(
+    inspectionGet(row, ["Origin Region", "COO"])
+  ),
+
+inspection_date:
+  inspectionDate(
+    inspectionGet(row, ["Inspection Date"])
+  ),
 
       commodity:
         normalizeInspectionCommodity(
