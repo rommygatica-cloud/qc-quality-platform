@@ -347,9 +347,7 @@ function normalizeReinspectionRow(row, sourceRowNumber) {
 
       location:
         inspectionClean(
-          inspectionGet(row, [
-            "Location or Warehouse"
-          ])
+          inspectionGet(row, ["Location or Warehouse"])
         ),
 
       inspection_date:
@@ -373,47 +371,26 @@ function normalizeReinspectionRow(row, sourceRowNumber) {
         inspectionClean(
           inspectionGet(row, ["Pallet No"])
         ),
-        
-sample: {
-  sample_number:
-    inspectionClean(
-      inspectionGet(row, ["Samples"])
-    ),
 
-  pallet_number:
-    inspectionClean(
-      inspectionGet(row, ["Pallet No"])
-    ),
+      grower:
+        inspectionClean(
+          inspectionGet(row, ["Grower"])
+        ),
 
-  grower:
-    inspectionClean(
-      inspectionGet(row, ["Grower"])
-    ),
+      lot_number:
+        inspectionClean(
+          inspectionGet(row, ["Lot Number"])
+        ),
 
-  lot_number:
-    inspectionClean(
-      inspectionGet(row, ["Lot Number"])
-    ),
+      origin:
+        inspectionClean(
+          inspectionGet(row, ["COO"])
+        ),
 
-  origin:
-    inspectionClean(
-      inspectionGet(row, ["COO"])
-    ),
-
-  inspection_date:
-    inspectionDate(
-      inspectionGet(row, ["Inspection Date"])
-    ),
-
-  commodity:
-    normalizeInspectionCommodity(
-      inspectionGet(row, ["Specie"])
-    ),
-
-  variety:
-    inspectionClean(
-      inspectionGet(row, ["Variety"])
-    ),
+      inspection_date:
+        inspectionDate(
+          inspectionGet(row, ["Inspection Date"])
+        ),
 
       commodity:
         normalizeInspectionCommodity(
