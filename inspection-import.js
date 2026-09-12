@@ -540,19 +540,202 @@ const INSPECTION_NON_DEFECT_FIELDS = new Set([
   "comments"
 ]);
 
+const INSPECTION_IGNORE_FIELDS = new Set([
+  "",
+  "id",
+  "created at",
+  "updated at"
+]);
+
+const INSPECTION_METRIC_FIELDS = new Set([
+  "temperature °f",
+  "pulp temperature",
+  "° brix",
+  "brix",
+
+  "diameter",
+  "diameter (mm)",
+
+  "firmness",
+  "firmness low",
+  "firmness high",
+  "firmness avg",
+
+  "durofel min",
+  "durofel max",
+  "durofel avg",
+
+  "10 berries weight (lbs)",
+  "10 berries weight (gr)",
+
+  "case net weight (kg)",
+  "case net weight (lb)",
+  "case net weight (lbs)",
+
+  "sample count",
+  "sizing low avg",
+  "sizing high avg",
+
+  "number of bags",
+  "quantity (bags/clam)",
+
+  "nº bunches",
+  "nº bunches undersize",
+  "nº bunches undersize(b)",
+  "weight bunch undersize",
+  "undersize (%)",
+
+  "clamshell weight (lb)",
+  "clamshells weight (lb)",
+
+  "% plu",
+  "plu %",
+  "frutos a 3 lb",
+  "frutos a 2 lb"
+]);
+
+const INSPECTION_ATTRIBUTE_FIELDS = new Set([
+  "color",
+  "ground color",
+  "% color cover",
+
+  "stem condition",
+  "stem condition (1-5)",
+
+  "texture",
+  "texture (1-5)",
+
+  "open appearance",
+
+  "plu code",
+  "plu number",
+  "plu match",
+
+  "barcode",
+
+  "bilingual",
+  "bilingual (yes/no)",
+
+  "lids",
+  "lids (yes/no)",
+
+  "traceability",
+  "traceability (y/n)",
+
+  "pallet type (1-3)",
+
+  "variety manifest match"
+]);
+
+function classifyInspectionField(column) {
+  const normalized = String(column || "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    INSPECTION_IGNORE_FIELDS.has(normalized)
+  ) {
+    return "ignore";
+  }
+
+  if (
+    INSPECTION_NON_DEFECT_FIELDS.has(normalized)
+  ) {
+    if (
+      INSPECTION_METRIC_FIELDS.has(normalized)
+    ) {
+      return "metric";
+    }
+
+    if (
+      INSPECTION_ATTRIBUTE_FIELDS.has(normalized)
+    ) {
+      return "attribute";
+    }
+
+    return "metadata";
+  }
+
+  if (
+    INSPECTION_METRIC_FIELDS.has(normalized)
+  ) {
+    return "metric";
+  }
+
+  if (
+    INSPECTION_ATTRIBUTE_FIELDS.has(normalized)
+  ) {
+    return "attribute";
+  }
+
+  return "defect";
+}
+
+function extractInspectionMetrics(row) {
+  const metrics = [];
+
+  Object.entries(row || {}).forEach(
+    ([column, rawValue]) => {
+      const classification =
+        classifyInspectionField(column);
+
+      if (
+        classification !== "metric" &&
+        classification !== "attribute"
+      ) {
+        return;
+      }
+
+      const cleanValue =
+        inspectionClean(rawValue);
+
+      if (!cleanValue) return;
+
+      const numericValue =
+        inspectionNumber(rawValue);
+
+      metrics.push({
+        metric_name: String(column).trim(),
+        normalized_metric: null,
+
+        metric_value:
+          numericValue !== null
+            ? numericValue
+            : null,
+
+        text_value:
+          numericValue === null
+            ? cleanValue
+            : null,
+
+        unit:
+          String(column).includes("%")
+            ? "%"
+            : null,
+
+        metric_group:
+          classification,
+
+        source_column:
+          String(column).trim()
+      });
+    }
+  );
+
+  return metrics;
+}
+
 function extractInspectionDefects(row) {
   const defects = [];
 
   Object.entries(row || {}).forEach(([column, rawValue]) => {
     const cleanColumn = String(column || "").trim();
-    const normalizedColumn = cleanColumn.toLowerCase();
-
     if (
-      !cleanColumn ||
-      INSPECTION_NON_DEFECT_FIELDS.has(normalizedColumn)
-    ) {
-      return;
-    }
+  !cleanColumn ||
+  classifyInspectionField(cleanColumn) !== "defect"
+) {
+  return;
+}
 
     const value = inspectionNumber(rawValue);
 
