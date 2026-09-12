@@ -373,6 +373,47 @@ function normalizeReinspectionRow(row, sourceRowNumber) {
         inspectionClean(
           inspectionGet(row, ["Pallet No"])
         ),
+        
+sample: {
+  sample_number:
+    inspectionClean(
+      inspectionGet(row, ["Samples"])
+    ),
+
+  pallet_number:
+    inspectionClean(
+      inspectionGet(row, ["Pallet No"])
+    ),
+
+  grower:
+    inspectionClean(
+      inspectionGet(row, ["Grower"])
+    ),
+
+  lot_number:
+    inspectionClean(
+      inspectionGet(row, ["Lot Number"])
+    ),
+
+  origin:
+    inspectionClean(
+      inspectionGet(row, ["COO"])
+    ),
+
+  inspection_date:
+    inspectionDate(
+      inspectionGet(row, ["Inspection Date"])
+    ),
+
+  commodity:
+    normalizeInspectionCommodity(
+      inspectionGet(row, ["Specie"])
+    ),
+
+  variety:
+    inspectionClean(
+      inspectionGet(row, ["Variety"])
+    ),
 
       commodity:
         normalizeInspectionCommodity(
@@ -466,6 +507,7 @@ const INSPECTION_NON_DEFECT_FIELDS = new Set([
   "inspection date",
   "arrival date",
   "packing date",
+  "packing date_1",
   "variety",
   "exporter",
   "package",
