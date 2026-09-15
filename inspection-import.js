@@ -105,6 +105,41 @@ function normalizeInspectionCommodity(value) {
 
   return map[text] || inspectionClean(value);
 }
+
+const QC_INSPECTION_TYPES = [
+  "Inbound",
+  "Reinspection",
+  "Outside Purchase",
+  "Transfer",
+  "Rejection",
+  "Repack Inspection"
+];
+
+function normalizeInspectionType(value) {
+  const text = String(value || "").trim().toLowerCase();
+
+  const map = {
+    inbound: "Inbound",
+    reinspection: "Reinspection",
+    reinspections: "Reinspection",
+
+    "outside purchase": "Outside Purchase",
+    outsidepurchase: "Outside Purchase",
+    osp: "Outside Purchase",
+
+    transfer: "Transfer",
+    transfers: "Transfer",
+
+    rejection: "Rejection",
+    rejections: "Rejection",
+
+    repack: "Repack Inspection",
+    "repack inspection": "Repack Inspection"
+  };
+
+  return map[text] || "";
+}
+
 function normalizeInboundInspectionRow(row, sourceRowNumber) {
   return {
     inspection: {
@@ -173,26 +208,6 @@ function normalizeInboundInspectionRow(row, sourceRowNumber) {
         inspectionClean(
           inspectionGet(row, ["Samples"])
         ),
-
-grower:
-  inspectionClean(
-    inspectionGet(row, ["Grower"])
-  ),
-
-lot_number:
-  inspectionClean(
-    inspectionGet(row, ["Lot Number"])
-  ),
-
-origin:
-  inspectionClean(
-    inspectionGet(row, ["COO"])
-  ),
-
-inspection_date:
-  inspectionDate(
-    inspectionGet(row, ["Inspection Date"])
-  ),
 
       pallet_number:
         inspectionClean(
@@ -470,6 +485,252 @@ function normalizeReinspectionRow(row, sourceRowNumber) {
     raw: row
   };
 }
+
+function normalizeGenericInspectionRow(
+  row,
+  sourceRowNumber,
+  inspectionType
+) {
+  return {
+    inspection: {
+      source: "Decofrut",
+
+      inspection_type:
+        normalizeInspectionType(inspectionType) ||
+        inspectionType,
+
+      source_sheet_id:
+        inspectionClean(
+          inspectionGet(row, ["IdSheet"])
+        ),
+
+      container:
+        inspectionClean(
+          inspectionGet(row, [
+            "Container/Hatch.",
+            "Container/Hatch_",
+            "Container"
+          ])
+        ),
+
+      po_number:
+        inspectionClean(
+          inspectionGet(row, [
+            "PO Number",
+            "PO Number.",
+            "PO / Vessel / Truck",
+            "PO"
+          ])
+        ),
+
+      lot_number:
+        inspectionClean(
+          inspectionGet(row, [
+            "Lot Number",
+            "Lot"
+          ])
+        ),
+
+      grower:
+        inspectionClean(
+          inspectionGet(row, ["Grower"])
+        ),
+
+      commodity:
+        normalizeInspectionCommodity(
+          inspectionGet(row, [
+            "Specie",
+            "Commodity"
+          ])
+        ),
+
+      variety:
+        inspectionClean(
+          inspectionGet(row, ["Variety"])
+        ),
+
+      origin:
+        inspectionClean(
+          inspectionGet(row, [
+            "Origin Region",
+            "COO",
+            "Origin"
+          ])
+        ),
+
+      location:
+        inspectionClean(
+          inspectionGet(row, [
+            "Port",
+            "Location or Warehouse",
+            "Location"
+          ])
+        ),
+
+      inspection_date:
+        inspectionDate(
+          inspectionGet(row, [
+            "Inspection Date",
+            "Date"
+          ])
+        ),
+
+      arrival_date:
+        inspectionDate(
+          inspectionGet(row, [
+            "Arrival Date"
+          ])
+        )
+    },
+
+    sample: {
+      sample_number:
+        inspectionClean(
+          inspectionGet(row, [
+            "Samples",
+            "Sample"
+          ])
+        ),
+
+      pallet_number:
+        inspectionClean(
+          inspectionGet(row, [
+            "Pallet No",
+            "Pallet"
+          ])
+        ),
+
+      grower:
+        inspectionClean(
+          inspectionGet(row, ["Grower"])
+        ),
+
+      lot_number:
+        inspectionClean(
+          inspectionGet(row, [
+            "Lot Number",
+            "Lot"
+          ])
+        ),
+
+      origin:
+        inspectionClean(
+          inspectionGet(row, [
+            "Origin Region",
+            "COO",
+            "Origin"
+          ])
+        ),
+
+      inspection_date:
+        inspectionDate(
+          inspectionGet(row, [
+            "Inspection Date",
+            "Date"
+          ])
+        ),
+
+      commodity:
+        normalizeInspectionCommodity(
+          inspectionGet(row, [
+            "Specie",
+            "Commodity"
+          ])
+        ),
+
+      variety:
+        inspectionClean(
+          inspectionGet(row, ["Variety"])
+        ),
+
+      size:
+        inspectionClean(
+          inspectionGet(row, ["Size"])
+        ),
+
+      label:
+        inspectionClean(
+          inspectionGet(row, ["Label"])
+        ),
+
+      pack_style:
+        inspectionClean(
+          inspectionGet(row, [
+            "Package",
+            "Pack Style"
+          ])
+        ),
+
+      packing_date:
+        inspectionDate(
+          inspectionGet(row, [
+            "Packing Date"
+          ])
+        ),
+
+      cases_per_pallet:
+        inspectionNumber(
+          inspectionGet(row, [
+            "Cases/Pallet"
+          ])
+        ),
+
+      qc_grade:
+        inspectionClean(
+          inspectionGet(row, [
+            "QcGrade",
+            "QC Grade"
+          ])
+        ),
+
+      quality:
+        inspectionClean(
+          inspectionGet(row, ["Quality"])
+        ),
+
+      condition:
+        inspectionClean(
+          inspectionGet(row, ["Condition"])
+        ),
+
+      opening:
+        inspectionClean(
+          inspectionGet(row, ["Opening"])
+        ),
+
+      pulp_temperature:
+        inspectionNumber(
+          inspectionGet(row, [
+            "Pulp Temperature",
+            "Temperature °F"
+          ])
+        ),
+
+      brix:
+        inspectionNumber(
+          inspectionGet(row, [
+            "° Brix",
+            "Brix"
+          ])
+        ),
+
+      firmness: null,
+
+      comments:
+        inspectionClean(
+          inspectionGet(row, [
+            "Comments",
+            "QC Comments"
+          ])
+        ),
+
+      source_row_number: sourceRowNumber
+    },
+
+    raw: row
+  };
+}
+
 const INSPECTION_NON_DEFECT_FIELDS = new Set([
   "specie",
   "boxes",
@@ -758,7 +1019,11 @@ function extractInspectionDefects(row) {
 
   return defects;
 }
-async function buildInspectionDryRun(file) {
+
+async function buildInspectionDryRun(
+  file,
+  inspectionType = "auto"
+) {
   const buffer = await file.arrayBuffer();
 
   const workbook = XLSX.read(buffer, {
@@ -774,32 +1039,91 @@ async function buildInspectionDryRun(file) {
       defval: ""
     });
 
-    const isInbound =
-      sheetName.toLowerCase().includes("inbound");
+    const lowerSheetName =
+  sheetName.toLowerCase();
 
-    const isReinspection =
-      sheetName.toLowerCase().includes("reinspection");
+let detectedType = "";
 
-    if (!isInbound && !isReinspection) {
-      continue;
-    }
+if (lowerSheetName.includes("reinspection")) {
+  detectedType = "Reinspection";
 
-    rows.forEach((row, index) => {
-      const normalized = isInbound
-        ? normalizeInboundInspectionRow(
-            row,
-            index + 2
-          )
-        : normalizeReinspectionRow(
-            row,
-            index + 2
-          );
+} else if (lowerSheetName.includes("inbound")) {
+  detectedType = "Inbound";
 
-      normalized.defects =
-        extractInspectionDefects(row);
+} else if (
+  lowerSheetName.includes("outside purchase") ||
+  lowerSheetName.includes("outsidepurchase") ||
+  lowerSheetName.includes("osp")
+) {
+  detectedType = "Outside Purchase";
 
-      output.push(normalized);
-    });
+} else if (lowerSheetName.includes("transfer")) {
+  detectedType = "Transfer";
+
+} else if (lowerSheetName.includes("rejection")) {
+  detectedType = "Rejection";
+
+} else if (lowerSheetName.includes("repack")) {
+  detectedType = "Repack Inspection";
+}
+
+const requestedType =
+  inspectionType === "auto"
+    ? ""
+    : normalizeInspectionType(inspectionType);
+
+const resolvedType =
+  requestedType || detectedType;
+
+// Si estamos en Auto y el nombre de la hoja
+// no identifica el workflow, no adivinamos.
+if (!resolvedType) {
+  console.warn(
+    `Inspection type could not be detected for sheet "${sheetName}".`
+  );
+
+  continue;
+}
+
+rows.forEach((row, index) => {
+  let normalized;
+
+  if (resolvedType === "Inbound") {
+
+    normalized =
+      normalizeInboundInspectionRow(
+        row,
+        index + 2
+      );
+
+  } else if (resolvedType === "Reinspection") {
+
+    normalized =
+      normalizeReinspectionRow(
+        row,
+        index + 2
+      );
+
+  } else {
+
+    normalized =
+      normalizeGenericInspectionRow(
+        row,
+        index + 2,
+        resolvedType
+      );
+  }
+
+  normalized.defects =
+    extractInspectionDefects(row);
+
+  normalized.metrics =
+    extractInspectionMetrics(row);
+
+    output.push(normalized);
+});
+
+  // Cierra el for de workbook.SheetNames
   }
 
   return output;
