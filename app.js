@@ -2326,7 +2326,7 @@ function openInboundModule(module) {
 
         <div class="qaPanelHeader" style="margin-top:18px;">
           <div>
-            <<h2>${isHistory ? "🗂️ Arrivals History" : "🚢 Arrivals"}</h2>
+            <h2>${isHistory ? "🗂️ Arrivals History" : "🚢 Arrivals"}</h2>
 
           <p>
           ${isHistory
@@ -2338,6 +2338,26 @@ function openInboundModule(module) {
           </div>
 
        <div class="qaToolbar">
+
+  <div class="arrivalImportBox">
+    <label for="arrivalImportMode">Import Type</label>
+
+    <select id="arrivalImportMode">
+      <option value="live">Daily Import</option>
+      <option value="historical">Historical Import</option>
+    </select>
+  </div>
+
+  <label class="primaryBtn" style="display:inline-block;">
+    Upload Arrivals
+    <input
+      type="file"
+      id="arrivalImportFile"
+      accept=".xlsx"
+      style="display:none;"
+      onchange="importArrivalsExcel()"
+${!isHistory ? `
+<div class="qaToolbar">
 
   <div class="arrivalImportBox">
     <label for="arrivalImportMode">Import Type</label>
@@ -2371,10 +2391,12 @@ function openInboundModule(module) {
   </label>
 
 </div>
+
 <div id="arrivalHealthSummary"
      class="qaKpiGrid"
      style="margin-bottom:18px;">
 </div>
+` : ""}
 
 <div class="arrivalToolbar">
 
@@ -2399,8 +2421,10 @@ function openInboundModule(module) {
 <th>Commodity</th>
 <th>Variety</th>
 <th>Origin</th>
-<th>Status</th>
-<th>Priority</th>
+${isHistory
+  ? `<th>Arrival Notes</th>`
+  : `<th>Status</th><th>Priority</th>`
+}
               </tr>
             </thead>
 
@@ -3512,27 +3536,44 @@ return !searchValue || text.includes(searchValue);
       <td>${commoditySummary}</td>
       <td>${varietySummary}</td>
       <td>${r.origin || "-"}</td>
-      <td>
-  <select data-id="${r.id}" onchange="window.updateArrivalField(this.dataset.id, 'status', this.value)">
-    <option value="">Select Status</option>
-<option value="Expected" ${r.status === "Expected" ? "selected" : ""}>Expected</option>
-<option value="At Door" ${r.status === "At Door" ? "selected" : ""}>🟢 At Door</option>
-<option value="Sampling" ${r.status === "Sampling" ? "selected" : ""}>🟡 Sampling</option>
-<option value="Inspection Finished" ${r.status === "Inspection Finished" ? "selected" : ""}>✅ Inspection Finished</option>
-<option value="Report Sent" ${r.status === "Report Sent" ? "selected" : ""}>📧 Report Sent</option>
-<option value="Cancelled / Diverted" ${r.status === "Cancelled / Diverted" ? "selected" : ""}>🚫 Cancelled / Diverted</option>
-  </select>
-</td>
+      ${currentArrivalView === "historical"
+  ? `
+    <td>
+      <button
+        class="secondaryBtn"
+        onclick="openArrivalNotes('${r.id}')">
+        💬 Arrival Notes
+      </button>
+    </td>
+  `
+  : `
+    <td>
+      <select
+        data-id="${r.id}"
+        onchange="window.updateArrivalField(this.dataset.id, 'status', this.value)">
+        <option value="">Select Status</option>
+        <option value="Expected" ${r.status === "Expected" ? "selected" : ""}>Expected</option>
+        <option value="At Door" ${r.status === "At Door" ? "selected" : ""}>🟢 At Door</option>
+        <option value="Sampling" ${r.status === "Sampling" ? "selected" : ""}>🟡 Sampling</option>
+        <option value="Inspection Finished" ${r.status === "Inspection Finished" ? "selected" : ""}>✅ Inspection Finished</option>
+        <option value="Report Sent" ${r.status === "Report Sent" ? "selected" : ""}>📧 Report Sent</option>
+        <option value="Cancelled / Diverted" ${r.status === "Cancelled / Diverted" ? "selected" : ""}>🚫 Cancelled / Diverted</option>
+      </select>
+    </td>
 
-<td>
-  <select data-id="${r.id}" onchange="window.updateArrivalField(this.dataset.id, 'priority', this.value)">
-    <option value="">Select Priority</option>
-<option value="Low" ${r.priority === "Low" ? "selected" : ""}>Low</option>
-<option value="Normal" ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
-<option value="High" ${r.priority === "High" ? "selected" : ""}>High</option>
-<option value="Critical" ${r.priority === "Critical" ? "selected" : ""}>Critical</option>
-  </select>
-     </td>
+    <td>
+      <select
+        data-id="${r.id}"
+        onchange="window.updateArrivalField(this.dataset.id, 'priority', this.value)">
+        <option value="">Select Priority</option>
+        <option value="Low" ${r.priority === "Low" ? "selected" : ""}>Low</option>
+        <option value="Normal" ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
+        <option value="High" ${r.priority === "High" ? "selected" : ""}>High</option>
+        <option value="Critical" ${r.priority === "Critical" ? "selected" : ""}>Critical</option>
+      </select>
+    </td>
+  `
+}
     </tr>
     ${(() => {
   
@@ -3599,12 +3640,13 @@ if (field === "status") {
 }
 
   if (
-    field === "status" &&
-    (value === "Report Sent" || value === "Cancelled / Diverted")
-  ) {
-    updates.active = false;
-    updates.closed_at = new Date().toISOString();
-  }
+  field === "status" &&
+  (value === "Report Sent" || value === "Cancelled / Diverted")
+) {
+  updates.active = false;
+  updates.data_type = "historical";
+  updates.closed_at = new Date().toISOString();
+}
 
   const { error } = await supabaseClient
     .from("arrival_containers")
