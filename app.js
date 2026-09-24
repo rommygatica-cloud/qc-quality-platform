@@ -2313,7 +2313,11 @@ function openInboundModule(module) {
 
   home.style.display = "none";
 
-  if (module === "arrivals") {
+  if (module === "arrivals" || module === "arrivals-history") {
+
+  const isHistory = module === "arrivals-history";
+
+  currentArrivalView = isHistory ? "historical" : "live";
     content.innerHTML = `
       <section class="qaPanel">
         <button class="secondaryBtn" onclick="backToInboundHome()">
@@ -2322,10 +2326,16 @@ function openInboundModule(module) {
 
         <div class="qaPanelHeader" style="margin-top:18px;">
           <div>
-            <h2>🚢 Arrivals</h2>
-            <p>Import arrival schedules and manifest details.</p>
+            <<h2>${isHistory ? "🗂️ Arrivals History" : "🚢 Arrivals"}</h2>
+
+          <p>
+          ${isHistory
+          ? "Review historical arrivals, manifests, and arrival records."
+          : "Manage current arrivals, manifests, and operational priorities."
+          }
+          </p>
           </div>
-        </div>
+          </div>
 
        <div class="qaToolbar">
 
@@ -2364,28 +2374,6 @@ function openInboundModule(module) {
 <div id="arrivalHealthSummary"
      class="qaKpiGrid"
      style="margin-bottom:18px;">
-</div>
-
-<div class="arrivalViewSwitch">
-
-  <button
-    class="${currentArrivalView==="live"?"active":""}"
-    onclick="setArrivalView('live')">
-    Live
-  </button>
-
-  <button
-    class="${currentArrivalView==="historical"?"active":""}"
-    onclick="setArrivalView('historical')">
-    Historical
-  </button>
-
-  <button
-    class="${currentArrivalView==="all"?"active":""}"
-    onclick="setArrivalView('all')">
-    All
-  </button>
-
 </div>
 
 <div class="arrivalToolbar">
