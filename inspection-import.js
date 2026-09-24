@@ -750,6 +750,7 @@ const INSPECTION_NON_DEFECT_FIELDS = new Set([
   "exporter",
   "package",
   "grower",
+  "subgrower",
   "label",
   "size",
   "lot number",
@@ -763,6 +764,7 @@ const INSPECTION_NON_DEFECT_FIELDS = new Set([
   "case net weight (lbs)",
   "barcode",
   "coo",
+  "origin region",
   "bilingual",
   "bilingual (yes/no)",
   "lids",
@@ -809,89 +811,318 @@ const INSPECTION_IGNORE_FIELDS = new Set([
 ]);
 
 const INSPECTION_METRIC_FIELDS = new Set([
+  // General
   "temperature °f",
   "pulp temperature",
   "° brix",
   "brix",
+  "case net weight",
+  "case net weight (kg)",
+  "case net weight (lb)",
+  "case net weight (lbs)",
+  "sample count",
 
-  "diameter",
-  "diameter (mm)",
+  // Citrus
+  "labeled net weight",
+  "weight box",
+  "underweight (%)",
+  "size (0-1-2)",
+  "count cut fruit (u)",
+  "undersize fruits (%)",
+  "sensitive fruits (%)",
+  "fruits to 3 lb",
+  "fruits to 2 lb",
+  "frutos a 3 lb",
+  "frutos a 2 lb",
 
-  "firmness",
-  "firmness low",
-  "firmness high",
-  "firmness avg",
-
+  // Cherries
+  "° brix min",
+  "° brix max",
+  "° brix avg",
+  "mm rng. min",
+  "mm rng. max",
+  "over size (u)",
+  "in size (u)",
+  "under size (u)",
   "durofel min",
   "durofel max",
   "durofel avg",
 
+  // Stone Fruit
+  "diameter",
+  "diameter (mm)",
+  "firmness",
+  "firmness low",
+  "firmness high",
+  "firmness avg",
+  "color cover (%)",
+  "blush avg (%)",
+
+  // Grapes / Packaging / Sizing
   "10 berries weight (lbs)",
   "10 berries weight (gr)",
-
-  "case net weight (kg)",
-  "case net weight (lb)",
-  "case net weight (lbs)",
-
-  "sample count",
   "sizing low avg",
   "sizing high avg",
-
   "number of bags",
   "quantity (bags/clam)",
-
   "nº bunches",
   "nº bunches undersize",
   "nº bunches undersize(b)",
   "weight bunch undersize",
   "undersize (%)",
-
   "clamshell weight (lb)",
   "clamshells weight (lb)",
 
+  // Compliance
   "% plu",
-  "plu %",
-  "frutos a 3 lb",
-  "frutos a 2 lb"
+  "plu %"
 ]);
 
 const INSPECTION_ATTRIBUTE_FIELDS = new Set([
+  // General
   "color",
   "ground color",
+  "ground color (1-5)",
   "% color cover",
-
-  "stem condition",
-  "stem condition (1-5)",
-
-  "texture",
-  "texture (1-5)",
-
   "open appearance",
+  "open appearance (1-4)",
+  "pallet type (1-3)",
+  "variety manifest match",
 
+  // PLU / Barcode / Compliance
   "plu code",
   "plu number",
   "plu match",
-
+  "plu/barcode",
+  "plu",
   "barcode",
-
+  "bar code",
   "bilingual",
   "bilingual (yes/no)",
-
   "lids",
   "lids (yes/no)",
-
   "traceability",
   "traceability (y/n)",
 
-  "pallet type (1-3)",
+  // Citrus
+  "internal quality (1-4)",
+  "kind of decay",
 
-  "variety manifest match"
+  // Cherries
+  "taste",
+  "color full (u)",
+  "color checkered (u)",
+  "color low (u)",
+  "texture",
+  "texture (1-5)",
+  "texture crisp (u)",
+  "texture firm (u)",
+  "texture semi firm (u)",
+  "texture soft (u)",
+  "stem condition",
+  "stem condition (1-5)",
+  "stem pulled (u)",
+  "stem green (u)",
+  "stem brown (u)"
 ]);
 
-function classifyInspectionField(column) {
-  const normalized = String(column || "")
+function normalizeInspectionFieldName(value) {
+  return String(value || "")
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+
+    // Normaliza espacios especiales de Excel
+    .replace(/\u00a0/g, " ")
+
+    // Convierte múltiples espacios en uno
+    .replace(/\s+/g, " ")
+
+    // Quita espacios antes de paréntesis
+    .replace(/\s+\(/g, " (")
+
+    // Quita punto final
+    .replace(/\.+$/g, "")
+
+    .trim();
+}
+
+const INSPECTION_CANONICAL_FIELD_MAP = {
+  // -------------------------
+  // Identity / Metadata
+  // -------------------------
+  "specie": "commodity",
+  "commodity": "commodity",
+
+  "grower": "grower",
+  "subgrower": "subgrower",
+
+  "variety": "variety",
+
+  "lot number": "lot_number",
+  "lot": "lot_number",
+
+  "po number": "po_number",
+  "po number.": "po_number",
+  "po / vessel / truck": "po_number",
+  "po": "po_number",
+
+  "container/hatch": "container",
+  "container/hatch_": "container",
+  "container/hatch.": "container",
+  "container": "container",
+
+  "idsheet": "source_sheet_id",
+
+  "inspection date": "inspection_date",
+  "arrival date": "arrival_date",
+  "packing date": "packing_date",
+  "packing date_1": "packing_date",
+
+  "pallet no": "pallet_number",
+  "pallet": "pallet_number",
+
+  "samples": "sample_number",
+  "sample": "sample_number",
+
+  "qcgrade": "qc_grade",
+  "qc grade": "qc_grade",
+
+  "origin region": "origin",
+  "coo": "origin",
+  "origin": "origin",
+
+  // -------------------------
+  // Core measurements
+  // -------------------------
+  "° brix": "brix",
+  "brix": "brix",
+
+  "° brix min": "brix_min",
+  "° brix max": "brix_max",
+  "° brix avg": "brix_avg",
+
+  "temperature °f": "pulp_temperature_f",
+  "pulp temperature": "pulp_temperature_f",
+
+  "diameter": "diameter_mm",
+  "diameter (mm)": "diameter_mm",
+
+  "firmness": "firmness",
+  "firmness low": "firmness_low",
+  "firmness high": "firmness_high",
+  "firmness avg": "firmness_avg",
+
+  "durofel min": "durofel_min",
+  "durofel max": "durofel_max",
+  "durofel avg": "durofel_avg",
+
+  "case net weight": "case_net_weight",
+  "case net weight (kg)": "case_net_weight_kg",
+  "case net weight (lb)": "case_net_weight_lb",
+  "case net weight (lbs)": "case_net_weight_lb",
+
+  "labeled net weight": "labeled_net_weight",
+  "weight box": "box_weight",
+
+  "sample count": "sample_count",
+
+  // -------------------------
+  // Sizing
+  // -------------------------
+  "mm rng. min": "size_mm_min",
+  "mm rng. max": "size_mm_max",
+
+  "sizing low avg": "sizing_low_avg",
+  "sizing high avg": "sizing_high_avg",
+
+  "over size (u)": "oversize_count",
+  "in size (u)": "insize_count",
+  "under size (u)": "undersize_count",
+
+  "undersize (%)": "undersize_pct",
+  "undersize fruits (%)": "undersize_pct",
+
+  // -------------------------
+  // PLU / compliance
+  // -------------------------
+  "plu %": "plu_pct",
+  "% plu": "plu_pct",
+
+  "plu code": "plu_code",
+  "plu number": "plu_code",
+  "plu": "plu_code",
+
+  "barcode": "barcode",
+  "bar code": "barcode",
+  "plu/barcode": "plu_barcode_check",
+
+  "variety manifest match": "variety_manifest_match",
+
+  // -------------------------
+  // Appearance / color
+  // -------------------------
+  "open appearance": "open_appearance",
+  "open appearance (1-4)": "open_appearance",
+
+  "ground color": "ground_color",
+  "ground color (1-5)": "ground_color",
+
+  "color": "color",
+  "% color cover": "color_cover_pct",
+  "color cover (%)": "color_cover_pct",
+  "blush avg (%)": "blush_pct",
+
+  // -------------------------
+  // Cherries
+  // -------------------------
+  "taste": "taste",
+
+  "color full (u)": "color_full_count",
+  "color checkered (u)": "color_checkered_count",
+  "color low (u)": "color_low_count",
+
+  "texture crisp (u)": "texture_crisp_count",
+  "texture firm (u)": "texture_firm_count",
+  "texture semi firm (u)": "texture_semi_firm_count",
+  "texture soft (u)": "texture_soft_count",
+
+  "stem pulled (u)": "stem_pulled_count",
+  "stem green (u)": "stem_green_count",
+  "stem brown (u)": "stem_brown_count",
+
+  // -------------------------
+  // Citrus
+  // -------------------------
+  "internal quality (1-4)": "internal_quality",
+  "kind of decay": "decay_type",
+
+  "count cut fruit (u)": "cut_fruit_count",
+  "sensitive fruits (%)": "sensitive_fruit_pct",
+
+  "fruits to 3 lb": "fruits_per_3lb",
+  "frutos a 3 lb": "fruits_per_3lb",
+
+  "fruits to 2 lb": "fruits_per_2lb",
+  "frutos a 2 lb": "fruits_per_2lb",
+
+  "underweight (%)": "underweight_pct"
+};
+
+function getCanonicalInspectionField(column) {
+  const normalized =
+    normalizeInspectionFieldName(column);
+
+  return (
+    INSPECTION_CANONICAL_FIELD_MAP[normalized] ||
+    normalized
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+  );
+}
+
+function classifyInspectionField(column) {
+  const normalized =
+    normalizeInspectionFieldName(column);
 
   if (
     INSPECTION_IGNORE_FIELDS.has(normalized)
@@ -957,7 +1188,9 @@ function extractInspectionMetrics(row) {
 
       metrics.push({
         metric_name: String(column).trim(),
-        normalized_metric: null,
+        normalized_metric:
+        
+        getCanonicalInspectionField(column),
 
         metric_value:
           numericValue !== null
