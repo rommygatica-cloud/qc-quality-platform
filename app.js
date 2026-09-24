@@ -2337,26 +2337,7 @@ function openInboundModule(module) {
           </div>
           </div>
 
-       <div class="qaToolbar">
-
-  <div class="arrivalImportBox">
-    <label for="arrivalImportMode">Import Type</label>
-
-    <select id="arrivalImportMode">
-      <option value="live">Daily Import</option>
-      <option value="historical">Historical Import</option>
-    </select>
-  </div>
-
-  <label class="primaryBtn" style="display:inline-block;">
-    Upload Arrivals
-    <input
-      type="file"
-      id="arrivalImportFile"
-      accept=".xlsx"
-      style="display:none;"
-      onchange="importArrivalsExcel()"
-${!isHistory ? `
+       ${!isHistory ? `
 <div class="qaToolbar">
 
   <div class="arrivalImportBox">
@@ -2400,14 +2381,13 @@ ${!isHistory ? `
 
 <div class="arrivalToolbar">
 
-    <input
+  <input
     id="arrivalSearch"
     class="arrivalSearch"
     placeholder="🔍 Search container, PO, lot, grower, commodity..."
-    >
+  >
 
-    </div>
-
+</div>
 <div class="qaTableWrap">
           <table class="qaTable">
             <thead>
