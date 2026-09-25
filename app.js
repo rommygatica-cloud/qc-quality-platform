@@ -13,6 +13,15 @@ let expandedArrivalId = null;
 
 const $ = id => document.getElementById(id);
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 async function load() {
   defects = await fetch("data/defects.json").then(r => r.json());
 
