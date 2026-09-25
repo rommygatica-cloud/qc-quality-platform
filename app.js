@@ -231,6 +231,123 @@ function openDefect(i) {
   $("modal").showModal();
 }
 
+window.openArrivalNotes = async function openArrivalNotes(containerId) {
+
+  const { data: arrival, error: arrivalError } = await supabaseClient
+    .from("arrival_containers")
+    .select("id, container, po")
+    .eq("id", containerId)
+    .single();
+
+  if (arrivalError) {
+    console.error("Arrival lookup error:", arrivalError);
+    alert("Unable to load arrival information.");
+    return;
+  }
+
+  const { data: notes, error: notesError } = await supabaseClient
+    .from("arrival_notes")
+    .select("*")
+    .eq("container_id", containerId)
+    .order("created_at", { ascending: false });
+
+  if (notesError) {
+    console.error("Arrival notes error:", notesError);
+    alert("Unable to load arrival notes.");
+    return;
+  }
+
+  $("modalContent").innerHTML = `
+    <h2>💬 Arrival Notes</h2>
+
+    <p>
+      <b>Container:</b> ${escapeHtml(arrival.container || "-")}
+      <br>
+      <b>PO:</b> ${escapeHtml(arrival.po || "-")}
+    </p>
+
+    <div style="margin-top:20px;">
+      <textarea
+        id="arrivalNoteText"
+        rows="4"
+        placeholder="Write an operational note..."
+        style="width:100%; resize:vertical;"
+      ></textarea>
+
+      <button
+        class="primaryBtn"
+        style="margin-top:10px;"
+        onclick="saveArrivalNote('${containerId}')">
+        Save Note
+      </button>
+    </div>
+
+    <div style="margin-top:24px;">
+      <h3>Note History</h3>
+
+      ${
+        notes?.length
+          ? notes.map(note => `
+              <div style="
+                padding:12px 0;
+                border-bottom:1px solid #e5e7eb;
+              ">
+                <div style="font-size:13px; color:#64748b;">
+                  ${new Date(note.created_at).toLocaleString()}
+                  · ${escapeHtml(note.created_by || "Unknown user")}
+                </div>
+
+                <div style="margin-top:5px;">
+                  ${escapeHtml(note.note)}
+                </div>
+              </div>
+            `).join("")
+          : `<p style="color:#64748b;">No arrival notes yet.</p>`
+      }
+    </div>
+  `;
+
+  $("modal").showModal();
+};
+
+window.saveArrivalNote = async function saveArrivalNote(containerId) {
+
+  const input = $("arrivalNoteText");
+  const noteText = String(input?.value || "").trim();
+
+  if (!noteText) {
+    alert("Please enter a note.");
+    return;
+  }
+
+  const {
+    data: { user },
+    error: userError
+  } = await supabaseClient.auth.getUser();
+
+  if (userError) {
+    console.error("Unable to read authenticated user:", userError);
+  }
+
+  const createdBy = user?.email || "Unknown user";
+
+  const { error } = await supabaseClient
+    .from("arrival_notes")
+    .insert({
+      container_id: containerId,
+      note: noteText,
+      created_by: createdBy
+    });
+
+  if (error) {
+    console.error("Arrival note save error:", error);
+    alert("Unable to save arrival note.");
+    return;
+  }
+
+  await openArrivalNotes(containerId);
+};
+
 function getCommodityIcon(commodity) {
   const group = getCommodityGroup(commodity);
 
