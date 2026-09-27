@@ -3068,13 +3068,7 @@ function renderArrivalDetails(
 ) {
    const isHistoricalView =
   currentArrivalView === "historical";
-  console.log(
-  "🧪 HISTORY CHECK:",
-  currentArrivalView,
-  isHistoricalView,
-  container.container
-);
-
+ 
    const treatmentAlert = getArrivalTreatmentAlert(container);
    const releaseDetails = getArrivalReleaseDetails(container);
 
@@ -3128,6 +3122,41 @@ const totalBoxes = lines.reduce(
 const tempRecorderCount = lines.filter(
   x => String(x.condition || "").trim().toLowerCase() === "temp recorder"
 ).length;
+
+const manifestPalletNumbers = new Set(
+  (lines || [])
+    .map(line => String(line.pallet_number || "").trim())
+    .filter(Boolean)
+);
+
+const inspectedPalletNumbers = new Set(
+  (inspectionSamples || [])
+    .filter(sample =>
+      String(
+        sample.qc_inspections?.inspection_type || ""
+      ).toLowerCase() === "inbound"
+    )
+    .map(sample =>
+      String(sample.pallet_number || "").trim()
+    )
+    .filter(pallet =>
+      pallet && manifestPalletNumbers.has(pallet)
+    )
+);
+
+const manifestPalletCount = manifestPalletNumbers.size;
+const inspectedPalletCount = inspectedPalletNumbers.size;
+
+const notSampledPalletCount = Math.max(
+  manifestPalletCount - inspectedPalletCount,
+  0
+);
+
+const inspectionCoverage = manifestPalletCount
+  ? Math.round(
+      (inspectedPalletCount / manifestPalletCount) * 100
+    )
+  : 0;
 
 const pendingLotGroups = Object.values(
   lines
@@ -3287,6 +3316,34 @@ const groupedLines = Object.values(
   </div>
 ` : ""}
 ` : ""}
+
+${isHistoricalView && inspectedPalletCount > 0 ? `
+  <div class="arrivalInspectionCoverage">
+    <div>
+      <strong>🔎 Inbound Inspection</strong>
+    </div>
+
+    <div>
+      <strong>${inspectedPalletCount} of ${manifestPalletCount}</strong>
+      pallets sampled ·
+      <strong>${inspectionCoverage}% coverage</strong>
+    </div>
+
+    <div>
+      ${notSampledPalletCount} pallets not sampled
+    </div>
+  </div>
+` : ""}
+
+console.log("🔎 COVERAGE CHECK:", {
+  container: container.container,
+  view: currentArrivalView,
+  manifestPalletCount,
+  inspectedPalletCount,
+  notSampledPalletCount,
+  inspectionCoverage,
+  samplesReceived: inspectionSamples.length
+});
 
 <div class="arrivalDetailSummary">
             <span>${uniqueLots.length} Lots</span>
