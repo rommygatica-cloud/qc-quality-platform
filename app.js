@@ -3335,16 +3335,6 @@ ${isHistoricalView && inspectedPalletCount > 0 ? `
   </div>
 ` : ""}
 
-console.log("🔎 COVERAGE CHECK:", {
-  container: container.container,
-  view: currentArrivalView,
-  manifestPalletCount,
-  inspectedPalletCount,
-  notSampledPalletCount,
-  inspectionCoverage,
-  samplesReceived: inspectionSamples.length
-});
-
 <div class="arrivalDetailSummary">
             <span>${uniqueLots.length} Lots</span>
             <span>${uniqueSubgrowers.length} Subgrowers</span>
