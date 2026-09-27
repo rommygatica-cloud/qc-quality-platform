@@ -3158,6 +3158,35 @@ const inspectionCoverage = manifestPalletCount
     )
   : 0;
 
+const inspectionByPallet = {};
+
+(inspectionSamples || [])
+  .filter(sample =>
+    String(
+      sample.qc_inspections?.inspection_type || ""
+    ).toLowerCase() === "inbound"
+  )
+  .forEach(sample => {
+    const palletNumber =
+      String(sample.pallet_number || "").trim();
+
+    if (!palletNumber) return;
+
+    inspectionByPallet[palletNumber] = {
+      qc_grade: sample.qc_grade || "",
+      quality: sample.quality || "",
+      condition: sample.condition || "",
+      source_sheet_id:
+        sample.qc_inspections?.source_sheet_id || ""
+    };
+  });
+
+console.log(
+  "🔎 PALLET MAP:",
+  container.container,
+  inspectionByPallet
+);
+
 const pendingLotGroups = Object.values(
   lines
     .filter(x => !String(x.lot || "").trim())
@@ -3376,7 +3405,31 @@ ${isHistoricalView && inspectedPalletCount > 0 ? `
                   <td>${x.size || "-"}</td>
                   <td>${x.pallets}</td>
                   <td>${Number(x.boxes || 0).toLocaleString()}</td>
-                  <td>${[...new Set(x.pallet_numbers)].join(", ") || "-"}</td>
+                  <td>
+  <div class="palletInspectionList">
+    ${[...new Set(x.pallet_numbers)]
+      .map(pallet => {
+        const palletNumber = String(pallet || "").trim();
+        const inspection = inspectionByPallet[palletNumber];
+
+        return inspection
+          ? `
+            <span class="palletSampled">
+              ✓ ${palletNumber}
+              ${inspection.qc_grade
+                ? `<strong>${inspection.qc_grade}</strong>`
+                : ""}
+            </span>
+          `
+          : `
+            <span class="palletNotSampled">
+              ${palletNumber}
+            </span>
+          `;
+      })
+      .join("") || "-"}
+  </div>
+</td>
                   <td>${x.label || "-"}</td>
                   <td>
   ${
