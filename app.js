@@ -3525,6 +3525,11 @@ if (inspectionSamplesError) {
   );
 }
 
+console.log(
+  "🔎 SHERLOCK INSPECTION SAMPLES:",
+  inspectionSamples
+);
+
     console.log("Supabase returned:", data);
     console.log("Supabase error:", error);
 
