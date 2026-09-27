@@ -3061,6 +3061,30 @@ function getArrivalReleaseDetails(container) {
   };
 }
 
+function getQcGradeColorClass(grade) {
+  const value = String(grade || "")
+    .trim()
+    .toUpperCase();
+
+  if (value === "A1") {
+    return "qcGradeBlue";
+  }
+
+  if (["A2", "B2"].includes(value)) {
+    return "qcGradeGreen";
+  }
+
+  if (["A3", "B3", "C2", "C3"].includes(value)) {
+    return "qcGradeYellow";
+  }
+
+  if (["A4", "B4", "C4"].includes(value)) {
+    return "qcGradeRed";
+  }
+
+  return "qcGradeNeutral";
+}
+
 function renderArrivalDetails(
   lines,
   container,
@@ -3417,8 +3441,12 @@ ${isHistoricalView && inspectedPalletCount > 0 ? `
             <span class="palletSampled">
               ✓ ${palletNumber}
               ${inspection.qc_grade
-                ? `<strong>${inspection.qc_grade}</strong>`
-                : ""}
+  ? `
+    <strong class="qcGradeBadge ${getQcGradeColorClass(inspection.qc_grade)}">
+      ${inspection.qc_grade}
+    </strong>
+  `
+  : ""}
             </span>
           `
           : `
