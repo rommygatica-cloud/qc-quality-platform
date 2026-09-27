@@ -1245,3 +1245,23 @@ canvas{
   font-size: 11px;
   color: #6b7280;
 }
+
+.arrivalInspectionCoverage {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border: 1px solid #dbe3ee;
+  border-radius: 10px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.arrivalInspectionCoverage > div:first-child {
+  margin-right: auto;
+}
+
+.arrivalInspectionCoverage strong {
+  font-weight: 700;
+}
