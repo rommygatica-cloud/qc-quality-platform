@@ -250,9 +250,9 @@ subgrower:
   ),
 
 lot_number:
-  inspectionClean(
-    inspectionGet(row, ["Lot Number"])
-  ),
+  sourceSystem === "smarterm"
+    ? rawLotOrReceivingEntry
+    : "",
 
 origin:
   inspectionClean(
