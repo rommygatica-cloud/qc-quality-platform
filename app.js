@@ -3500,6 +3500,31 @@ if (manifestError) {
   console.error("Manifest lines error:", manifestError);
 }
 
+const { data: inspectionSamples, error: inspectionSamplesError } =
+  await supabaseClient
+    .from("qc_inspection_samples")
+    .select(`
+      id,
+      inspection_id,
+      pallet_number,
+      qc_grade,
+      quality,
+      condition,
+      qc_inspections!inner (
+        id,
+        arrival_container_id,
+        source_sheet_id,
+        inspection_type
+      )
+    `);
+
+if (inspectionSamplesError) {
+  console.error(
+    "Inspection samples error:",
+    inspectionSamplesError
+  );
+}
+
     console.log("Supabase returned:", data);
     console.log("Supabase error:", error);
 
