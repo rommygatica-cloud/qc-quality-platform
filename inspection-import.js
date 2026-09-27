@@ -141,6 +141,20 @@ function normalizeInspectionType(value) {
 }
 
 function normalizeInboundInspectionRow(row, sourceRowNumber) {
+    const rawInspectionDate = inspectionGet(row, ["Inspection Date"]);
+  const normalizedInspectionDate = inspectionDate(rawInspectionDate);
+
+  const famousCutoverDate = "2026-07-13";
+
+  const sourceSystem =
+    normalizedInspectionDate &&
+    normalizedInspectionDate >= famousCutoverDate
+      ? "famous"
+      : "smarterm";
+
+  const rawLotOrReceivingEntry = inspectionClean(
+    inspectionGet(row, ["Lot Number"])
+  );
   return {
     inspection: {
       source: "Decofrut",
@@ -167,12 +181,24 @@ function normalizeInboundInspectionRow(row, sourceRowNumber) {
           ])
         ),
 
-      lot_number:
+            lot_number:
+        sourceSystem === "smarterm"
+          ? rawLotOrReceivingEntry
+          : "",
+
+      receiving_entry:
+        sourceSystem === "famous"
+          ? rawLotOrReceivingEntry
+          : "",
+
+      source_system: sourceSystem,
+
+            grower:
         inspectionClean(
-          inspectionGet(row, ["Lot Number"])
+          inspectionGet(row, ["Exporter"])
         ),
 
-      grower:
+      subgrower:
         inspectionClean(
           inspectionGet(row, ["Grower"])
         ),
@@ -214,6 +240,11 @@ function normalizeInboundInspectionRow(row, sourceRowNumber) {
           inspectionGet(row, ["Pallet No"])
         ),
 grower:
+  inspectionClean(
+    inspectionGet(row, ["Exporter"])
+  ),
+
+subgrower:
   inspectionClean(
     inspectionGet(row, ["Grower"])
   ),
@@ -1542,15 +1573,20 @@ window.groupInspectionDryRunBySheet =
         ? group.poNumbers[0]
         : "",
 
-    lot_number:
-      group.lots.length === 1
-        ? group.lots[0]
-        : "",
+        lot_number:
+      first.inspection.lot_number || "",
+
+    receiving_entry:
+      first.inspection.receiving_entry || "",
+
+    source_system:
+      first.inspection.source_system || "",
 
     grower:
-      group.growers.length === 1
-        ? group.growers[0]
-        : "",
+      first.inspection.grower || "",
+
+    subgrower:
+      first.inspection.subgrower || "",
 
     commodity:
       group.commodities.length === 1
@@ -1624,8 +1660,11 @@ window.groupInspectionDryRunBySheet =
       pallet_number:
         record.sample.pallet_number || "",
 
-      grower:
+            grower:
         record.sample.grower || "",
+
+      subgrower:
+        record.sample.subgrower || "",
 
       lot_number:
         record.sample.lot_number || "",
