@@ -3556,6 +3556,26 @@ const linesByContainerId = {};
   linesByContainerId[line.container_id].push(line);
 });
 
+const inspectionSamplesByContainerId = {};
+
+(inspectionSamples || []).forEach(sample => {
+  const containerId =
+    sample.qc_inspections?.arrival_container_id;
+
+  if (!containerId) return;
+
+  if (!inspectionSamplesByContainerId[containerId]) {
+    inspectionSamplesByContainerId[containerId] = [];
+  }
+
+  inspectionSamplesByContainerId[containerId].push(sample);
+});
+
+console.log(
+  "🔎 SHERLOCK BY CONTAINER:",
+  inspectionSamplesByContainerId
+);
+
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
