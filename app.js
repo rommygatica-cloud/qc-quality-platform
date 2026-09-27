@@ -3066,6 +3066,15 @@ function renderArrivalDetails(
   container,
   inspectionSamples = []
 ) {
+   const isHistoricalView =
+  currentArrivalView === "historical";
+  console.log(
+  "🧪 HISTORY CHECK:",
+  currentArrivalView,
+  isHistoricalView,
+  container.container
+);
+
    const treatmentAlert = getArrivalTreatmentAlert(container);
    const releaseDetails = getArrivalReleaseDetails(container);
 
@@ -3228,6 +3237,7 @@ const groupedLines = Object.values(
           </div>
           ` : ""}
 
+          ${!isHistoricalView ? `
           <div class="containerTempRow">
           <span><strong>🌡 Set Temperature</strong></span>
 
@@ -3275,6 +3285,7 @@ const groupedLines = Object.values(
       </div>
     `).join("")}
   </div>
+` : ""}
 ` : ""}
 
 <div class="arrivalDetailSummary">
