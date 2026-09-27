@@ -3061,7 +3061,11 @@ function getArrivalReleaseDetails(container) {
   };
 }
 
-function renderArrivalDetails(lines, container) {
+function renderArrivalDetails(
+  lines,
+  container,
+  inspectionSamples = []
+) {
    const treatmentAlert = getArrivalTreatmentAlert(container);
    const releaseDetails = getArrivalReleaseDetails(container);
 
@@ -3649,6 +3653,9 @@ return !searchValue || text.includes(searchValue);
   tbody.innerHTML = tableData.map(r => {
   const lines = linesByContainerId[r.id] || [];
 
+  const inspectionSamplesForContainer =
+  inspectionSamplesByContainerId[r.id] || [];
+
   const treatmentAlert = getArrivalTreatmentAlert(r);
 
   const lotSummary =
@@ -3734,8 +3741,12 @@ return !searchValue || text.includes(searchValue);
     ${(() => {
   
     return expandedArrivalId === r.id
-        ? renderArrivalDetails(lines, r)
-        : "";
+    ? renderArrivalDetails(
+        lines,
+        r,
+        inspectionSamplesForContainer
+      )
+    : "";
 })()}
 
     `;
