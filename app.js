@@ -3999,4 +3999,34 @@ window.toggleArrivalDetails = function(id){
 
 }
 
+function openAdminTab(tabName) {
+  // Hide all admin tab content
+  document.querySelectorAll(".adminTabContent").forEach(section => {
+    section.style.display = "none";
+  });
+
+  // Remove active state from all admin tab buttons
+  document.querySelectorAll(".adminTab").forEach(button => {
+    button.classList.remove("active");
+  });
+
+  // Show selected tab
+  const selectedSection = document.getElementById(
+    `adminTab-${tabName}`
+  );
+
+  if (selectedSection) {
+    selectedSection.style.display = "";
+  }
+
+  // Highlight selected tab button
+  const selectedButton = document.querySelector(
+    `[data-admin-tab="${tabName}"]`
+  );
+
+  if (selectedButton) {
+    selectedButton.classList.add("active");
+  }
+}
+
 load();

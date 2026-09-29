@@ -225,136 +225,296 @@
       <div id="qaModuleContent" style="margin-top:28px;"></div>
     </section>
 
-    <section id="admin" class="view">
-      <h2>Administration</h2>
+<section id="admin" class="view">
 
-      <div class="adminGrid">
-        <div class="adminPanel">
-          <h3>Upload QA Rejections Excel</h3>
-          <p>Import QA and repack rejection records from Excel.</p>
+  <div class="pageIntro">
+    <h2>Administration</h2>
+    <p>Manage users, platform data, documents, and media.</p>
+  </div>
 
-          <div class="adminForm">
-            <input type="file" id="qaRejectionsFile" accept=".xlsx,.xls,.csv" />
+  <!-- ADMIN TABS -->
+  <div class="adminTabs">
+    <button
+      class="adminTab active"
+      data-admin-tab="users"
+      onclick="openAdminTab('users')"
+    >
+      👥 Users & Access
+    </button>
 
-            <button onclick="importQARejectionsExcel()">
-              Import QA Rejections
-            </button>
+    <button
+      class="adminTab"
+      data-admin-tab="imports"
+      onclick="openAdminTab('imports')"
+    >
+      📥 Data Imports
+    </button>
 
-            <div id="qaRejectionsResult"></div>
-          </div>
-        </div>
+    <button
+      class="adminTab"
+      data-admin-tab="content"
+      onclick="openAdminTab('content')"
+    >
+      📁 Documents & Media
+    </button>
+  </div>
 
-        <div class="adminPanel">
-          <h3>Upload Document</h3>
-          <p>Upload specifications, tolerances, or SOP documents.</p>
 
-          <div class="adminForm">
-            <input id="docTitle" placeholder="Document Title" />
+  <!-- USERS & ACCESS -->
+  <div id="adminTab-users" class="adminTabContent">
 
-            <select id="docType">
-              <option>Specification</option>
-              <option>Tolerance</option>
-              <option>SOP</option>
-            </select>
+    <div class="adminPanel adminUsersPlaceholder">
+      <h3>👥 Users & Access</h3>
 
-            <select id="docSection">
-              <option>PTF Specs</option>
-              <option>Retail</option>
-              <option>USDA</option>
-              <option>Receiving</option>
-              <option>Inventory</option>
-              <option>Reports</option>
-            </select>
+      <p>
+        Manage internal and external users, roles, and individual
+        permissions.
+      </p>
 
-            <input id="docCommodity" placeholder="Commodity" />
-            <input id="docCustomer" placeholder="Customer" />
-            <input type="file" id="docFile" />
-
-            <button onclick="uploadDocument()">
-              Upload Document
-            </button>
-          </div>
-        </div>
-
-        <div class="adminPanel">
-          <h3>Upload Barcode Excel</h3>
-          <p>Import barcode and label information. Existing UPC or GTIN records will be skipped.</p>
-
-          <div class="adminForm">
-            <input type="file" id="barcodeExcelFile" accept=".xlsx,.xls,.csv" />
-
-            <button onclick="importBarcodeExcel()">
-              Import Barcode Excel
-            </button>
-
-            <div id="barcodeImportResult"></div>
-          </div>
-        </div>
-
-        <div class="adminPanel">
-          <h3>Upload Commodity Cover Image</h3>
-          <p>Upload the main cover image shown on each commodity card.</p>
-
-          <div class="adminForm">
-            <select id="commodityImageSelect">
-              <option>Grapes</option>
-              <option>Oranges</option>
-              <option>Mandarins</option>
-              <option>Peaches</option>
-              <option>Pears</option>
-              <option>Cherries</option>
-              <option>Nectarines</option>
-              <option>Lemons</option>
-              <option>Plums</option>
-            </select>
-
-            <input type="file" id="commodityImageFile" accept="image/*" />
-
-            <button onclick="uploadCommodityImage()">
-              Upload Cover Image
-            </button>
-
-            <div id="commodityImageResult"></div>
-          </div>
-        </div>
-
-        <div class="adminPanel">
-          <h3>Upload Defect / Reference Photo</h3>
-          <p>Upload photos for quality defects, condition defects, parameters, or gallery.</p>
-
-          <div class="adminForm">
-            <select id="libraryPhotoCommodity">
-              <option>Grapes</option>
-              <option>Oranges</option>
-              <option>Mandarins</option>
-              <option>Peaches</option>
-              <option>Pears</option>
-              <option>Cherries</option>
-              <option>Nectarines</option>
-              <option>Lemons</option>
-              <option>Plums</option>
-            </select>
-
-            <select id="libraryPhotoSection">
-              <option>Quality Defects</option>
-              <option>Condition Defects</option>
-              <option>Parameters</option>
-              <option>Photo Gallery</option>
-            </select>
-
-            <input id="libraryPhotoDefectName" placeholder="Defect / Topic Name" />
-            <input id="libraryPhotoNotes" placeholder="Notes" />
-            <input type="file" id="libraryPhotoFile" accept="image/*" />
-
-            <button onclick="uploadQCLibraryPhoto()">
-              Upload QC Photo
-            </button>
-
-            <div id="libraryPhotoResult"></div>
-          </div>
-        </div>
+      <div class="adminComingSoon">
+        User Management will be configured here.
       </div>
-    </section>
+    </div>
+
+  </div>
+
+
+  <!-- DATA IMPORTS -->
+  <div
+    id="adminTab-imports"
+    class="adminTabContent"
+    style="display:none;"
+  >
+
+    <div class="adminGrid">
+
+      <!-- QA REJECTIONS -->
+      <div class="adminPanel">
+
+        <h3>Upload QA Rejections Excel</h3>
+
+        <p>
+          Import QA and repack rejection records from Excel.
+        </p>
+
+        <div class="adminForm">
+
+          <input
+            type="file"
+            id="qaRejectionsFile"
+            accept=".xlsx,.xls,.csv"
+          />
+
+          <button onclick="importQARejectionsExcel()">
+            Import QA Rejections
+          </button>
+
+          <div id="qaRejectionsResult"></div>
+
+        </div>
+
+      </div>
+
+
+      <!-- BARCODE EXCEL -->
+      <div class="adminPanel">
+
+        <h3>Upload Barcode Excel</h3>
+
+        <p>
+          Import barcode and label information.
+          Existing UPC or GTIN records will be skipped.
+        </p>
+
+        <div class="adminForm">
+
+          <input
+            type="file"
+            id="barcodeExcelFile"
+            accept=".xlsx,.xls,.csv"
+          />
+
+          <button onclick="importBarcodeExcel()">
+            Import Barcode Excel
+          </button>
+
+          <div id="barcodeImportResult"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- DOCUMENTS & MEDIA -->
+  <div
+    id="adminTab-content"
+    class="adminTabContent"
+    style="display:none;"
+  >
+
+    <div class="adminGrid">
+
+      <!-- DOCUMENT -->
+      <div class="adminPanel">
+
+        <h3>Upload Document</h3>
+
+        <p>
+          Upload specifications, tolerances, or SOP documents.
+        </p>
+
+        <div class="adminForm">
+
+          <input
+            id="docTitle"
+            placeholder="Document Title"
+          />
+
+          <select id="docType">
+            <option>Specification</option>
+            <option>Tolerance</option>
+            <option>SOP</option>
+          </select>
+
+          <select id="docSection">
+            <option>PTF Specs</option>
+            <option>Retail</option>
+            <option>USDA</option>
+            <option>Receiving</option>
+            <option>Inventory</option>
+            <option>Reports</option>
+          </select>
+
+          <input
+            id="docCommodity"
+            placeholder="Commodity"
+          />
+
+          <input
+            id="docCustomer"
+            placeholder="Customer"
+          />
+
+          <input
+            type="file"
+            id="docFile"
+          />
+
+          <button onclick="uploadDocument()">
+            Upload Document
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- COMMODITY COVER -->
+      <div class="adminPanel">
+
+        <h3>Upload Commodity Cover Image</h3>
+
+        <p>
+          Upload the main cover image shown on each commodity card.
+        </p>
+
+        <div class="adminForm">
+
+          <select id="commodityImageSelect">
+            <option>Grapes</option>
+            <option>Oranges</option>
+            <option>Mandarins</option>
+            <option>Peaches</option>
+            <option>Pears</option>
+            <option>Cherries</option>
+            <option>Nectarines</option>
+            <option>Lemons</option>
+            <option>Plums</option>
+          </select>
+
+          <input
+            type="file"
+            id="commodityImageFile"
+            accept="image/*"
+          />
+
+          <button onclick="uploadCommodityImage()">
+            Upload Cover Image
+          </button>
+
+          <div id="commodityImageResult"></div>
+
+        </div>
+
+      </div>
+
+
+      <!-- QC REFERENCE PHOTO -->
+      <div class="adminPanel">
+
+        <h3>Upload Defect / Reference Photo</h3>
+
+        <p>
+          Upload photos for quality defects, condition defects,
+          parameters, or gallery.
+        </p>
+
+        <div class="adminForm">
+
+          <select id="libraryPhotoCommodity">
+            <option>Grapes</option>
+            <option>Oranges</option>
+            <option>Mandarins</option>
+            <option>Peaches</option>
+            <option>Pears</option>
+            <option>Cherries</option>
+            <option>Nectarines</option>
+            <option>Lemons</option>
+            <option>Plums</option>
+          </select>
+
+          <select id="libraryPhotoSection">
+            <option>Quality Defects</option>
+            <option>Condition Defects</option>
+            <option>Parameters</option>
+            <option>Photo Gallery</option>
+          </select>
+
+          <input
+            id="libraryPhotoDefectName"
+            placeholder="Defect / Topic Name"
+          />
+
+          <input
+            id="libraryPhotoNotes"
+            placeholder="Notes"
+          />
+
+          <input
+            type="file"
+            id="libraryPhotoFile"
+            accept="image/*"
+          />
+
+          <button onclick="uploadQCLibraryPhoto()">
+            Upload QC Photo
+          </button>
+
+          <div id="libraryPhotoResult"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
   </main>
 
   <dialog id="modal">
