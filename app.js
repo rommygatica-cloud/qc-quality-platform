@@ -130,6 +130,12 @@ if (id === "qa") {
   openQAModule("dashboard");
   window.scrollTo(0, 0);
 }
+
+if (id === "admin") {
+  openAdminTab("users");
+  loadAdminUsers();
+  window.scrollTo(0, 0);
+}
 }
 
 function renderDashboard() {
@@ -3999,6 +4005,132 @@ window.toggleArrivalDetails = function(id){
 
 }
 
+async function loadAdminUsers() {
+  const container = document.querySelector(
+    "#adminTab-users .adminUsersPlaceholder"
+  );
+
+  if (!container) return;
+
+  container.innerHTML = `
+    <h3>👥 Users & Access</h3>
+    <p>Loading users...</p>
+  `;
+
+  const { data: users, error } = await supabaseClient
+    .from("user_roles")
+    .select(`
+      id,
+      email,
+      role,
+      access_group,
+      is_active,
+      role_template_id
+    `)
+    .order("email");
+
+  if (error) {
+    console.error("Admin users error:", error);
+
+    container.innerHTML = `
+      <h3>👥 Users & Access</h3>
+      <p style="color:#991b1b;">
+        Unable to load users.
+      </p>
+    `;
+
+    return;
+  }
+
+  const realUsers = (users || []).filter(user =>
+    user.email &&
+    user.email.includes("@")
+  );
+
+  container.innerHTML = `
+    <div class="adminUsersHeader">
+      <div>
+        <h3>👥 Users & Access</h3>
+        <p>
+          Manage internal and external users, roles,
+          and individual permissions.
+        </p>
+      </div>
+
+      <button class="primaryBtn" disabled>
+        + Add User
+      </button>
+    </div>
+
+    <div class="qaTableWrap">
+      <table class="qaTable adminUsersTable">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Access Group</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            realUsers.length
+              ? realUsers.map(user => `
+                  <tr>
+                    <td>
+                      <strong>
+                        ${escapeHtml(user.email)}
+                      </strong>
+                    </td>
+
+                    <td>
+                      ${
+                        user.access_group === "pacific"
+                          ? "Pacific Internal"
+                          : user.access_group === "external"
+                            ? "External"
+                            : "-"
+                      }
+                    </td>
+
+                    <td>
+                      ${escapeHtml(user.role || "-")}
+                    </td>
+
+                    <td>
+                      ${
+                        user.is_active
+                          ? `<span class="tag">Active</span>`
+                          : `<span class="tag">Inactive</span>`
+                      }
+                    </td>
+
+                    <td>
+                      <button
+                        class="secondaryBtn"
+                        disabled
+                      >
+                        Manage
+                      </button>
+                    </td>
+                  </tr>
+                `).join("")
+              : `
+                <tr>
+                  <td colspan="5">
+                    No users found.
+                  </td>
+                </tr>
+              `
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function openAdminTab(tabName) {
   // Hide all admin tab content
   document.querySelectorAll(".adminTabContent").forEach(section => {
@@ -4027,6 +4159,10 @@ function openAdminTab(tabName) {
   if (selectedButton) {
     selectedButton.classList.add("active");
   }
+
+if (tabName === "users") {
+  loadAdminUsers();
+}
 }
 
 load();
