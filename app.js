@@ -4364,15 +4364,15 @@ window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
                     >
 
                       <option
-                        value="inherited"
-                        ${
-                          permission.selectedMode === "inherited"
-                            ? "selected"
-                            : ""
-                        }
-                      >
-                        Inherited
-                      </option>
+  value="inherited"
+  ${
+    permission.selectedMode === "inherited"
+      ? "selected"
+      : ""
+  }
+>
+  Inherited (${permission.inheritedAllowed ? "Allowed" : "Denied"})
+</option>
 
                       <option
                         value="allow"
