@@ -4108,28 +4108,265 @@ async function loadAdminUsers() {
                     </td>
 
                     <td>
-                      <button
-                        class="secondaryBtn"
-                        disabled
-                      >
-                        Manage
-                      </button>
+<button
+  class="secondaryBtn"
+  onclick="openAdminUserManage('${user.id}')"
+>
+  Manage
+</button>
+</td>
+</tr>
+`).join("")
+: `
+<tr>
+<td colspan="5">
+No users found.
+</td>
+</tr>
+`
+}
+</tbody>
+</table>
+</div>
+`;
+}
+
+window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
+  const { data: user, error: userError } = await supabaseClient
+    .from("user_roles")
+    .select(`
+      id,
+      email,
+      role,
+      access_group,
+      is_active,
+      role_template_id
+    `)
+    .eq("id", userRoleId)
+    .single();
+
+  if (userError || !user) {
+    console.error("User lookup error:", userError);
+    alert("Unable to load user.");
+    return;
+  }
+
+  const { data: templatePermissions, error: templateError } =
+    await supabaseClient
+      .from("role_template_permissions")
+      .select(`
+        permission_key,
+        is_allowed,
+        permission_catalog (
+          permission_name,
+          module_name,
+          description
+        )
+      `)
+      .eq("role_template_id", user.role_template_id);
+
+  if (templateError) {
+    console.error("Template permissions error:", templateError);
+    alert("Unable to load role permissions.");
+    return;
+  }
+
+  const { data: overrides, error: overridesError } =
+    await supabaseClient
+      .from("user_permissions")
+      .select(`
+        permission_key,
+        is_allowed
+      `)
+      .eq("user_role_id", user.id);
+
+  if (overridesError) {
+    console.error("User overrides error:", overridesError);
+    alert("Unable to load individual permissions.");
+    return;
+  }
+
+  const overrideMap = {};
+
+  (overrides || []).forEach(item => {
+    overrideMap[item.permission_key] = item.is_allowed;
+  });
+
+  const permissionRows = (templatePermissions || []).map(item => {
+    const hasOverride =
+      Object.prototype.hasOwnProperty.call(
+        overrideMap,
+        item.permission_key
+      );
+
+    const inheritedAllowed = item.is_allowed === true;
+
+    const effectiveAllowed = hasOverride
+      ? overrideMap[item.permission_key]
+      : inheritedAllowed;
+
+    const permissionSource = hasOverride
+      ? effectiveAllowed
+        ? "Custom Allow"
+        : "Custom Deny"
+      : "Inherited";
+
+    return {
+      permission_key: item.permission_key,
+      permission_name:
+        item.permission_catalog?.permission_name ||
+        item.permission_key,
+
+      module_name:
+        item.permission_catalog?.module_name ||
+        "Other",
+
+      effectiveAllowed,
+      permissionSource
+    };
+  });
+
+  // Include custom permissions that are not part of the template
+  (overrides || []).forEach(item => {
+    const alreadyIncluded = permissionRows.some(
+      row => row.permission_key === item.permission_key
+    );
+
+    if (alreadyIncluded) return;
+
+    permissionRows.push({
+      permission_key: item.permission_key,
+      permission_name: item.permission_key,
+      module_name: "Custom",
+      effectiveAllowed: item.is_allowed,
+      permissionSource:
+        item.is_allowed ? "Custom Allow" : "Custom Deny"
+    });
+  });
+
+  permissionRows.sort((a, b) => {
+    const moduleCompare =
+      a.module_name.localeCompare(b.module_name);
+
+    if (moduleCompare !== 0) return moduleCompare;
+
+    return a.permission_name.localeCompare(
+      b.permission_name
+    );
+  });
+
+  $("modalContent").innerHTML = `
+    <div class="adminPermissionModal">
+
+      <div class="adminPermissionHeader">
+        <div>
+          <h2>👤 Manage User</h2>
+
+          <p>
+            ${escapeHtml(user.email)}
+          </p>
+        </div>
+
+        <span class="tag">
+          ${user.is_active ? "Active" : "Inactive"}
+        </span>
+      </div>
+
+      <div class="adminUserSummary">
+        <div>
+          <span>Access Group</span>
+          <strong>
+            ${
+              user.access_group === "pacific"
+                ? "Pacific Internal"
+                : user.access_group === "external"
+                  ? "External"
+                  : "-"
+            }
+          </strong>
+        </div>
+
+        <div>
+          <span>Role Template</span>
+          <strong>${escapeHtml(user.role || "-")}</strong>
+        </div>
+      </div>
+
+      <div class="adminPermissionNotice">
+        Permissions are currently shown in read-only mode.
+        Individual overrides will be enabled next.
+      </div>
+
+      <div class="qaTableWrap">
+        <table class="qaTable">
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th>Permission</th>
+              <th>Effective Access</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${
+              permissionRows.length
+                ? permissionRows.map(permission => `
+                    <tr>
+                      <td>
+                        ${escapeHtml(permission.module_name)}
+                      </td>
+
+                      <td>
+                        <strong>
+                          ${escapeHtml(permission.permission_name)}
+                        </strong>
+
+                        <div style="
+                          margin-top:3px;
+                          font-size:11px;
+                          color:#94a3b8;
+                        ">
+                          ${escapeHtml(permission.permission_key)}
+                        </div>
+                      </td>
+
+                      <td>
+                        ${
+                          permission.effectiveAllowed
+                            ? `<span class="tag">✓ Allowed</span>`
+                            : `<span class="tag">✕ Denied</span>`
+                        }
+                      </td>
+
+                      <td>
+                        ${
+                          permission.permissionSource === "Inherited"
+                            ? `<span>Inherited</span>`
+                            : permission.permissionSource === "Custom Allow"
+                              ? `<strong>Custom Allow</strong>`
+                              : `<strong>Custom Deny</strong>`
+                        }
+                      </td>
+                    </tr>
+                  `).join("")
+                : `
+                  <tr>
+                    <td colspan="4">
+                      No permissions configured.
                     </td>
                   </tr>
-                `).join("")
-              : `
-                <tr>
-                  <td colspan="5">
-                    No users found.
-                  </td>
-                </tr>
-              `
-          }
-        </tbody>
-      </table>
+                `
+            }
+          </tbody>
+        </table>
+      </div>
+
     </div>
   `;
-}
+
+  $("modal").showModal();
+};
 
 function openAdminTab(tabName) {
   // Hide all admin tab content
