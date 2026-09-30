@@ -4132,6 +4132,7 @@ No users found.
 }
 
 window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
+
   const { data: user, error: userError } = await supabaseClient
     .from("user_roles")
     .select(`
@@ -4151,17 +4152,31 @@ window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
     return;
   }
 
+
+  const { data: catalog, error: catalogError } = await supabaseClient
+    .from("permission_catalog")
+    .select(`
+      permission_key,
+      permission_name,
+      module_name,
+      description
+    `)
+    .order("module_name")
+    .order("permission_name");
+
+  if (catalogError) {
+    console.error("Permission catalog error:", catalogError);
+    alert("Unable to load permission catalog.");
+    return;
+  }
+
+
   const { data: templatePermissions, error: templateError } =
     await supabaseClient
       .from("role_template_permissions")
       .select(`
         permission_key,
-        is_allowed,
-        permission_catalog (
-          permission_name,
-          module_name,
-          description
-        )
+        is_allowed
       `)
       .eq("role_template_id", user.role_template_id);
 
@@ -4170,6 +4185,7 @@ window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
     alert("Unable to load role permissions.");
     return;
   }
+
 
   const { data: overrides, error: overridesError } =
     await supabaseClient
@@ -4186,74 +4202,54 @@ window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
     return;
   }
 
+
+  const templateMap = {};
+
+  (templatePermissions || []).forEach(item => {
+    templateMap[item.permission_key] = item.is_allowed;
+  });
+
+
   const overrideMap = {};
 
   (overrides || []).forEach(item => {
     overrideMap[item.permission_key] = item.is_allowed;
   });
 
-  const permissionRows = (templatePermissions || []).map(item => {
+
+  const permissionRows = (catalog || []).map(permission => {
+
+    const inheritedAllowed =
+      templateMap[permission.permission_key] === true;
+
     const hasOverride =
       Object.prototype.hasOwnProperty.call(
         overrideMap,
-        item.permission_key
+        permission.permission_key
       );
 
-    const inheritedAllowed = item.is_allowed === true;
+    const overrideValue = hasOverride
+      ? overrideMap[permission.permission_key]
+      : null;
 
     const effectiveAllowed = hasOverride
-      ? overrideMap[item.permission_key]
+      ? overrideValue
       : inheritedAllowed;
 
-    const permissionSource = hasOverride
-      ? effectiveAllowed
-        ? "Custom Allow"
-        : "Custom Deny"
-      : "Inherited";
+    const selectedMode = hasOverride
+      ? overrideValue
+        ? "allow"
+        : "deny"
+      : "inherited";
 
     return {
-      permission_key: item.permission_key,
-      permission_name:
-        item.permission_catalog?.permission_name ||
-        item.permission_key,
-
-      module_name:
-        item.permission_catalog?.module_name ||
-        "Other",
-
+      ...permission,
+      inheritedAllowed,
       effectiveAllowed,
-      permissionSource
+      selectedMode
     };
   });
 
-  // Include custom permissions that are not part of the template
-  (overrides || []).forEach(item => {
-    const alreadyIncluded = permissionRows.some(
-      row => row.permission_key === item.permission_key
-    );
-
-    if (alreadyIncluded) return;
-
-    permissionRows.push({
-      permission_key: item.permission_key,
-      permission_name: item.permission_key,
-      module_name: "Custom",
-      effectiveAllowed: item.is_allowed,
-      permissionSource:
-        item.is_allowed ? "Custom Allow" : "Custom Deny"
-    });
-  });
-
-  permissionRows.sort((a, b) => {
-    const moduleCompare =
-      a.module_name.localeCompare(b.module_name);
-
-    if (moduleCompare !== 0) return moduleCompare;
-
-    return a.permission_name.localeCompare(
-      b.permission_name
-    );
-  });
 
   $("modalContent").innerHTML = `
     <div class="adminPermissionModal">
@@ -4261,10 +4257,7 @@ window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
       <div class="adminPermissionHeader">
         <div>
           <h2>👤 Manage User</h2>
-
-          <p>
-            ${escapeHtml(user.email)}
-          </p>
+          <p>${escapeHtml(user.email)}</p>
         </div>
 
         <span class="tag">
@@ -4272,7 +4265,9 @@ window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
         </span>
       </div>
 
+
       <div class="adminUserSummary">
+
         <div>
           <span>Access Group</span>
           <strong>
@@ -4290,82 +4285,293 @@ window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
           <span>Role Template</span>
           <strong>${escapeHtml(user.role || "-")}</strong>
         </div>
+
       </div>
 
-      <div class="adminPermissionNotice">
-        Permissions are currently shown in read-only mode.
-        Individual overrides will be enabled next.
+
+      <div
+        style="
+          margin:18px 0;
+          padding:12px 14px;
+          background:#f8fafc;
+          border:1px solid #e2e8f0;
+          border-radius:10px;
+          font-size:13px;
+          color:#475569;
+        "
+      >
+        <strong>Inherited</strong> uses the Role Template default.
+        <strong>Allow</strong> grants access only to this user.
+        <strong>Deny</strong> removes access only from this user.
       </div>
+
 
       <div class="qaTableWrap">
+
         <table class="qaTable">
+
           <thead>
             <tr>
               <th>Module</th>
               <th>Permission</th>
+              <th>Role Default</th>
+              <th>User Setting</th>
               <th>Effective Access</th>
-              <th>Source</th>
             </tr>
           </thead>
 
           <tbody>
+
             ${
-              permissionRows.length
-                ? permissionRows.map(permission => `
-                    <tr>
-                      <td>
-                        ${escapeHtml(permission.module_name)}
-                      </td>
+              permissionRows.map(permission => `
+                <tr>
 
-                      <td>
-                        <strong>
-                          ${escapeHtml(permission.permission_name)}
-                        </strong>
+                  <td>
+                    ${escapeHtml(permission.module_name)}
+                  </td>
 
-                        <div style="
-                          margin-top:3px;
-                          font-size:11px;
-                          color:#94a3b8;
-                        ">
-                          ${escapeHtml(permission.permission_key)}
-                        </div>
-                      </td>
+                  <td>
+                    <strong>
+                      ${escapeHtml(permission.permission_name)}
+                    </strong>
 
-                      <td>
+                    <div
+                      style="
+                        margin-top:3px;
+                        font-size:11px;
+                        color:#94a3b8;
+                      "
+                    >
+                      ${escapeHtml(permission.permission_key)}
+                    </div>
+                  </td>
+
+                  <td>
+                    ${
+                      permission.inheritedAllowed
+                        ? `<span class="tag">✓ Allowed</span>`
+                        : `<span style="color:#94a3b8;">Not Included</span>`
+                    }
+                  </td>
+
+                  <td>
+
+                    <select
+                      class="adminPermissionSelect"
+                      data-permission-key="${escapeHtml(permission.permission_key)}"
+                      data-inherited="${permission.inheritedAllowed ? "true" : "false"}"
+                      onchange="updateAdminPermissionPreview(this)"
+                    >
+
+                      <option
+                        value="inherited"
                         ${
-                          permission.effectiveAllowed
-                            ? `<span class="tag">✓ Allowed</span>`
-                            : `<span class="tag">✕ Denied</span>`
+                          permission.selectedMode === "inherited"
+                            ? "selected"
+                            : ""
                         }
-                      </td>
+                      >
+                        Inherited
+                      </option>
 
-                      <td>
+                      <option
+                        value="allow"
                         ${
-                          permission.permissionSource === "Inherited"
-                            ? `<span>Inherited</span>`
-                            : permission.permissionSource === "Custom Allow"
-                              ? `<strong>Custom Allow</strong>`
-                              : `<strong>Custom Deny</strong>`
+                          permission.selectedMode === "allow"
+                            ? "selected"
+                            : ""
                         }
-                      </td>
-                    </tr>
-                  `).join("")
-                : `
-                  <tr>
-                    <td colspan="4">
-                      No permissions configured.
-                    </td>
-                  </tr>
-                `
+                      >
+                        Allow
+                      </option>
+
+                      <option
+                        value="deny"
+                        ${
+                          permission.selectedMode === "deny"
+                            ? "selected"
+                            : ""
+                        }
+                      >
+                        Deny
+                      </option>
+
+                    </select>
+
+                  </td>
+
+                  <td>
+                    <span
+                      class="adminEffectivePermission tag"
+                    >
+                      ${
+                        permission.effectiveAllowed
+                          ? "✓ Allowed"
+                          : "✕ Denied"
+                      }
+                    </span>
+                  </td>
+
+                </tr>
+              `).join("")
             }
+
           </tbody>
+
         </table>
+
+      </div>
+
+
+      <div
+        style="
+          display:flex;
+          justify-content:flex-end;
+          gap:10px;
+          margin-top:20px;
+        "
+      >
+
+        <button
+          class="secondaryBtn"
+          onclick="document.getElementById('modal').close()"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="primaryBtn"
+          onclick="saveAdminUserPermissions('${user.id}')"
+        >
+          Save Permissions
+        </button>
+
       </div>
 
     </div>
   `;
 
   $("modal").showModal();
+};
+
+window.updateAdminPermissionPreview =
+function updateAdminPermissionPreview(select) {
+
+  const row = select.closest("tr");
+  const badge = row?.querySelector(
+    ".adminEffectivePermission"
+  );
+
+  if (!badge) return;
+
+  const inherited =
+    select.dataset.inherited === "true";
+
+  let allowed = inherited;
+
+  if (select.value === "allow") {
+    allowed = true;
+  }
+
+  if (select.value === "deny") {
+    allowed = false;
+  }
+
+  badge.textContent = allowed
+    ? "✓ Allowed"
+    : "✕ Denied";
+};
+
+window.saveAdminUserPermissions =
+async function saveAdminUserPermissions(userRoleId) {
+
+  const selects = [
+    ...document.querySelectorAll(
+      ".adminPermissionSelect"
+    )
+  ];
+
+  const overridesToSave = [];
+  const inheritedKeys = [];
+
+  selects.forEach(select => {
+
+    const permissionKey =
+      select.dataset.permissionKey;
+
+    const mode = select.value;
+
+    if (mode === "inherited") {
+      inheritedKeys.push(permissionKey);
+      return;
+    }
+
+    overridesToSave.push({
+      user_role_id: userRoleId,
+      permission_key: permissionKey,
+      is_allowed: mode === "allow"
+    });
+
+  });
+
+
+  if (inheritedKeys.length) {
+
+    const { error: deleteError } =
+      await supabaseClient
+        .from("user_permissions")
+        .delete()
+        .eq("user_role_id", userRoleId)
+        .in("permission_key", inheritedKeys);
+
+    if (deleteError) {
+      console.error(
+        "Permission reset error:",
+        deleteError
+      );
+
+      alert(
+        "Unable to reset inherited permissions."
+      );
+
+      return;
+    }
+
+  }
+
+
+  if (overridesToSave.length) {
+
+    const { error: saveError } =
+      await supabaseClient
+        .from("user_permissions")
+        .upsert(
+          overridesToSave,
+          {
+            onConflict:
+              "user_role_id,permission_key"
+          }
+        );
+
+    if (saveError) {
+      console.error(
+        "Permission save error:",
+        saveError
+      );
+
+      alert(
+        "Unable to save permissions."
+      );
+
+      return;
+    }
+
+  }
+
+
+  alert("User permissions saved successfully.");
+
+  await openAdminUserManage(userRoleId);
 };
 
 function openAdminTab(tabName) {
