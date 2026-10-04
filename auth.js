@@ -259,21 +259,8 @@ async function loadUserPermissions(userRoleId) {
 */
 
 function hasPermission(permissionKey) {
-
-  /*
-  | QC Admin currently has full access.
-  | Later we can change this so individual QC Admin
-  | restrictions also apply.
-  */
-
-  if (currentUserRole === "QC Admin") {
-    return true;
-  }
-
-
   return currentUserPermissions[permissionKey] === true;
 }
-
 
 /*
 |--------------------------------------------------------------------------

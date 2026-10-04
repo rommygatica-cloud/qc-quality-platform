@@ -3857,8 +3857,9 @@ return !searchValue || text.includes(searchValue);
   : `
     <td>
       <select
-        data-id="${r.id}"
-        onchange="window.updateArrivalField(this.dataset.id, 'status', this.value)">
+  data-id="${r.id}"
+  ${typeof hasPermission === "function" && !hasPermission("arrivals.edit_status") ? "disabled" : ""}
+  onchange="window.updateArrivalField(this.dataset.id, 'status', this.value)">
         <option value="">Select Status</option>
         <option value="Expected" ${r.status === "Expected" ? "selected" : ""}>Expected</option>
         <option value="At Door" ${r.status === "At Door" ? "selected" : ""}>🟢 At Door</option>
@@ -3871,8 +3872,9 @@ return !searchValue || text.includes(searchValue);
 
     <td>
       <select
-        data-id="${r.id}"
-        onchange="window.updateArrivalField(this.dataset.id, 'priority', this.value)">
+  data-id="${r.id}"
+  ${typeof hasPermission === "function" && !hasPermission("arrivals.edit_priority") ? "disabled" : ""}
+  onchange="window.updateArrivalField(this.dataset.id, 'priority', this.value)">
         <option value="">Select Priority</option>
         <option value="Low" ${r.priority === "Low" ? "selected" : ""}>Low</option>
         <option value="Normal" ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
@@ -3899,6 +3901,25 @@ return !searchValue || text.includes(searchValue);
 }
 
 window.updateArrivalField = async function updateArrivalField(id, field, value) {
+    const requiredPermission = {
+    status: "arrivals.edit_status",
+    priority: "arrivals.edit_priority",
+    eta: "arrivals.edit_eta",
+    door: "arrivals.edit_door"
+  }[field];
+
+  if (
+    requiredPermission &&
+    typeof hasPermission === "function" &&
+    !hasPermission(requiredPermission)
+  ) {
+    console.warn(
+      `Permission denied: ${requiredPermission}`
+    );
+
+    alert("You do not have permission to modify this field.");
+    return;
+  }
   const {
   data: { user },
   error: userError
