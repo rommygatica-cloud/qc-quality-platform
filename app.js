@@ -3736,7 +3736,7 @@ startDate.setDate(startDate.getDate() - 7);
 
 const sortedData = data
   .filter(r => {
-    const etaDate = parseEtaDate(r.warehouse_eta || r.eta);
+    const etaDate = parseEtaDate(r.eta);
 
     if (!etaDate) return false;
 
@@ -3747,8 +3747,11 @@ const sortedData = data
     return true;
   })
   .sort((a, b) => {
-    return parseEtaDate(b.eta) - parseEtaDate(a.eta);
-  });
+  return (
+    parseEtaDate(b.warehouse_eta || b.eta) -
+    parseEtaDate(a.warehouse_eta || a.eta)
+  );
+});
 
 renderArrivalHealthSummary(sortedData);
 
