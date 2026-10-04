@@ -3760,7 +3760,7 @@ const healthFilteredData =
           return isArrivalAttention(r);
         }
 
-        return getEtaHealth(r.eta) === currentArrivalHealthFilter;
+        return getEtaHealth(r.warehouse_eta || r.eta) === currentArrivalHealthFilter;
       });
 
 const searchValue = ($("arrivalSearch")?.value || "").toLowerCase().trim();
