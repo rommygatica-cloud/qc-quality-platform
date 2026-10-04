@@ -2524,8 +2524,11 @@ function openInboundModule(module) {
           <table class="qaTable">
             <thead>
               <tr>
-               <th style="width:40px;"></th>
-<th>ETA</th>
+              <th style="width:40px;"></th>
+<th>JK ETA</th>
+<th>WH</th>
+<th>Warehouse ETA</th>
+<th>Door</th>
 <th>Ref</th>
 <th>PO</th>
 <th>Lot</th>
@@ -2536,7 +2539,7 @@ function openInboundModule(module) {
 ${isHistory
   ? `<th>Arrival Notes</th>`
   : `<th>Status</th><th>Priority</th>`
-}
+} 
               </tr>
             </thead>
 
@@ -3829,8 +3832,38 @@ return !searchValue || text.includes(searchValue);
       </td>
 
       <td>${r.eta || "-"}</td>
-      <td>
-      <div>${r.container || "-"}</div>
+
+<td>
+  <input
+    type="text"
+    value="${r.warehouse || ""}"
+    placeholder="WH"
+    data-id="${r.id}"
+    onchange="window.updateArrivalField(this.dataset.id, 'warehouse', this.value)"
+  >
+</td>
+
+<td>
+  <input
+    type="date"
+    value="${r.warehouse_eta || ""}"
+    data-id="${r.id}"
+    onchange="window.updateArrivalField(this.dataset.id, 'warehouse_eta', this.value)"
+  >
+</td>
+
+<td>
+  <input
+    type="text"
+    value="${r.door || ""}"
+    placeholder="Door"
+    data-id="${r.id}"
+    onchange="window.updateArrivalField(this.dataset.id, 'door', this.value)"
+  >
+</td>
+
+<td>
+  <div>${r.container || "-"}</div>
 
       ${treatmentAlert ? `
       <div class="arrivalTreatmentBadge ${treatmentAlert.level}">
