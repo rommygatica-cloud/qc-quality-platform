@@ -2893,7 +2893,7 @@ function renderArrivalHealthSummary(list) {
     return;
   }
 
-  const health = getEtaHealth(r.eta);
+  const health = getEtaHealth(r.warehouse_eta || r.eta);
 
   if (
     health === "today" ||
