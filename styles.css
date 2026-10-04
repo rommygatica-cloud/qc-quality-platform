@@ -1417,3 +1417,15 @@ canvas{
   color: #64748b;
   font-size: 13px;
 }
+/* Compact fields - Arrivals */
+.arrivalRow input[type="text"] {
+  width: 75px;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.arrivalRow input[type="date"] {
+  width: 120px;
+  padding: 4px 6px;
+  font-size: 12px;
+}
