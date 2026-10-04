@@ -3736,7 +3736,7 @@ startDate.setDate(startDate.getDate() - 7);
 
 const sortedData = data
   .filter(r => {
-    const etaDate = parseEtaDate(r.eta);
+    const etaDate = parseEtaDate(r.warehouse_eta || r.eta);
 
     if (!etaDate) return false;
 
