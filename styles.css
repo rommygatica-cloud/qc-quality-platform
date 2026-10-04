@@ -1423,11 +1423,14 @@ canvas{
   padding: 4px 6px;
   font-size: 12px;
 }
+.arrivalRow input[placeholder="Door"] {
+  width: 50px;
+}
 
 .arrivalRow input[type="date"] {
   width: 120px;
   padding: 4px 6px;
-  font-size: 11px;
+  font-size: 10px;
   font-family: Inter, Segoe UI, Arial, sans-serif;
   font-weight: 400;
 }
