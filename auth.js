@@ -393,7 +393,207 @@ function applyPermissionAccess() {
 
     });
 }
+let isPasswordRecovery = false;
+const initialAuthHash = window.location.hash;
+const inviteFromUrl =
+  new URLSearchParams(initialAuthHash.substring(1)).get("type") === "invite";
 
+if (inviteFromUrl) {
+  sessionStorage.setItem("qc_invitation_flow", "true");
+}
+
+const isInvitationFlow =
+  inviteFromUrl ||
+  sessionStorage.getItem("qc_invitation_flow") === "true";
+
+console.log("📨 INVITATION FLOW:", isInvitationFlow);
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+    console.log("🔎 AUTH EVENT:", event, session?.user?.email);
+      if (isInvitationFlow) {
+    console.log("🎯 INVITED USER DETECTED:", session?.user?.email);
+    showInvitationPasswordScreen();
+    return;
+  }
+  if (event === "PASSWORD_RECOVERY") {
+    isPasswordRecovery = true;
+    console.log("🔐 PASSWORD RECOVERY MODE");
+    showPasswordRecoveryScreen();
+  }
+});
+
+function showInvitationPasswordScreen() {
+
+  console.log("👤 SHOW INVITATION PASSWORD SCREEN");
+  document.body.innerHTML = `
+    <div style="
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      flex-direction:column;
+      gap:12px;
+      font-family:Arial;
+    ">
+      <h1>Welcome to QC Hub</h1>
+      <p>Set your password to activate your account.</p>
+      <input
+  id="invitationPassword"
+  type="password"
+  placeholder="Create Password"
+  style="padding:10px;width:280px;"
+>
+
+<input
+  id="confirmInvitationPassword"
+  type="password"
+  placeholder="Confirm Password"
+  style="padding:10px;width:280px;"
+>
+
+<button
+  id="activateAccountBtn"
+  style="padding:12px 20px;"
+>
+  Activate Account
+</button>
+    </div>
+  `;
+  document.getElementById("activateAccountBtn").onclick = async () => {
+
+  const password =
+    document.getElementById("invitationPassword").value;
+
+  const confirmPassword =
+    document.getElementById("confirmInvitationPassword").value;
+
+  if (!password || !confirmPassword) {
+    alert("Please enter and confirm your password.");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    alert("Passwords do not match.");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.updateUser({
+  password: password
+});
+
+if (error) {
+  alert(error.message);
+  return;
+}
+
+console.log("✅ INVITATION PASSWORD CREATED");
+alert("Account activated successfully!");
+sessionStorage.removeItem("qc_invitation_flow");
+
+await supabaseClient.auth.signOut();
+
+location.href = window.location.origin;
+};
+}
+
+function showPasswordRecoveryScreen() {
+
+  document.body.innerHTML = `
+    <div style="
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      flex-direction:column;
+      gap:12px;
+      font-family:Arial;
+    ">
+
+      <h1>Reset Password</h1>
+
+      <input
+        id="newPassword"
+        type="password"
+        placeholder="New Password"
+        style="padding:10px;width:280px;"
+      >
+
+      <input
+        id="confirmNewPassword"
+        type="password"
+        placeholder="Confirm New Password"
+        style="padding:10px;width:280px;"
+      >
+
+      <label style="
+      display:flex;
+      align-items:center;
+      gap:6px;
+      width:280px;
+      font-size:14px;
+      cursor:pointer;
+      ">
+      <input
+      id="showRecoveryPasswords"
+      type="checkbox"
+      >
+      Show passwords
+      </label>
+
+      <button
+        id="updatePasswordBtn"
+        style="padding:12px 20px;"
+      >
+        Update Password
+      </button>
+
+    </div>
+  `;
+
+document.getElementById("showRecoveryPasswords").onchange = function () {
+
+  const inputType = this.checked ? "text" : "password";
+
+  document.getElementById("newPassword").type = inputType;
+  document.getElementById("confirmNewPassword").type = inputType;
+};
+
+    document.getElementById("updatePasswordBtn").onclick = async () => {
+
+    const newPassword =
+      document.getElementById("newPassword").value;
+
+    const confirmPassword =
+      document.getElementById("confirmNewPassword").value;
+
+    if (!newPassword || !confirmPassword) {
+      alert("Please enter and confirm your new password.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
+
+    const { error } =
+      await supabaseClient.auth.updateUser({
+        password: newPassword
+      });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    alert("Password updated successfully.");
+
+await supabaseClient.auth.signOut();
+
+location.href = window.location.origin;
+  };
+
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -448,6 +648,18 @@ async function checkAuth() {
         >
           Login
         </button>
+
+       <button
+  onclick="forgotPassword()"
+  style="
+    border:none;
+    background:none;
+    cursor:pointer;
+    text-decoration:underline;
+  "
+>
+  Forgot password?
+</button> 
 
       </div>
     `;
@@ -586,6 +798,28 @@ async function login() {
   location.reload();
 }
 
+async function forgotPassword() {
+
+  const email =
+    document.getElementById("email")?.value.trim();
+
+  if (!email) {
+    alert("Please enter your email first.");
+    return;
+  }
+
+  const { error } =
+    await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Password reset email sent. Please check your inbox.");
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -607,4 +841,6 @@ async function logout() {
 |--------------------------------------------------------------------------
 */
 
-checkAuth();
+if (!isInvitationFlow) {
+  checkAuth();
+}

@@ -4114,10 +4114,13 @@ async function loadAdminUsers() {
         </p>
       </div>
 
-      <button class="primaryBtn" disabled>
-        + Add User
+      <button
+      class="primaryBtn"
+      onclick="openAdminAddUser()"
+      >
+      + Add User
       </button>
-    </div>
+      </div>
 
     <div class="qaTableWrap">
       <table class="qaTable adminUsersTable">
@@ -4187,6 +4190,152 @@ No users found.
 </div>
 `;
 }
+
+window.openAdminAddUser = async function openAdminAddUser() {
+
+  const { data: roleTemplates, error: roleTemplatesError } =
+    await supabaseClient
+      .from("role_templates")
+      .select("id, access_group, role_name, description")
+      .eq("is_active", true)
+      .order("access_group")
+      .order("role_name");
+
+  if (roleTemplatesError) {
+    console.error("Role templates error:", roleTemplatesError);
+    alert("Unable to load role templates.");
+    return;
+  }
+
+  console.log("👥 AVAILABLE ROLE TEMPLATES:", roleTemplates);
+
+  $("modalContent").innerHTML = `
+  <div class="adminPermissionModal">
+
+    <div class="adminPermissionHeader">
+      <div>
+        <h2>➕ Add User</h2>
+        <p>Create a new QC Hub user.</p>
+      </div>
+    </div>
+
+    <div style="display:grid; gap:16px; margin-top:24px;">
+
+      <div>
+        <label><b>Email</b></label>
+        <input
+          id="adminNewUserEmail"
+          type="email"
+          placeholder="name@company.com"
+          style="width:100%; margin-top:6px;"
+        >
+      </div>
+
+      <div>
+        <label><b>Access Group</b></label>
+        <select
+          id="adminNewUserAccessGroup"
+          style="width:100%; margin-top:6px;"
+        >
+          <option value="">Select access group...</option>
+          <option value="pacific">Pacific Internal</option>
+          <option value="external">External</option>
+        </select>
+      </div>
+
+      <div>
+        <label><b>Role</b></label>
+        <select
+          id="adminNewUserRole"
+          style="width:100%; margin-top:6px;"
+          disabled
+        >
+          <option value="">Select access group first...</option>
+        </select>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+        <button
+          class="primaryBtn"
+          id="adminCreateUserBtn"
+        >
+          Create User
+        </button>
+      </div>
+    </div>
+
+  </div>
+`;
+
+  $("modal").showModal();
+
+  const accessGroupSelect = $("adminNewUserAccessGroup");
+const roleSelect = $("adminNewUserRole");
+
+accessGroupSelect.onchange = () => {
+  const accessGroup = accessGroupSelect.value;
+
+  const availableRoles = roleTemplates.filter(
+    role => role.access_group === accessGroup
+  );
+
+  roleSelect.innerHTML = `
+    <option value="">Select role...</option>
+    ${availableRoles.map(role => `
+      <option value="${role.id}">
+        ${role.role_name}
+      </option>
+    `).join("")}
+  `;
+
+  roleSelect.disabled = !accessGroup;
+};
+  $("adminCreateUserBtn").onclick = async () => {
+    const email = $("adminNewUserEmail").value.trim().toLowerCase();
+    const roleTemplateId = $("adminNewUserRole").value;
+
+    const selectedTemplate = roleTemplates.find(
+      role => role.id === roleTemplateId
+    );
+
+if (!email || !selectedTemplate) {
+  alert("Please enter an email and select a role.");
+  return;
+}
+
+    console.log("🧪 NEW USER PREVIEW:", {
+      email,
+      access_group: selectedTemplate?.access_group,
+      role: selectedTemplate?.role_name,
+      role_template_id: selectedTemplate?.id
+    });
+    const { data, error } = await supabaseClient.functions.invoke(
+  "invite-qc-user",
+  {
+    body: {
+      email,
+      role_template_id: selectedTemplate?.id
+    }
+  }
+);
+
+console.log("📨 INVITE RESULT:", data, error);
+if (error) {
+  console.error("Invite user error:", error);
+
+  if (error.context?.status === 409) {
+    alert("User already exists in QC Hub.");
+  } else {
+    alert("Unable to create user.");
+  }
+
+  return;
+}
+
+alert(`Invitation sent to ${email}`);
+$("modal").close();
+await loadAdminUsers();
+  };
+};
 
 window.openAdminUserManage = async function openAdminUserManage(userRoleId) {
 
