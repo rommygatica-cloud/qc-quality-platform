@@ -1418,6 +1418,10 @@ canvas{
   font-size: 13px;
 }
 /* Compact fields - Arrivals */
+.arrivalRow input.arrival-field-filled {
+  background: #eef8f0;
+  border-color: #9fc8a7;
+}
 .arrivalRow input[type="text"] {
   width: 75px;
   padding: 4px 6px;
