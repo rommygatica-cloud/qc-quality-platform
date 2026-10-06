@@ -246,6 +246,394 @@ function openDefect(i) {
   $("modal").showModal();
 }
 
+window.openDailyArrivalReport = async function openDailyArrivalReport() {
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  const todayIso = `${year}-${month}-${day}`;
+  const reportDate = `${month}/${day}/${year}`;
+
+  const { data: arrivals, error } = await supabaseClient
+    .from("arrival_containers")
+    .select("*")
+    .eq("warehouse_eta", todayIso);
+
+  if (error) {
+    console.error("Daily report arrivals error:", error);
+    alert("Unable to load today's arrivals.");
+    return;
+  }
+
+  const arrivalIds = (arrivals || []).map(r => r.id);
+
+let manifestLines = [];
+
+if (arrivalIds.length) {
+  const { data: manifestData, error: manifestError } = await supabaseClient
+    .from("arrival_manifest_lines")
+    .select("container_id, variety")
+    .in("container_id", arrivalIds);
+
+  if (manifestError) {
+    console.error("Daily report manifest error:", manifestError);
+  } else {
+    manifestLines = manifestData || [];
+  }
+}
+
+let notes = [];
+
+if (arrivalIds.length) {
+  const { data: notesData, error: notesError } = await supabaseClient
+    .from("arrival_notes")
+    .select("*")
+    .in("container_id", arrivalIds)
+    .order("created_at", { ascending: false });
+
+  if (notesError) {
+    console.error("Daily report notes error:", notesError);
+  } else {
+    notes = notesData || [];
+  }
+}
+
+const warehouseGroups = {};
+
+(arrivals || []).forEach(arrival => {
+  const warehouse = String(arrival.warehouse || "").trim() || "Warehouse Not Assigned";
+
+  if (!warehouseGroups[warehouse]) {
+    warehouseGroups[warehouse] = [];
+  }
+
+  warehouseGroups[warehouse].push(arrival);
+});
+
+const getArrivalVariety = arrival => {
+  const lines = manifestLines.filter(
+    line => line.container_id === arrival.id
+  );
+
+  return (
+    [...new Set(lines.map(line => line.variety).filter(Boolean))].join(", ") ||
+    arrival.variety ||
+    "-"
+  );
+};
+
+const reportRows = Object.entries(warehouseGroups).map(
+  ([warehouse, warehouseArrivals]) => {
+
+    const completed = warehouseArrivals.filter(
+      arrival => arrival.status === "Report Sent"
+    );
+
+    const open = warehouseArrivals.filter(
+      arrival => arrival.status !== "Report Sent"
+    );
+
+    return `
+      <div style="margin-top:24px;">
+
+        <div style="
+          font-size:16px;
+          font-weight:700;
+          padding-bottom:8px;
+          border-bottom:2px solid #cbd5e1;
+        ">
+          📍 ${escapeHtml(warehouse)}
+          · ${warehouseArrivals.length} Container${warehouseArrivals.length === 1 ? "" : "s"}
+        </div>
+
+        ${
+          completed.length
+            ? `
+              <div style="margin-top:14px; font-weight:600;">
+                ✅ Completed — Report Sent (${completed.length})
+              </div>
+
+              ${completed.map(arrival => {
+                const latestNote = notes.find(
+                  note => note.container_id === arrival.id
+                );
+
+                return `
+                  <div style="
+                    padding:10px 0;
+                    border-bottom:1px solid #e5e7eb;
+                  ">
+                    <b>${escapeHtml(arrival.container || "-")}</b>
+                    · PO ${escapeHtml(arrival.po || "-")}
+                    · ${escapeHtml(arrival.grower || "-")}
+                    · ${escapeHtml(arrival.commodity || "-")}
+                    · ${escapeHtml(getArrivalVariety(arrival))}
+
+                    ${
+                      latestNote
+                        ? `<div style="margin-top:5px;">
+                            💬 ${escapeHtml(latestNote.note || "")}
+                           </div>`
+                        : ""
+                    }
+                  </div>
+                `;
+              }).join("")}
+            `
+            : ""
+        }
+
+        ${
+          open.length
+            ? `
+              <div style="margin-top:16px; font-weight:600;">
+                ⏳ Open / Follow-up (${open.length})
+              </div>
+
+              ${open.map(arrival => {
+                const latestNote = notes.find(
+                  note => note.container_id === arrival.id
+                );
+
+                return `
+                  <div style="
+                    padding:10px 0;
+                    border-bottom:1px solid #e5e7eb;
+                  ">
+                    <b>${escapeHtml(arrival.container || "-")}</b>
+                    · PO ${escapeHtml(arrival.po || "-")}
+                    · ${escapeHtml(arrival.grower || "-")}
+                    · ${escapeHtml(arrival.commodity || "-")}
+                    · ${escapeHtml(getArrivalVariety(arrival))}
+
+                    <div style="margin-top:5px;">
+                      <b>Status:</b>
+                      ${escapeHtml(arrival.status || "Pending")}
+                    </div>
+
+                    ${
+                      latestNote
+                        ? `<div style="margin-top:5px;">
+                            💬 ${escapeHtml(latestNote.note || "")}
+                           </div>`
+                        : ""
+                    }
+                  </div>
+                `;
+              }).join("")}
+            `
+            : ""
+        }
+
+      </div>
+    `;
+  }
+).join("");
+
+const emailWarehouseSummary = Object.entries(warehouseGroups)
+  .map(([warehouse, warehouseArrivals]) => {
+    return `${warehouse} - ${warehouseArrivals.length} Container${warehouseArrivals.length === 1 ? "" : "s"}`;
+  })
+  .join("\n");
+
+const reportEmailBody = Object.entries(warehouseGroups).map(
+  ([warehouse, warehouseArrivals]) => {
+
+    const completed = warehouseArrivals.filter(
+      arrival => arrival.status === "Report Sent"
+    );
+
+    const open = warehouseArrivals.filter(
+      arrival => arrival.status !== "Report Sent"
+    );
+
+    let text = `${warehouse} - ${warehouseArrivals.length} Container${warehouseArrivals.length === 1 ? "" : "s"}\n`;
+
+    if (completed.length) {
+      text += `\nCOMPLETED - REPORT SENT (${completed.length})\n`;
+
+      completed.forEach(arrival => {
+        text += `${arrival.container || "-"} | PO ${arrival.po || "-"} | ${arrival.grower || "-"} | ${arrival.commodity || "-"} | ${getArrivalVariety(arrival)}\n`;
+
+        const latestNote = notes.find(
+          note => note.container_id === arrival.id
+        );
+
+        if (latestNote) {
+          text += `Note: ${latestNote.note}\n`;
+        }
+      });
+    }
+
+    if (open.length) {
+      text += `\nOPEN / FOLLOW-UP (${open.length})\n`;
+
+      open.forEach(arrival => {
+        text += `${arrival.container || "-"} | PO ${arrival.po || "-"} | ${arrival.grower || "-"} | ${arrival.commodity || "-"} | ${getArrivalVariety(arrival)}\n`;
+        text += `Status: ${arrival.status || "Pending"}\n`;
+
+        const latestNote = notes.find(
+          note => note.container_id === arrival.id
+        );
+
+        if (latestNote) {
+          text += `Note: ${latestNote.note}\n`;
+        }
+      });
+    }
+
+    return text;
+  }
+).join("\n");
+
+const totalCompleted = (arrivals || []).filter(
+  arrival => arrival.status === "Report Sent"
+).length;
+
+const totalOpen = (arrivals || []).length - totalCompleted;
+
+const warehouseCards = Object.entries(warehouseGroups).map(
+  ([warehouse, warehouseArrivals]) => {
+
+    const completedCount = warehouseArrivals.filter(
+      arrival => arrival.status === "Report Sent"
+    ).length;
+
+    const openCount = warehouseArrivals.length - completedCount;
+
+    return `
+      <div style="
+        border:1px solid #e2e8f0;
+        border-radius:10px;
+        padding:10px 14px;
+        min-width:125px;
+      ">
+        <div style="
+          font-size:12px;
+          color:#64748b;
+          font-weight:600;
+        ">
+          ${escapeHtml(warehouse)}
+        </div>
+
+        <div style="
+          font-size:22px;
+          font-weight:700;
+          margin-top:2px;
+        ">
+          ${warehouseArrivals.length}
+        </div>
+
+        <div style="
+          font-size:11px;
+          color:#64748b;
+          margin-top:2px;
+        ">
+          ${completedCount} Completed · ${openCount} Open
+        </div>
+      </div>
+    `;
+  }
+).join("");
+
+window.currentDailyReportDate = reportDate;
+window.currentDailyReportWarehouseSummary = emailWarehouseSummary;
+window.currentDailyReportEmailBody = reportEmailBody;
+
+$("modalContent").innerHTML = `
+  <h2>📋 QC Daily Report</h2>
+
+  <p style="color:#64748b;">
+    Warehouse ETA: ${reportDate}
+    · ${arrivals.length} arrival${arrivals.length === 1 ? "" : "s"}
+  </p>
+
+  <div style="
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:16px;
+">
+
+  <div style="
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:10px 14px;
+    min-width:125px;
+  ">
+    <div style="
+      font-size:12px;
+      color:#64748b;
+      font-weight:600;
+    ">
+      TOTAL
+    </div>
+
+    <div style="
+      font-size:22px;
+      font-weight:700;
+      margin-top:2px;
+    ">
+      ${arrivals.length}
+    </div>
+
+    <div style="
+      font-size:11px;
+      color:#64748b;
+      margin-top:2px;
+    ">
+      ${totalCompleted} Completed · ${totalOpen} Open
+    </div>
+  </div>
+
+  ${warehouseCards}
+
+</div>
+
+  <div style="margin-top:20px;">
+    ${
+      reportRows ||
+      `<p style="color:#64748b;">
+        No arrivals scheduled for today.
+      </p>`
+    }
+  </div>
+  <div style="margin-top:24px; text-align:right;">
+  <button
+    type="button"
+    class="primaryBtn"
+    onclick="createDailyReportEmail()">
+    ✉️ Create Email
+  </button>
+</div>
+`;
+
+$("modal").showModal();
+};
+
+window.createDailyReportEmail = function createDailyReportEmail() {
+
+  const subject = `QC Daily Report - ${window.currentDailyReportDate}`;
+
+const body = `Hi Team,
+
+Please see below today's QC inbound summary.
+
+TODAY'S ARRIVALS
+${window.currentDailyReportWarehouseSummary}
+
+${window.currentDailyReportEmailBody}
+
+Best regards,`;
+
+  const mailto =
+    `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+  window.location.href = mailto;
+};
+
 window.openArrivalNotes = async function openArrivalNotes(containerId) {
 
   const { data: arrival, error: arrivalError } = await supabaseClient
@@ -2171,7 +2559,8 @@ const { data: existingContainer, error: findContainerError } =
     .from("arrival_containers")
     .select("*")
     .eq("container", data.container)
-    .maybeSingle();
+.eq("po", data.po)
+.maybeSingle();
 
 if (findContainerError) {
   console.error("Container Lookup Error:", findContainerError);
@@ -2185,6 +2574,7 @@ if (existingContainer) {
     await supabaseClient
       .from("arrival_containers")
       .update({
+        arrival_key: `${String(data.po || "").trim()}-${String(data.container || "").trim().toUpperCase()}`,
         po: data.po,
         grower: data.grower,
         origin: data.records.find(r => r.origin)?.origin || "",
@@ -2212,6 +2602,7 @@ if (existingContainer) {
     await supabaseClient
       .from("arrival_containers")
       .insert({
+        arrival_key: `${String(data.po || "").trim()}-${String(data.container || "").trim().toUpperCase()}`,
         eta: data.eta,
         po: data.po,
         lot: "",
@@ -2414,7 +2805,7 @@ function renderInboundPreview(records) {
     </td>
     <td>
       <select>
-        <option value="">Select Priority</option>
+        <option value="">Priority</option>
         <option>Low</option>
         <option>Normal</option>
         <option>High</option>
@@ -2503,6 +2894,14 @@ function openInboundModule(module) {
     />
   </label>
 
+  <button
+  type="button"
+  class="secondaryBtn"
+  style="margin-left:auto;"
+  onclick="openDailyArrivalReport()">
+  📋 QC Daily Report
+</button>
+
 </div>
 
 <div id="arrivalHealthSummary"
@@ -2562,8 +2961,38 @@ $("arrivalSearch")?.addEventListener("input", () => {
 
 return;
   }
+  if (module === "inspections") {
+    content.innerHTML = `
+      <section class="qaPanel">
+        <button class="secondaryBtn" onclick="backToInboundHome()">
+          ← Back
+        </button>
 
+        <div class="qaPanelHeader" style="margin-top:18px;">
+          <div>
+            <h2>Inspections</h2>
+            <p>Inbound QC inspection data and analysis.</p>
+          </div>
+        </div>
+        <div class="qaToolbar">
+  <label class="primaryBtn" style="display:inline-block;">
+    📥 Upload Inspection Data
+    <input
+      type="file"
+      id="inspectionImportFile"
+      accept=".xlsx,.xls"
+      style="display:none;"
+      onchange="previewInspectionImport()"
+    />
+  </label>
+</div>
+      </section>
+    `;
+
+    return;
+  }
   content.innerHTML = `
+
     <section class="qaPanel">
       <button class="secondaryBtn" onclick="backToInboundHome()">
         ← Back
@@ -2578,6 +3007,535 @@ return;
     </section>
   `;
 }
+
+window.previewInspectionImport = async function previewInspectionImport() {
+  const file = $("inspectionImportFile")?.files[0];
+
+  if (!file) {
+    alert("Please select an inspection file.");
+    return;
+  }
+
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: "array" });
+
+  console.log("📋 INSPECTION WORKBOOK:", workbook.SheetNames);
+
+  workbook.SheetNames.forEach(sheetName => {
+    const sheet = workbook.Sheets[sheetName];
+
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      defval: ""
+    });
+
+    console.log(`📄 SHEET: ${sheetName}`);
+    console.log("Rows:", rows);
+    console.log("Headers:", Object.keys(rows[0] || {}));
+    console.table(
+  rows.map(r => ({
+    IdSheet: r["IdSheet"],
+    Container: r["Container/Hatch."],
+    PO: r["PO Number"],
+    Sample: r["Samples"],
+    Pallet: r["Pallet No"],
+    Grade: r["QcGrade"]
+  }))
+);
+  });
+
+  const allRows = workbook.SheetNames.flatMap(sheetName => {
+  const sheet = workbook.Sheets[sheetName];
+
+  return XLSX.utils.sheet_to_json(sheet, {
+    defval: ""
+  });
+});
+
+const inspectionIds = [
+  ...new Set(
+    allRows
+      .map(r => String(r["IdSheet"] || "").trim())
+      .filter(Boolean)
+  )
+];
+
+const containers = [
+  ...new Set(
+    allRows
+      .map(r => String(r["Container/Hatch."] || "").trim())
+      .filter(Boolean)
+  )
+];
+
+const poNumbers = [
+  ...new Set(
+    allRows
+      .map(r => String(r["PO Number"] || "").trim())
+      .filter(Boolean)
+  )
+];
+
+const commodities = [
+  ...new Set(
+    allRows
+      .map(r => String(r["Specie"] || "").trim())
+      .filter(Boolean)
+  )
+];
+
+const inspectionSummary = inspectionIds.map(id => {
+  const inspectionRows = allRows.filter(
+    r => String(r["IdSheet"] || "").trim() === id
+  );
+
+  const firstRow = inspectionRows[0] || {};
+
+  return {
+    IdSheet: id,
+    PO: String(firstRow["PO Number"] || "").trim(),
+    Container: String(firstRow["Container/Hatch."] || "").trim(),
+    Samples: inspectionRows.length
+  };
+});
+
+console.table(inspectionSummary);
+
+const { data: existingInspections, error: existingInspectionsError } =
+  await supabaseClient
+    .from("qc_inspections")
+    .select("id, source_sheet_id, container, po_number")
+    .eq("source", "Decofrut")
+    .in("source_sheet_id", inspectionIds);
+
+if (existingInspectionsError) {
+  console.error(
+    "❌ Error checking existing inspections:",
+    existingInspectionsError
+  );
+} else {
+  console.log(
+    "🔎 EXISTING DECOFRUT INSPECTIONS:",
+    existingInspections
+  );
+
+  console.table(
+    inspectionSummary.map(item => ({
+      ...item,
+      Status: existingInspections?.some(
+        existing =>
+          String(existing.source_sheet_id || "").trim() === item.IdSheet
+      )
+        ? "ALREADY EXISTS"
+        : "NEW"
+    }))
+  );
+}
+
+const arrivalChecks = await Promise.all(
+  inspectionSummary.map(async item => {
+    const { data, error } = await supabaseClient
+      .from("arrival_containers")
+      .select("id, po, container")
+      .eq("po", item.PO)
+      .eq("container", item.Container)
+      .maybeSingle();
+
+    return {
+      IdSheet: item.IdSheet,
+      PO: item.PO,
+      Container: item.Container,
+      ArrivalID: data?.id || "",
+      LinkStatus: error
+        ? "ERROR"
+        : data?.id
+          ? "MATCHED"
+          : "NOT FOUND"
+    };
+  })
+);
+
+console.log("🔗 INSPECTION → ARRIVAL CHECK:");
+console.table(arrivalChecks);
+
+const inspectionPayloadPreview = inspectionSummary.map(item => {
+  const inspectionRows = allRows.filter(
+    r => String(r["IdSheet"] || "").trim() === item.IdSheet
+  );
+
+  const firstRow = inspectionRows[0] || {};
+
+  const arrivalMatch = arrivalChecks.find(
+    a => a.IdSheet === item.IdSheet
+  );
+
+  return {
+    source: "Decofrut",
+    inspection_type: "Inbound",
+    source_sheet_id: item.IdSheet,
+
+    container: String(firstRow["Container/Hatch."] || "").trim(),
+    po_number: String(firstRow["PO Number"] || "").trim(),
+    lot_number: String(firstRow["Lot Number"] || "").trim(),
+
+    grower: String(firstRow["Grower"] || "").trim(),
+    commodity: String(firstRow["Specie"] || "").trim(),
+    variety: String(firstRow["Variety"] || "").trim(),
+    origin: String(firstRow["Origin Region"] || "").trim(),
+
+    inspection_date: firstRow["Inspection Date"]
+  ? XLSX.SSF.format("yyyy-mm-dd", firstRow["Inspection Date"])
+  : null,
+
+    arrival_container_id:
+      arrivalMatch?.LinkStatus === "MATCHED"
+        ? arrivalMatch.ArrivalID
+        : null
+  };
+});
+
+console.log("🧪 QC INSPECTIONS PAYLOAD PREVIEW:");
+console.table(inspectionPayloadPreview);
+
+const samplePayloadPreview = allRows.map(row => ({
+  source_sheet_id: String(row["IdSheet"] || "").trim(),
+  sample_number: row["Samples"] || null,
+  pallet_number: String(row["Pallet No"] || "").trim(),
+
+  commodity: String(row["Specie"] || "").trim(),
+  variety: String(row["Variety"] || "").trim(),
+  size: String(row["Size"] || "").trim(),
+  label: String(row["Label"] || "").trim(),
+  pack_style: String(row["Package"] || "").trim(),
+
+  packing_date: row["Packing Date"]
+    ? XLSX.SSF.format("yyyy-mm-dd", row["Packing Date"])
+    : null,
+
+  cases_per_pallet: row["Cases/Pallet"] || null,
+  qc_grade: String(row["QcGrade"] || "").trim(),
+
+  quality: String(row["Quality"] || "").trim(),
+  condition: String(row["Condition"] || "").trim(),
+
+  pulp_temperature: row["Temperature °F"] || null,
+  brix: row["° Brix"] || null,
+
+  comments: String(row["Comments"] || "").trim(),
+
+  grower: String(row["Grower"] || "").trim(),
+  lot_number: String(row["Lot Number"] || "").trim(),
+  origin: String(row["Origin Region"] || "").trim(),
+
+  inspection_date: row["Inspection Date"]
+    ? XLSX.SSF.format("yyyy-mm-dd", row["Inspection Date"])
+    : null
+}));
+
+console.log("🧪 QC SAMPLES PAYLOAD PREVIEW:");
+console.table(samplePayloadPreview);
+
+const baseInspectionColumns = [
+  "Specie",
+  "Boxes",
+  "Kneto",
+  "PO / Vessel / Truck",
+  "Container/Hatch.",
+  "Port",
+  "Inspection Date",
+  "Variety",
+  "Exporter",
+  "Grower",
+  "Package",
+  "Label",
+  "Size",
+  "Container/Hatch_",
+  "Lot Number",
+  "IdSheet",
+  "PO Number",
+  "Origin Region",
+  "Samples",
+  "QcGrade",
+  "Pallet No",
+  "Cases/Pallet",
+  "Labeled Net Weight",
+  "Packing Date",
+  "Temperature °F",
+  "Quality",
+  "Condition",
+  "Comments"
+];
+
+const allSourceColumns = [
+  ...new Set(
+    allRows.flatMap(row => Object.keys(row))
+  )
+];
+
+const detectedDetailColumns = allSourceColumns.filter(
+  column => !baseInspectionColumns.includes(column)
+);
+
+console.log("🔬 DETECTED DETAIL COLUMNS:");
+console.log(detectedDetailColumns);
+
+const detailPayloadPreview = [];
+
+allRows.forEach(row => {
+  const sourceSheetId = String(row["IdSheet"] || "").trim();
+  const sampleNumber = row["Samples"] || null;
+  const palletNumber = String(row["Pallet No"] || "").trim();
+
+  detectedDetailColumns.forEach(column => {
+    const value = row[column];
+
+    if (value === "" || value === null || value === undefined) {
+      return;
+    }
+
+    detailPayloadPreview.push({
+      source_sheet_id: sourceSheetId,
+      sample_number: sampleNumber,
+      pallet_number: palletNumber,
+      source_column: column,
+      value: value
+    });
+  });
+});
+
+console.log("🔬 DETAIL PAYLOAD PREVIEW:");
+console.table(detailPayloadPreview);
+console.log(
+  "🔬 TOTAL DETAIL RECORDS:",
+  detailPayloadPreview.length
+);
+
+console.table(
+  detectedDetailColumns.map(column => ({
+    Column: column,
+    Records: detailPayloadPreview.filter(
+      item => item.source_column === column
+    ).length
+  }))
+);
+
+const defectPayloadPreview = detailPayloadPreview.map((item, index) => ({
+  
+  source_sheet_id: item.source_sheet_id,
+  sample_number: item.sample_number,
+  pallet_number: item.pallet_number,
+
+  defect_name: item.source_column,
+  normalized_defect: null,
+  defect_value: item.value,
+  unit: null,
+  defect_group: null,
+  source_column: item.source_column
+}));
+
+console.log("🧪 QC DEFECT PAYLOAD PREVIEW:");
+console.table(defectPayloadPreview);
+
+console.log(
+  "🧪 QC DEFECT PAYLOAD COUNT:",
+  defectPayloadPreview.length
+);
+
+const unmatchedDetails = defectPayloadPreview.filter(detail => {
+  return !samplePayloadPreview.some(sample =>
+    String(sample.source_sheet_id) === String(detail.source_sheet_id) &&
+    String(sample.sample_number) === String(detail.sample_number) &&
+    String(sample.pallet_number) === String(detail.pallet_number)
+  );
+});
+
+console.log(
+  "🔗 UNMATCHED DETAIL RECORDS:",
+  unmatchedDetails.length
+);
+
+const duplicateSampleKeys = samplePayloadPreview
+  .map(sample =>
+    `${sample.source_sheet_id}|${sample.sample_number}|${sample.pallet_number}`
+  )
+  .filter((key, index, array) => array.indexOf(key) !== index);
+
+console.log(
+  "🛡️ DUPLICATE SAMPLE KEYS IN FILE:",
+  duplicateSampleKeys.length
+);
+
+const existingInspectionIds = new Set(
+  (existingInspections || []).map(item =>
+    String(item.source_sheet_id || "").trim()
+  )
+);
+
+const inspectionsAlreadyImported = inspectionIds.filter(id =>
+  existingInspectionIds.has(String(id).trim())
+);
+
+console.log(
+  "🛡️ INSPECTIONS ALREADY IN SUPABASE:",
+  inspectionsAlreadyImported.length
+);
+
+console.log(
+  "🛡️ EXISTING IDS:",
+  inspectionsAlreadyImported
+);
+
+console.log(
+  "🛡️ PARENT INSERT PAUSED — inspections already saved in Supabase"
+);
+
+const insertedInspections = existingInspections || [];
+
+console.log(
+  "🔗 AVAILABLE PARENT INSPECTIONS:",
+  insertedInspections
+);
+
+const samplesReadyToInsert = samplePayloadPreview.map(sample => {
+  const parentInspection = insertedInspections.find(
+    inspection =>
+      String(inspection.source_sheet_id) ===
+      String(sample.source_sheet_id)
+  );
+
+  const { source_sheet_id, ...sampleData } = sample;
+
+return {
+  ...sampleData,
+  inspection_id: parentInspection?.id || null
+};
+});
+
+const samplesWithoutParent = samplesReadyToInsert.filter(
+  sample => !sample.inspection_id
+);
+
+console.log(
+  "🔗 SAMPLES READY TO INSERT:",
+  samplesReadyToInsert.length
+);
+
+console.log(
+  "❌ SAMPLES WITHOUT PARENT:",
+  samplesWithoutParent.length
+);
+
+if (samplesWithoutParent.length > 0) {
+  alert("Sample import stopped. Some samples do not have a parent inspection.");
+  return;
+}
+
+const parentInspectionIds = insertedInspections.map(
+  inspection => inspection.id
+);
+
+const { data: insertedSamples, error: existingSamplesError } =
+  await supabaseClient
+    .from("qc_inspection_samples")
+    .select("id, inspection_id, sample_number, pallet_number")
+    .in("inspection_id", parentInspectionIds);
+
+if (existingSamplesError) {
+  console.error(
+    "❌ EXISTING QC SAMPLES ERROR:",
+    existingSamplesError
+  );
+  return;
+}
+
+console.log(
+  "🛡️ SAMPLE INSERT PAUSED — samples already saved in Supabase"
+);
+
+console.log(
+  "🔗 AVAILABLE QC SAMPLES:",
+  insertedSamples.length
+);
+
+const detailsReadyToInsert = defectPayloadPreview.map(detail => {
+  const parentInspection = insertedInspections.find(
+    inspection =>
+      String(inspection.source_sheet_id) ===
+      String(detail.source_sheet_id)
+  );
+
+  const parentSample = insertedSamples.find(
+    sample =>
+      String(sample.inspection_id) === String(parentInspection?.id) &&
+      String(sample.sample_number) === String(detail.sample_number) &&
+      String(sample.pallet_number) === String(detail.pallet_number)
+  );
+
+  return {
+    sample_id: parentSample?.id || null,
+    defect_name: detail.defect_name,
+    normalized_defect: detail.normalized_defect,
+    defect_value: detail.defect_value,
+    unit: detail.unit,
+    defect_group: detail.defect_group,
+    source_column: detail.source_column
+  };
+});
+
+const detailsWithoutSample = detailsReadyToInsert.filter(
+  detail => !detail.sample_id
+);
+
+console.log(
+  "🔗 DETAILS READY TO INSERT:",
+  detailsReadyToInsert.length
+);
+
+console.log(
+  "❌ DETAILS WITHOUT SAMPLE:",
+  detailsWithoutSample.length
+);
+
+if (detailsWithoutSample.length > 0) {
+  alert("Detail import stopped. Some details do not have a parent sample.");
+  return;
+}
+
+console.log(
+  "🚀 READY TO INSERT QC DETAILS:",
+  detailsReadyToInsert.length
+);
+
+const { data: insertedDetails, error: insertDetailsError } =
+  await supabaseClient
+    .from("qc_inspection_defects")
+    .insert(detailsReadyToInsert)
+    .select("id");
+
+if (insertDetailsError) {
+  console.error(
+    "❌ QC DETAILS INSERT ERROR:",
+    insertDetailsError
+  );
+
+  alert("Detail import stopped. QC details could not be saved.");
+  return;
+}
+
+console.log(
+  "✅ INSERTED QC DETAILS COUNT:",
+  insertedDetails.length
+);
+
+alert(
+  `Inspection Import Preview\n\n` +
+  `Samples: ${allRows.length}\n` +
+  `Inspections: ${inspectionIds.length}\n` +
+  `Containers: ${containers.length}\n` +
+  `PO: ${poNumbers.join(", ")}\n` +
+  `Commodity: ${commodities.join(", ")}\n\n` +
+  `No data has been imported yet.`
+);
+};
 
 function backToInboundHome() {
   const home = $("inboundHomeGrid");
@@ -2672,7 +3630,7 @@ const records = rows
     const poLot = splitPoLot(row["Vessel #"]);
 
     return {
-      arrival_key: `${String(row["Container"]).trim()}-${formatExcelDate(row["ETA"])}`,
+      arrival_key: `${String(poLot.po || "").trim()}-${String(row["Container"] || "").trim().toUpperCase()}`,
       vessel: row["Vessel"] || "",
       po: poLot.po,
       lot: poLot.lot,
@@ -2704,13 +3662,17 @@ const uniqueRecords = Array.from(
 
 console.log("Unique Arrival Records:", uniqueRecords);
 
-  const arrivalKeys = uniqueRecords.map(r => r.arrival_key);
+  const containerNumbers = [...new Set(
+  uniqueRecords
+    .map(r => String(r.container || "").trim())
+    .filter(Boolean)
+)];
 
 const { data: existingArrivals, error: existingError } =
   await supabaseClient
     .from("arrival_containers")
-    .select("id, arrival_key")
-    .in("arrival_key", arrivalKeys);
+    .select("id, arrival_key, container, po")
+    .in("container", containerNumbers);
 
 if (existingError) {
   console.error("Existing arrivals lookup error:", existingError);
@@ -2718,16 +3680,25 @@ if (existingError) {
   return;
 }
 
+const makePoContainerKey = (po, container) =>
+  `${String(po || "").trim()}-${String(container || "").trim().toUpperCase()}`;
+
 const existingKeys = new Set(
-  (existingArrivals || []).map(r => r.arrival_key)
+  (existingArrivals || []).map(r =>
+    makePoContainerKey(r.po, r.container)
+  )
 );
 
 const newArrivals = uniqueRecords.filter(
-  r => !existingKeys.has(r.arrival_key)
+  r => !existingKeys.has(
+    makePoContainerKey(r.po, r.container)
+  )
 );
 
 const updateArrivals = uniqueRecords.filter(
-  r => existingKeys.has(r.arrival_key)
+  r => existingKeys.has(
+    makePoContainerKey(r.po, r.container)
+  )
 );
 
 // INSERT nuevos arrivals
@@ -2746,10 +3717,25 @@ if (newArrivals.length) {
 
 // UPDATE arrivals existentes sin pisar datos operativos QC
 for (const record of updateArrivals) {
+  const canonicalKey = makePoContainerKey(record.po, record.container);
+
+const matchingRecords = (existingArrivals || []).filter(r =>
+  makePoContainerKey(r.po, r.container) === canonicalKey
+);
+
+const existingRecord =
+  matchingRecords.find(r =>
+    String(r.arrival_key || "").trim().toUpperCase() === canonicalKey.toUpperCase()
+  ) || matchingRecords[0];
+if (!existingRecord) {
+  console.warn("Existing arrival not found:", record);
+  continue;
+}
   const { error: updateError } =
     await supabaseClient
       .from("arrival_containers")
       .update({
+        arrival_key: record.arrival_key,
         vessel: record.vessel,
         po: record.po,
         lot: record.lot,
@@ -2767,7 +3753,7 @@ for (const record of updateArrivals) {
         last_manifest_import: record.last_manifest_import,
         data_type: record.data_type
       })
-      .eq("arrival_key", record.arrival_key);
+      .eq("id", existingRecord.id);
 
   if (updateError) {
     console.error(
@@ -2823,7 +3809,20 @@ function parseEtaDate(value) {
 
   if (!text) return null;
 
+  // Warehouse ETA format: YYYY-MM-DD
+  const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]) - 1;
+    const day = Number(isoMatch[3]);
+
+    return new Date(year, month, day);
+  }
+
+  // JK ETA format: D-Mmm-YY
   const parts = text.split("-");
+
   if (parts.length < 3) return null;
 
   const day = Number(parts[0]);
@@ -2873,7 +3872,18 @@ function getEtaHealth(eta) {
 function isArrivalAttention(record) {
   const treatmentAlert = getArrivalTreatmentAlert(record);
 
-  return treatmentAlert?.level === "critical";
+  // Critical treatment/release issue
+  if (treatmentAlert?.level === "critical") {
+    return true;
+  }
+
+  // Use Warehouse ETA first, JK ETA as fallback
+  const etaHealth = getEtaHealth(
+    record.warehouse_eta || record.eta
+  );
+
+  // Past ETA and still in Live Arrivals
+  return etaHealth === "delayed";
 }
 
 function renderArrivalHealthSummary(list) {
@@ -3644,9 +4654,12 @@ if (currentArrivalView === "all") {
 
 const { data, error } = await arrivalsQuery;
 
-  const { data: manifestLines, error: manifestError } = await supabaseClient
+  const arrivalIds = (data || []).map(r => r.id);
+
+const { data: manifestLines, error: manifestError } = await supabaseClient
   .from("arrival_manifest_lines")
-  .select("*");
+  .select("*")
+  .in("container_id", arrivalIds);
 
 if (manifestError) {
   console.error("Manifest lines error:", manifestError);
@@ -3738,8 +4751,19 @@ const sortedData = data
   .filter(r => {
     const etaDate = parseEtaDate(r.eta);
 
-    if (!etaDate) return false;
+    // History: show all historical records,
+    // even when JK ETA is TBD or missing.
+    if (currentArrivalView === "historical") {
+      return true;
+    }
 
+    // Live: TBD/missing ETA must remain visible.
+    if (!etaDate) {
+      return true;
+    }
+
+    // Live records with a valid ETA:
+    // keep the current 7-day window.
     if (currentArrivalView === "live") {
       return etaDate >= startDate;
     }
@@ -3747,6 +4771,18 @@ const sortedData = data
     return true;
   })
   .sort((a, b) => {
+  // TODAY view:
+  // Warehouse-confirmed arrivals first,
+  // JK ETA-only arrivals second.
+  if (currentArrivalHealthFilter === "today") {
+    const aHasWarehouseEta = Boolean(a.warehouse_eta);
+    const bHasWarehouseEta = Boolean(b.warehouse_eta);
+
+    if (aHasWarehouseEta !== bHasWarehouseEta) {
+      return aHasWarehouseEta ? -1 : 1;
+    }
+  }
+
   return (
     parseEtaDate(b.warehouse_eta || b.eta) -
     parseEtaDate(a.warehouse_eta || a.eta)
@@ -3841,6 +4877,7 @@ return !searchValue || text.includes(searchValue);
     type="text"
     value="${r.warehouse || ""}"
     placeholder="WH"
+    class="${r.warehouse ? "arrival-field-filled" : ""}"
     data-id="${r.id}"
     onchange="window.updateArrivalField(this.dataset.id, 'warehouse', this.value)"
   >
@@ -3850,6 +4887,7 @@ return !searchValue || text.includes(searchValue);
   <input
     type="date"
     value="${r.warehouse_eta || ""}"
+    class="${r.warehouse_eta ? "arrival-field-filled" : ""}"
     data-id="${r.id}"
     onchange="window.updateArrivalField(this.dataset.id, 'warehouse_eta', this.value)"
   >
@@ -3860,6 +4898,7 @@ return !searchValue || text.includes(searchValue);
     type="text"
     value="${r.door || ""}"
     placeholder="Door"
+    class="${r.door ? "arrival-field-filled" : ""}"
     data-id="${r.id}"
     onchange="window.updateArrivalField(this.dataset.id, 'door', this.value)"
   >
@@ -3907,16 +4946,27 @@ return !searchValue || text.includes(searchValue);
     </td>
 
     <td>
+    <div style="display:flex; align-items:center; gap:4px; white-space:nowrap;">
       <select
   data-id="${r.id}"
   ${typeof hasPermission === "function" && !hasPermission("arrivals.edit_priority") ? "disabled" : ""}
   onchange="window.updateArrivalField(this.dataset.id, 'priority', this.value)">
-        <option value="">Select Priority</option>
+        <option value="">Priority</option>
         <option value="Low" ${r.priority === "Low" ? "selected" : ""}>Low</option>
         <option value="Normal" ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
         <option value="High" ${r.priority === "High" ? "selected" : ""}>High</option>
         <option value="Critical" ${r.priority === "Critical" ? "selected" : ""}>Critical</option>
       </select>
+      ${r.warehouse_eta ? `
+  <button
+    type="button"
+    class="secondaryBtn"
+    style="margin-left:4px; padding:3px 6px; min-width:auto;"
+    title="Arrival Notes"
+    onclick="openArrivalNotes('${r.id}')">
+    💬
+  </button>
+` : ""}
     </td>
   `
 }
