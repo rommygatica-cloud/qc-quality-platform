@@ -2446,8 +2446,7 @@ const records = rows
 
     pallet_number: String(row.tagid || "").trim(),
 
-    // Lot real todavía no viene en el manifest
-    lot: "",
+    lot: String(row.entryno || "").trim(),
 
     commodity: String(row.commodity || "").trim(),
     variety: String(row.variety || "").trim(),
@@ -2479,7 +2478,7 @@ const records = rows
 
     condition: String(row.condition || "").trim(),
 
-    lot_source: "pending",
+    lot_source: "famous",
 
     recorder_code: "",
     temp_rec_loc: "",
@@ -2490,6 +2489,10 @@ const records = rows
 console.log("Records:", records);
 console.log("Total Records:", records.length);
 console.table(records.slice(0, 10));
+console.table(records.slice(0, 10).map(r => ({
+  pallet: r.pallet_number,
+  lot: r.lot
+})));
 
 const validation = {
   totalRows: rows.length,
@@ -2536,22 +2539,6 @@ async function saveManifestToDatabase(data) {
     .filter(Boolean)
 )];
 
-const { data: existingPallets, error: checkError } =
-  await supabaseClient
-    .from("arrival_manifest_lines")
-    .select("container_id, pallet_number")
-    .in("pallet_number", palletNumbers);
-
-if (checkError) {
-  console.error("Duplicate Check Error:", checkError);
-
-  alert(
-    "Error checking existing pallets:\n\n" +
-    checkError.message
-  );
-
-  return false;
-}
   let containerRow = null;
 
 const { data: existingContainer, error: findContainerError } =
@@ -2559,7 +2546,10 @@ const { data: existingContainer, error: findContainerError } =
     .from("arrival_containers")
     .select("*")
     .eq("container", data.container)
-.eq("po", data.po)
+.in("po", [
+  String(data.po || "").trim(),
+  `${String(data.po || "").trim()}-${String(data.container || "").trim().slice(-4)}`
+])
 .maybeSingle();
 
 if (findContainerError) {
@@ -2576,6 +2566,7 @@ if (existingContainer) {
       .update({
         arrival_key: `${String(data.po || "").trim()}-${String(data.container || "").trim().toUpperCase()}`,
         po: data.po,
+        lot: [...new Set(data.records.map(r => r.lot).filter(Boolean))].join(", "),
         grower: data.grower,
         origin: data.records.find(r => r.origin)?.origin || "",
         commodity: [...new Set(
@@ -2605,7 +2596,7 @@ if (existingContainer) {
         arrival_key: `${String(data.po || "").trim()}-${String(data.container || "").trim().toUpperCase()}`,
         eta: data.eta,
         po: data.po,
-        lot: "",
+        lot: [...new Set(data.records.map(r => r.lot).filter(Boolean))].join(", "),
         grower: data.grower,
         vessel: data.vessel,
         container: data.container,
@@ -2633,9 +2624,21 @@ if (existingContainer) {
   containerRow = newContainer;
 }
 
-  const existingForThisContainer = new Set(
+const { data: existingPallets, error: checkError } =
+  await supabaseClient
+    .from("arrival_manifest_lines")
+    .select("container_id, pallet_number")
+    .eq("container_id", containerRow.id)
+    .in("pallet_number", palletNumbers);
+
+if (checkError) {
+  console.error("Pallet Lookup Error:", checkError);
+  alert("Error checking existing pallets: " + checkError.message);
+  return false;
+}
+
+ const existingForThisContainer = new Set(
   (existingPallets || [])
-    .filter(p => p.container_id === containerRow.id)
     .map(p => String(p.pallet_number || "").trim())
 );
 
@@ -2651,9 +2654,7 @@ data.records.forEach(r => {
     po: data.po,
     pallet_number: palletNumber,
 
-    // IMPORTANTE:
-    // NO incluimos "lot" aquí.
-    // Así nunca borramos un lot asignado manualmente.
+    lot: String(r.lot || "").trim(),
 
     grower: data.grower,
     commodity: r.commodity,
@@ -2682,12 +2683,10 @@ data.records.forEach(r => {
   if (existingForThisContainer.has(palletNumber)) {
     updateLines.push(lineData);
   } else {
+    
     newLines.push({
       ...lineData,
-
-      // Los pallets nuevos nacen sin Lot.
-      lot: "",
-      lot_source: "pending"
+      lot_source: "famous"
     });
   }
 });
@@ -2699,6 +2698,10 @@ for (const line of updateLines) {
       .from("arrival_manifest_lines")
       .update({
         po: line.po,
+        ...(line.lot ? {
+        lot: line.lot,
+        lot_source: "famous"
+        } : {}),
         grower: line.grower,
         commodity: line.commodity,
         variety: line.variety,
@@ -3593,7 +3596,7 @@ function splitPoLot(value) {
   }
 
   return {
-    po: text,
+    po: text.split("-")[0].trim(),
     lot: ""
   };
 }
@@ -3634,17 +3637,15 @@ const records = rows
       vessel: row["Vessel"] || "",
       po: poLot.po,
       lot: poLot.lot,
-      container: row["Container"] || "",
+      container: String(row["Container"] || "").trim().toUpperCase(),
       eta: formatExcelDate(row["ETA"]),
       recorder_status: row["Status"] || "Pending",
       source_status: String(row["Status"] || "").trim(),
       commodity: row["Commodity"] || "",
       origin: normalizeOrigin(row["Origin"] || ""),
       treatment: String(row["Treatment"] || "").trim(),
-      shipper_name: row["Shipper"] || "",
       grower: "",
-      manifest_name: file.name,
-      last_manifest_import: new Date().toISOString(),
+      jk_source_file: file.name,
       data_type: importMode,
       active: importMode === "live",
       status:
@@ -3664,14 +3665,14 @@ console.log("Unique Arrival Records:", uniqueRecords);
 
   const containerNumbers = [...new Set(
   uniqueRecords
-    .map(r => String(r.container || "").trim())
+    .map(r => String(r.container || "").trim().toUpperCase())
     .filter(Boolean)
 )];
 
 const { data: existingArrivals, error: existingError } =
   await supabaseClient
     .from("arrival_containers")
-    .select("id, arrival_key, container, po")
+    .select("id, arrival_key, container, po, lot, status, active, data_type, eta, commodity, origin, manifest_name, last_manifest_import")
     .in("container", containerNumbers);
 
 if (existingError) {
@@ -3680,8 +3681,19 @@ if (existingError) {
   return;
 }
 
+console.table(
+  (existingArrivals || []).map(r => ({
+    po: r.po,
+    lot: r.lot,
+    container: r.container,
+    status: r.status,
+    active: r.active,
+    data_type: r.data_type
+  }))
+);
+
 const makePoContainerKey = (po, container) =>
-  `${String(po || "").trim()}-${String(container || "").trim().toUpperCase()}`;
+  `${String(po || "").trim().split("-")[0]}-${String(container || "").trim().toUpperCase()}`;
 
 const existingKeys = new Set(
   (existingArrivals || []).map(r =>
@@ -3689,17 +3701,101 @@ const existingKeys = new Set(
   )
 );
 
-const newArrivals = uniqueRecords.filter(
-  r => !existingKeys.has(
-    makePoContainerKey(r.po, r.container)
-  )
+const isPendingPo = po =>
+  !String(po || "").trim() ||
+  ["TBD", "N/A", "PENDING", "--"].includes(
+    String(po || "").trim().toUpperCase()
+  );
+const sameContainer = (a, b) =>
+  String(a || "").trim().toUpperCase() ===
+  String(b || "").trim().toUpperCase();
+
+const findArrivalMatches = record =>
+  (existingArrivals || []).filter(existing =>
+    sameContainer(existing.container, record.container) &&
+    makePoContainerKey(existing.po, existing.container) ===
+      makePoContainerKey(record.po, record.container)
+  );
+
+const newArrivals = uniqueRecords.filter(record => {
+  const matches = findArrivalMatches(record);
+  if (matches.some(existing =>
+  existing.status === "Report Sent" ||
+  existing.status === "Cancelled / Diverted" ||
+  existing.active === false
+)) {
+  return false;
+}
+if (isPendingPo(record.po)) {
+  console.warn(
+    "JK Fresh arrival without PO — manual review required:",
+    record.container
+  );
+  return false;
+}
+if (matches.length > 1) {
+  console.warn(
+    "Multiple arrival matches — review required:",
+    record.container,
+    matches
+  );
+  return false;
+}
+
+return matches.length === 0;
+});
+
+const updateArrivals = uniqueRecords.filter(record => {
+
+  if (isPendingPo(record.po)) return false;
+
+  const matches = findArrivalMatches(record);
+
+  return matches.length === 1 &&
+    matches[0].active === true &&
+    matches[0].data_type === "live" &&
+    !["Report Sent", "Cancelled / Diverted"].includes(matches[0].status);
+
+});
+
+// 🧪 JK FRESH DRY RUN — NO MODIFICA SUPABASE
+
+console.table(
+  newArrivals.map(r => ({
+    action: "INSERT",
+    po: r.po,
+    container: r.container
+  }))
 );
 
-const updateArrivals = uniqueRecords.filter(
-  r => existingKeys.has(
-    makePoContainerKey(r.po, r.container)
-  )
+console.table(
+  updateArrivals.map(r => {
+    const existing = findArrivalMatches(r)[0];
+
+    return {
+      action: "UPDATE",
+      po: r.po,
+      container: r.container,
+      famous_manifest: Boolean(
+        existing?.manifest_name ||
+        existing?.last_manifest_import
+      ),
+      commodity_current: existing?.commodity,
+      commodity_jk: r.commodity,
+      origin_current: existing?.origin,
+      origin_jk: r.origin
+    };
+  })
 );
+
+alert(
+  `DRY RUN — No database changes\n` +
+  `New arrivals: ${newArrivals.length}\n` +
+  `Updates: ${updateArrivals.length}\n` +
+  `Skipped: ${uniqueRecords.length - newArrivals.length - updateArrivals.length}`
+);
+
+return;
 
 // INSERT nuevos arrivals
 if (newArrivals.length) {
@@ -3717,41 +3813,44 @@ if (newArrivals.length) {
 
 // UPDATE arrivals existentes sin pisar datos operativos QC
 for (const record of updateArrivals) {
-  const canonicalKey = makePoContainerKey(record.po, record.container);
-
-const matchingRecords = (existingArrivals || []).filter(r =>
-  makePoContainerKey(r.po, r.container) === canonicalKey
-);
-
-const existingRecord =
-  matchingRecords.find(r =>
-    String(r.arrival_key || "").trim().toUpperCase() === canonicalKey.toUpperCase()
-  ) || matchingRecords[0];
+const existingRecord = findArrivalMatches(record)[0];
 if (!existingRecord) {
   console.warn("Existing arrival not found:", record);
   continue;
 }
+
+if (
+  existingRecord.status === "Report Sent" ||
+  existingRecord.status === "Cancelled / Diverted" ||
+  existingRecord.active === false
+) {
+  console.log("Skipping closed arrival:", record.container);
+  continue;
+}
+
   const { error: updateError } =
     await supabaseClient
       .from("arrival_containers")
       .update({
-        arrival_key: record.arrival_key,
         vessel: record.vessel,
-        po: record.po,
-        lot: record.lot,
         container: record.container,
-        eta: record.eta,
+        eta:
+  record.eta &&
+  record.eta.trim().toUpperCase() !== "TBD"
+    ? record.eta
+    : existingRecord.eta || record.eta,
 
         recorder_status: record.recorder_status,
         source_status: record.source_status,
         treatment: record.treatment,
 
-        commodity: record.commodity,
-        origin: record.origin,
-        shipper_name: record.shipper_name,
-        manifest_name: record.manifest_name,
-        last_manifest_import: record.last_manifest_import,
-        data_type: record.data_type
+        commodity: (existingRecord.manifest_name || existingRecord.last_manifest_import)
+  ? existingRecord.commodity
+  : record.commodity,
+        origin: (existingRecord.manifest_name || existingRecord.last_manifest_import)
+  ? existingRecord.origin
+  : record.origin,
+        jk_source_file: record.jk_source_file,
       })
       .eq("id", existingRecord.id);
 
@@ -3771,9 +3870,13 @@ if (!existingRecord) {
   }
 }
 
-  alert(
-    `${uniqueRecords.length} arrival records imported successfully.`
+alert(
+  `JK Fresh import completed.\n` +
+  `New arrivals: ${newArrivals.length}\n` +
+  `Existing arrivals updated: ${updateArrivals.length}\n` +
+  `Skipped: ${uniqueRecords.length - newArrivals.length - updateArrivals.length}`
 );
+  
 currentArrivalView =
   importMode === "historical"
     ? "historical"
@@ -4640,7 +4743,8 @@ async function loadInboundArrivals() {
 if (currentArrivalView === "live") {
   arrivalsQuery = arrivalsQuery
     .eq("active", true)
-    .eq("data_type", "live");
+    .eq("data_type", "live")
+    .not("status", "in", '("Report Sent","Cancelled / Diverted")');
 }
 
 if (currentArrivalView === "historical") {
@@ -4656,10 +4760,30 @@ const { data, error } = await arrivalsQuery;
 
   const arrivalIds = (data || []).map(r => r.id);
 
-const { data: manifestLines, error: manifestError } = await supabaseClient
-  .from("arrival_manifest_lines")
-  .select("*")
-  .in("container_id", arrivalIds);
+let manifestLines = [];
+let manifestError = null;
+let offset = 0;
+
+while (true) {
+  const { data: batch, error } = await supabaseClient
+    .from("arrival_manifest_lines")
+    .select("*")
+    .in("container_id", arrivalIds)
+    .order("id", { ascending: true })
+    .range(offset, offset + 999);
+
+  if (error) {
+    manifestError = error;
+    break;
+  }
+
+  manifestLines.push(...(batch || []));
+
+  if (!batch || batch.length < 1000) break;
+
+  offset += 1000;
+}
+  console.log("🔎 MANIFEST LINES LOADED:", manifestLines?.length);
 
 if (manifestError) {
   console.error("Manifest lines error:", manifestError);
@@ -4722,6 +4846,16 @@ const linesByContainerId = {};
 });
 
 const inspectionSamplesByContainerId = {};
+console.log(
+  "🔎 SHERLOCK SUDU8234302:",
+  (manifestLines || []).filter(line =>
+    line.container_id ===
+    data.find(r =>
+      r.container === "SUDU8234302" &&
+      String(r.po) === "8458"
+    )?.id
+  )
+);
 
 (inspectionSamples || []).forEach(sample => {
   const containerId =
@@ -4748,48 +4882,37 @@ const startDate = new Date(today);
 startDate.setDate(startDate.getDate() - 7);
 
 const sortedData = data
-  .filter(r => {
-    const etaDate = parseEtaDate(r.eta);
-
-    // History: show all historical records,
-    // even when JK ETA is TBD or missing.
-    if (currentArrivalView === "historical") {
-      return true;
-    }
-
-    // Live: TBD/missing ETA must remain visible.
-    if (!etaDate) {
-      return true;
-    }
-
-    // Live records with a valid ETA:
-    // keep the current 7-day window.
-    if (currentArrivalView === "live") {
-      return etaDate >= startDate;
-    }
-
-    return true;
-  })
   .sort((a, b) => {
-  // TODAY view:
-  // Warehouse-confirmed arrivals first,
-  // JK ETA-only arrivals second.
-  if (currentArrivalHealthFilter === "today") {
-    const aHasWarehouseEta = Boolean(a.warehouse_eta);
-    const bHasWarehouseEta = Boolean(b.warehouse_eta);
+    // TODAY view:
+    // Warehouse-confirmed arrivals first,
+    // JK ETA-only arrivals second.
+    if (currentArrivalHealthFilter === "today") {
+      const aHasWarehouseEta = Boolean(a.warehouse_eta);
+      const bHasWarehouseEta = Boolean(b.warehouse_eta);
 
-    if (aHasWarehouseEta !== bHasWarehouseEta) {
-      return aHasWarehouseEta ? -1 : 1;
+      if (aHasWarehouseEta !== bHasWarehouseEta) {
+        return aHasWarehouseEta ? -1 : 1;
+      }
     }
-  }
 
-  return (
-    parseEtaDate(b.warehouse_eta || b.eta) -
-    parseEtaDate(a.warehouse_eta || a.eta)
-  );
-});
+    return (
+      parseEtaDate(b.warehouse_eta || b.eta) -
+      parseEtaDate(a.warehouse_eta || a.eta)
+    );
+  });
 
 renderArrivalHealthSummary(sortedData);
+
+
+console.log("🕵️ AVENGERS FILTER:", {
+  filter: currentArrivalHealthFilter,
+  containerInSortedData: sortedData.some(
+    r => r.container === "SUDU8234302"
+  ),
+  containerPO: sortedData.find(
+    r => r.container === "SUDU8234302"
+  )?.po
+});
 
 const healthFilteredData =
   currentArrivalHealthFilter === "all"
@@ -4806,6 +4929,13 @@ const searchValue = ($("arrivalSearch")?.value || "").toLowerCase().trim();
 
 const tableData = healthFilteredData.filter(r => {
   const lines = linesByContainerId[r.id] || [];
+  if (r.container === "SUDU8234302") {
+  console.log("🔎 SHERLOCK RENDER:", {
+    containerId: r.id,
+    palletsFound: lines.length,
+    lot: r.lot
+  });
+}
 
 const text = [
   r.container,
