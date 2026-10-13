@@ -3758,45 +3758,6 @@ const updateArrivals = uniqueRecords.filter(record => {
 
 });
 
-// 🧪 JK FRESH DRY RUN — NO MODIFICA SUPABASE
-
-console.table(
-  newArrivals.map(r => ({
-    action: "INSERT",
-    po: r.po,
-    container: r.container
-  }))
-);
-
-console.table(
-  updateArrivals.map(r => {
-    const existing = findArrivalMatches(r)[0];
-
-    return {
-      action: "UPDATE",
-      po: r.po,
-      container: r.container,
-      famous_manifest: Boolean(
-        existing?.manifest_name ||
-        existing?.last_manifest_import
-      ),
-      commodity_current: existing?.commodity,
-      commodity_jk: r.commodity,
-      origin_current: existing?.origin,
-      origin_jk: r.origin
-    };
-  })
-);
-
-alert(
-  `DRY RUN — No database changes\n` +
-  `New arrivals: ${newArrivals.length}\n` +
-  `Updates: ${updateArrivals.length}\n` +
-  `Skipped: ${uniqueRecords.length - newArrivals.length - updateArrivals.length}`
-);
-
-return;
-
 // INSERT nuevos arrivals
 if (newArrivals.length) {
   const { error: insertError } =
