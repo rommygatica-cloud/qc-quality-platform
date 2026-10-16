@@ -204,10 +204,30 @@
       </div>
     </section>
 
-    <section id="traceability" class="view">
-      <h2>Traceability Search</h2>
-      <p>Search by PO, lot, container, grower, or commodity.</p>
-    </section>
+   <section id="traceability" class="view">
+
+  <div class="pageIntro">
+    <h2>Traceability Search</h2>
+    <p>Track inventory, pallet history, and QC scores.</p>
+  </div>
+
+  <div id="traceabilityHomeGrid" class="qaHomeGrid">
+
+    <article class="stat qaHomeCard">
+      <b>🔎 Traceability Search</b>
+      <span>Search by PO, lot, container, grower, or commodity.</span>
+    </article>
+
+    <article class="stat qaHomeCard" onclick="openTraceabilityModule('inventory')">
+      <b>📦 Inventory Detail</b>
+      <span>View inventory, pallet details, and QC scores.</span>
+    </article>
+
+  </div>
+
+  <div id="traceabilityModuleContent" style="margin-top:28px;"></div>
+
+</section>
 
     <section id="qa" class="view">
       <div class="pageIntro">
@@ -529,5 +549,6 @@
   <script src="quality-intelligence.js?v=3"></script>
   <script src="inspection-import.js?v=9"></script>
   <script src="app.js?v=qa-control-138"></script>
+  <script src="traceability.js?v=1"></script>
 </body>
 </html>

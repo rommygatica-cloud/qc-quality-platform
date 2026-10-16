@@ -152,6 +152,14 @@ function normalizeInboundInspectionRow(row, sourceRowNumber) {
       ? "famous"
       : "smarterm";
 
+const rawPoVessel = inspectionClean(
+  inspectionGet(row, ["PO / Vessel / Truck"])
+);
+
+const motherVessel = rawPoVessel.includes("_")
+  ? rawPoVessel.split("_").slice(1).join("_").trim()
+  : "";
+      
   const rawLotOrReceivingEntry = inspectionClean(
     inspectionGet(row, ["Lot Number"])
   );
@@ -159,6 +167,7 @@ function normalizeInboundInspectionRow(row, sourceRowNumber) {
     inspection: {
       source: "Decofrut",
       inspection_type: "Inbound",
+      mother_vessel: motherVessel,
 
       source_sheet_id:
         inspectionClean(
@@ -174,12 +183,9 @@ function normalizeInboundInspectionRow(row, sourceRowNumber) {
         ),
 
       po_number:
-        inspectionClean(
-          inspectionGet(row, [
-            "PO Number",
-            "PO / Vessel / Truck"
-          ])
-        ),
+  inspectionClean(
+    inspectionGet(row, ["PO Number"])
+  ),
 
             lot_number:
         sourceSystem === "smarterm"
@@ -1562,6 +1568,7 @@ window.groupInspectionDryRunBySheet =
     source: first.inspection.source || "Decofrut",
     inspection_type: inspectionType,
     source_sheet_id: sourceSheetId,
+    mother_vessel: first.inspection.mother_vessel || "",
 
     container:
       group.containers.length === 1
@@ -1625,6 +1632,7 @@ window.groupInspectionDryRunBySheet =
         .from("arrival_containers")
         .select("id")
         .eq("container", inspectionRow.container)
+        .eq("po", inspectionRow.po_number)
         .maybeSingle();
 
     if (!arrivalError && arrivalMatch?.id) {
@@ -1648,7 +1656,10 @@ window.groupInspectionDryRunBySheet =
     );
     throw insertInspectionError;
   }
+  // Remember the new inspection ID for recovery if needed
+const newInspectionId = savedInspection.id;
 
+try {
   // 5) Crear samples
   for (const record of group.records) {
     const sampleRow = {
@@ -1778,6 +1789,24 @@ window.groupInspectionDryRunBySheet =
     sourceSheetId,
     samplesInserted: group.records.length
   };
+    } catch (error) {
+    console.error("❌ Inspection import failed:", error);
+
+    const { error: cleanupError } = await supabaseClient
+      .from("qc_inspections")
+      .delete()
+      .eq("id", newInspectionId);
+
+    if (cleanupError) {
+      console.error("❌ Cleanup failed:", cleanupError);
+      throw new Error(
+        `Import failed and cleanup failed for inspection ${sourceSheetId}. Manual review required.`
+      );
+    }
+
+    console.log("🧹 Incomplete inspection removed:", sourceSheetId);
+    throw error;
+  }
 }
 
 window.saveSingleInspectionGroup =

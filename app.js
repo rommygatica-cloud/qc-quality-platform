@@ -3012,532 +3012,100 @@ return;
 }
 
 window.previewInspectionImport = async function previewInspectionImport() {
-  const file = $("inspectionImportFile")?.files[0];
 
-  if (!file) {
+  // Use the updated Decofrut inspection importer
+  const previewFile = $("inspectionImportFile")?.files[0];
+
+  if (!previewFile) {
     alert("Please select an inspection file.");
     return;
   }
 
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array" });
+  const rows = await window.buildInspectionDryRun(previewFile, "auto");
+  const groups = window.groupInspectionDryRunBySheet(rows);
 
-  console.log("📋 INSPECTION WORKBOOK:", workbook.SheetNames);
-
-  workbook.SheetNames.forEach(sheetName => {
-    const sheet = workbook.Sheets[sheetName];
-
-    const rows = XLSX.utils.sheet_to_json(sheet, {
-      defval: ""
-    });
-
-    console.log(`📄 SHEET: ${sheetName}`);
-    console.log("Rows:", rows);
-    console.log("Headers:", Object.keys(rows[0] || {}));
-    console.table(
-  rows.map(r => ({
-    IdSheet: r["IdSheet"],
-    Container: r["Container/Hatch."],
-    PO: r["PO Number"],
-    Sample: r["Samples"],
-    Pallet: r["Pallet No"],
-    Grade: r["QcGrade"]
-  }))
+  console.log("🫘 DECOFRUT IMPORT PREVIEW:", groups);
+console.log(
+  "🛡️ SAVE FUNCTION AVAILABLE:",
+  typeof window.saveSingleInspectionGroup
 );
-  });
 
-  const allRows = workbook.SheetNames.flatMap(sheetName => {
-  const sheet = workbook.Sheets[sheetName];
-
-  return XLSX.utils.sheet_to_json(sheet, {
-    defval: ""
-  });
-});
-
-const inspectionIds = [
-  ...new Set(
-    allRows
-      .map(r => String(r["IdSheet"] || "").trim())
-      .filter(Boolean)
-  )
-];
-
-const containers = [
-  ...new Set(
-    allRows
-      .map(r => String(r["Container/Hatch."] || "").trim())
-      .filter(Boolean)
-  )
-];
-
-const poNumbers = [
-  ...new Set(
-    allRows
-      .map(r => String(r["PO Number"] || "").trim())
-      .filter(Boolean)
-  )
-];
-
-const commodities = [
-  ...new Set(
-    allRows
-      .map(r => String(r["Specie"] || "").trim())
-      .filter(Boolean)
-  )
-];
-
-const inspectionSummary = inspectionIds.map(id => {
-  const inspectionRows = allRows.filter(
-    r => String(r["IdSheet"] || "").trim() === id
-  );
-
-  const firstRow = inspectionRows[0] || {};
-
-  return {
-    IdSheet: id,
-    PO: String(firstRow["PO Number"] || "").trim(),
-    Container: String(firstRow["Container/Hatch."] || "").trim(),
-    Samples: inspectionRows.length
-  };
-});
-
-console.table(inspectionSummary);
-
-const { data: existingInspections, error: existingInspectionsError } =
-  await supabaseClient
-    .from("qc_inspections")
-    .select("id, source_sheet_id, container, po_number")
-    .eq("source", "Decofrut")
-    .in("source_sheet_id", inspectionIds);
-
-if (existingInspectionsError) {
-  console.error(
-    "❌ Error checking existing inspections:",
-    existingInspectionsError
-  );
-} else {
-  console.log(
-    "🔎 EXISTING DECOFRUT INSPECTIONS:",
-    existingInspections
-  );
-
-  console.table(
-    inspectionSummary.map(item => ({
-      ...item,
-      Status: existingInspections?.some(
-        existing =>
-          String(existing.source_sheet_id || "").trim() === item.IdSheet
-      )
-        ? "ALREADY EXISTS"
-        : "NEW"
-    }))
-  );
+// DECOFRUT — FULL IMPORT
+if (!groups.length) {
+  alert("No valid inspections were found in this file.");
+  return;
 }
 
-const arrivalChecks = await Promise.all(
-  inspectionSummary.map(async item => {
-    const { data, error } = await supabaseClient
-      .from("arrival_containers")
-      .select("id, po, container")
-      .eq("po", item.PO)
-      .eq("container", item.Container)
-      .maybeSingle();
-
-    return {
-      IdSheet: item.IdSheet,
-      PO: item.PO,
-      Container: item.Container,
-      ArrivalID: data?.id || "",
-      LinkStatus: error
-        ? "ERROR"
-        : data?.id
-          ? "MATCHED"
-          : "NOT FOUND"
-    };
-  })
+const totalSamples = groups.reduce(
+  (total, group) => total + group.records.length,
+  0
 );
 
-console.log("🔗 INSPECTION → ARRIVAL CHECK:");
-console.table(arrivalChecks);
-
-const inspectionPayloadPreview = inspectionSummary.map(item => {
-  const inspectionRows = allRows.filter(
-    r => String(r["IdSheet"] || "").trim() === item.IdSheet
-  );
-
-  const firstRow = inspectionRows[0] || {};
-
-  const arrivalMatch = arrivalChecks.find(
-    a => a.IdSheet === item.IdSheet
-  );
-
-  return {
-    source: "Decofrut",
-    inspection_type: "Inbound",
-    source_sheet_id: item.IdSheet,
-
-    container: String(firstRow["Container/Hatch."] || "").trim(),
-    po_number: String(firstRow["PO Number"] || "").trim(),
-    lot_number: String(firstRow["Lot Number"] || "").trim(),
-
-    grower: String(firstRow["Grower"] || "").trim(),
-    commodity: String(firstRow["Specie"] || "").trim(),
-    variety: String(firstRow["Variety"] || "").trim(),
-    origin: String(firstRow["Origin Region"] || "").trim(),
-
-    inspection_date: firstRow["Inspection Date"]
-  ? XLSX.SSF.format("yyyy-mm-dd", firstRow["Inspection Date"])
-  : null,
-
-    arrival_container_id:
-      arrivalMatch?.LinkStatus === "MATCHED"
-        ? arrivalMatch.ArrivalID
-        : null
-  };
-});
-
-console.log("🧪 QC INSPECTIONS PAYLOAD PREVIEW:");
-console.table(inspectionPayloadPreview);
-
-const samplePayloadPreview = allRows.map(row => ({
-  source_sheet_id: String(row["IdSheet"] || "").trim(),
-  sample_number: row["Samples"] || null,
-  pallet_number: String(row["Pallet No"] || "").trim(),
-
-  commodity: String(row["Specie"] || "").trim(),
-  variety: String(row["Variety"] || "").trim(),
-  size: String(row["Size"] || "").trim(),
-  label: String(row["Label"] || "").trim(),
-  pack_style: String(row["Package"] || "").trim(),
-
-  packing_date: row["Packing Date"]
-    ? XLSX.SSF.format("yyyy-mm-dd", row["Packing Date"])
-    : null,
-
-  cases_per_pallet: row["Cases/Pallet"] || null,
-  qc_grade: String(row["QcGrade"] || "").trim(),
-
-  quality: String(row["Quality"] || "").trim(),
-  condition: String(row["Condition"] || "").trim(),
-
-  pulp_temperature: row["Temperature °F"] || null,
-  brix: row["° Brix"] || null,
-
-  comments: String(row["Comments"] || "").trim(),
-
-  grower: String(row["Grower"] || "").trim(),
-  lot_number: String(row["Lot Number"] || "").trim(),
-  origin: String(row["Origin Region"] || "").trim(),
-
-  inspection_date: row["Inspection Date"]
-    ? XLSX.SSF.format("yyyy-mm-dd", row["Inspection Date"])
-    : null
-}));
-
-console.log("🧪 QC SAMPLES PAYLOAD PREVIEW:");
-console.table(samplePayloadPreview);
-
-const baseInspectionColumns = [
-  "Specie",
-  "Boxes",
-  "Kneto",
-  "PO / Vessel / Truck",
-  "Container/Hatch.",
-  "Port",
-  "Inspection Date",
-  "Variety",
-  "Exporter",
-  "Grower",
-  "Package",
-  "Label",
-  "Size",
-  "Container/Hatch_",
-  "Lot Number",
-  "IdSheet",
-  "PO Number",
-  "Origin Region",
-  "Samples",
-  "QcGrade",
-  "Pallet No",
-  "Cases/Pallet",
-  "Labeled Net Weight",
-  "Packing Date",
-  "Temperature °F",
-  "Quality",
-  "Condition",
-  "Comments"
-];
-
-const allSourceColumns = [
-  ...new Set(
-    allRows.flatMap(row => Object.keys(row))
-  )
-];
-
-const detectedDetailColumns = allSourceColumns.filter(
-  column => !baseInspectionColumns.includes(column)
+const confirmImport = confirm(
+  `DECOFRUT IMPORT\n\n` +
+  `Inspections: ${groups.length}\n` +
+  `Samples: ${totalSamples}\n\n` +
+  `This will save REAL data to Supabase.\n` +
+  `Existing inspections will be skipped.\n\n` +
+  `Do you want to continue?`
 );
 
-console.log("🔬 DETECTED DETAIL COLUMNS:");
-console.log(detectedDetailColumns);
+if (!confirmImport) return;
 
-const detailPayloadPreview = [];
+let inserted = 0;
+let skipped = 0;
+let failed = 0;
+let samplesInserted = 0;
 
-allRows.forEach(row => {
-  const sourceSheetId = String(row["IdSheet"] || "").trim();
-  const sampleNumber = row["Samples"] || null;
-  const palletNumber = String(row["Pallet No"] || "").trim();
+const failedInspections = [];
 
-  detectedDetailColumns.forEach(column => {
-    const value = row[column];
+for (const group of groups) {
+  try {
+    const result = await window.saveSingleInspectionGroup(group);
 
-    if (value === "" || value === null || value === undefined) {
-      return;
+    if (result.status === "inserted") {
+      inserted++;
+      samplesInserted += result.samplesInserted || 0;
+    } else if (result.status === "skipped") {
+      skipped++;
     }
 
-    detailPayloadPreview.push({
-      source_sheet_id: sourceSheetId,
-      sample_number: sampleNumber,
-      pallet_number: palletNumber,
-      source_column: column,
-      value: value
-    });
-  });
-});
+    console.log(
+      `🫘 Inspection ${group.sourceSheetId}: ${result.status}`
+    );
 
-console.log("🔬 DETAIL PAYLOAD PREVIEW:");
-console.table(detailPayloadPreview);
-console.log(
-  "🔬 TOTAL DETAIL RECORDS:",
-  detailPayloadPreview.length
-);
+  } catch (error) {
+    failed++;
+    failedInspections.push(group.sourceSheetId);
 
-console.table(
-  detectedDetailColumns.map(column => ({
-    Column: column,
-    Records: detailPayloadPreview.filter(
-      item => item.source_column === column
-    ).length
-  }))
-);
-
-const defectPayloadPreview = detailPayloadPreview.map((item, index) => ({
-  
-  source_sheet_id: item.source_sheet_id,
-  sample_number: item.sample_number,
-  pallet_number: item.pallet_number,
-
-  defect_name: item.source_column,
-  normalized_defect: null,
-  defect_value: item.value,
-  unit: null,
-  defect_group: null,
-  source_column: item.source_column
-}));
-
-console.log("🧪 QC DEFECT PAYLOAD PREVIEW:");
-console.table(defectPayloadPreview);
-
-console.log(
-  "🧪 QC DEFECT PAYLOAD COUNT:",
-  defectPayloadPreview.length
-);
-
-const unmatchedDetails = defectPayloadPreview.filter(detail => {
-  return !samplePayloadPreview.some(sample =>
-    String(sample.source_sheet_id) === String(detail.source_sheet_id) &&
-    String(sample.sample_number) === String(detail.sample_number) &&
-    String(sample.pallet_number) === String(detail.pallet_number)
-  );
-});
-
-console.log(
-  "🔗 UNMATCHED DETAIL RECORDS:",
-  unmatchedDetails.length
-);
-
-const duplicateSampleKeys = samplePayloadPreview
-  .map(sample =>
-    `${sample.source_sheet_id}|${sample.sample_number}|${sample.pallet_number}`
-  )
-  .filter((key, index, array) => array.indexOf(key) !== index);
-
-console.log(
-  "🛡️ DUPLICATE SAMPLE KEYS IN FILE:",
-  duplicateSampleKeys.length
-);
-
-const existingInspectionIds = new Set(
-  (existingInspections || []).map(item =>
-    String(item.source_sheet_id || "").trim()
-  )
-);
-
-const inspectionsAlreadyImported = inspectionIds.filter(id =>
-  existingInspectionIds.has(String(id).trim())
-);
-
-console.log(
-  "🛡️ INSPECTIONS ALREADY IN SUPABASE:",
-  inspectionsAlreadyImported.length
-);
-
-console.log(
-  "🛡️ EXISTING IDS:",
-  inspectionsAlreadyImported
-);
-
-console.log(
-  "🛡️ PARENT INSERT PAUSED — inspections already saved in Supabase"
-);
-
-const insertedInspections = existingInspections || [];
-
-console.log(
-  "🔗 AVAILABLE PARENT INSPECTIONS:",
-  insertedInspections
-);
-
-const samplesReadyToInsert = samplePayloadPreview.map(sample => {
-  const parentInspection = insertedInspections.find(
-    inspection =>
-      String(inspection.source_sheet_id) ===
-      String(sample.source_sheet_id)
-  );
-
-  const { source_sheet_id, ...sampleData } = sample;
-
-return {
-  ...sampleData,
-  inspection_id: parentInspection?.id || null
-};
-});
-
-const samplesWithoutParent = samplesReadyToInsert.filter(
-  sample => !sample.inspection_id
-);
-
-console.log(
-  "🔗 SAMPLES READY TO INSERT:",
-  samplesReadyToInsert.length
-);
-
-console.log(
-  "❌ SAMPLES WITHOUT PARENT:",
-  samplesWithoutParent.length
-);
-
-if (samplesWithoutParent.length > 0) {
-  alert("Sample import stopped. Some samples do not have a parent inspection.");
-  return;
+    console.error(
+      `❌ Inspection ${group.sourceSheetId} failed:`,
+      error
+    );
+  }
 }
 
-const parentInspectionIds = insertedInspections.map(
-  inspection => inspection.id
-);
-
-const { data: insertedSamples, error: existingSamplesError } =
-  await supabaseClient
-    .from("qc_inspection_samples")
-    .select("id, inspection_id, sample_number, pallet_number")
-    .in("inspection_id", parentInspectionIds);
-
-if (existingSamplesError) {
-  console.error(
-    "❌ EXISTING QC SAMPLES ERROR:",
-    existingSamplesError
-  );
-  return;
-}
-
-console.log(
-  "🛡️ SAMPLE INSERT PAUSED — samples already saved in Supabase"
-);
-
-console.log(
-  "🔗 AVAILABLE QC SAMPLES:",
-  insertedSamples.length
-);
-
-const detailsReadyToInsert = defectPayloadPreview.map(detail => {
-  const parentInspection = insertedInspections.find(
-    inspection =>
-      String(inspection.source_sheet_id) ===
-      String(detail.source_sheet_id)
-  );
-
-  const parentSample = insertedSamples.find(
-    sample =>
-      String(sample.inspection_id) === String(parentInspection?.id) &&
-      String(sample.sample_number) === String(detail.sample_number) &&
-      String(sample.pallet_number) === String(detail.pallet_number)
-  );
-
-  return {
-    sample_id: parentSample?.id || null,
-    defect_name: detail.defect_name,
-    normalized_defect: detail.normalized_defect,
-    defect_value: detail.defect_value,
-    unit: detail.unit,
-    defect_group: detail.defect_group,
-    source_column: detail.source_column
-  };
+console.log("📊 DECOFRUT IMPORT SUMMARY:", {
+  inserted,
+  skipped,
+  failed,
+  samplesInserted,
+  failedInspections
 });
-
-const detailsWithoutSample = detailsReadyToInsert.filter(
-  detail => !detail.sample_id
-);
-
-console.log(
-  "🔗 DETAILS READY TO INSERT:",
-  detailsReadyToInsert.length
-);
-
-console.log(
-  "❌ DETAILS WITHOUT SAMPLE:",
-  detailsWithoutSample.length
-);
-
-if (detailsWithoutSample.length > 0) {
-  alert("Detail import stopped. Some details do not have a parent sample.");
-  return;
-}
-
-console.log(
-  "🚀 READY TO INSERT QC DETAILS:",
-  detailsReadyToInsert.length
-);
-
-const { data: insertedDetails, error: insertDetailsError } =
-  await supabaseClient
-    .from("qc_inspection_defects")
-    .insert(detailsReadyToInsert)
-    .select("id");
-
-if (insertDetailsError) {
-  console.error(
-    "❌ QC DETAILS INSERT ERROR:",
-    insertDetailsError
-  );
-
-  alert("Detail import stopped. QC details could not be saved.");
-  return;
-}
-
-console.log(
-  "✅ INSERTED QC DETAILS COUNT:",
-  insertedDetails.length
-);
 
 alert(
-  `Inspection Import Preview\n\n` +
-  `Samples: ${allRows.length}\n` +
-  `Inspections: ${inspectionIds.length}\n` +
-  `Containers: ${containers.length}\n` +
-  `PO: ${poNumbers.join(", ")}\n` +
-  `Commodity: ${commodities.join(", ")}\n\n` +
-  `No data has been imported yet.`
+  `DECOFRUT IMPORT COMPLETE\n\n` +
+  `New inspections: ${inserted}\n` +
+  `Already existing: ${skipped}\n` +
+  `Failed: ${failed}\n` +
+  `New samples saved: ${samplesInserted}\n\n` +
+  (failed
+    ? `Failed IdSheets: ${failedInspections.join(", ")}\nCheck Console for details.`
+    : `Import completed without reported errors.`)
 );
+
+return;
+
 };
 
 function backToInboundHome() {
@@ -4031,7 +3599,9 @@ function getArrivalTreatmentAlert(container) {
   const sourceStatusUpper = sourceStatus.toUpperCase();
 
   if (
-    sourceStatusUpper.includes("CT FAILED") ||
+  sourceStatusUpper.includes("HAS NOT PASSED COLD TREATMENT") ||
+  sourceStatusUpper.includes("NOT PASSED COLD TREATMENT") ||
+  sourceStatusUpper.includes("CT FAILED") ||
     sourceStatusUpper.includes("FAILED COLD TREATMENT") ||
     (
       sourceStatusUpper.includes("FAILED") &&
@@ -4781,6 +4351,21 @@ console.log(
 );
 
     console.log("Supabase returned:", data);
+    console.log(
+  "🫘 CT CONTAINERS CHECK:",
+  (data || [])
+    .filter(r =>
+      ["TTNU8149719", "MNBU4508502"].includes(r.container)
+    )
+    .map(r => ({
+      container: r.container,
+      active: r.active,
+      data_type: r.data_type,
+      status: r.status,
+      eta: r.eta,
+      warehouse_eta: r.warehouse_eta
+    }))
+);
     console.log("Supabase error:", error);
 
   if (error) {
