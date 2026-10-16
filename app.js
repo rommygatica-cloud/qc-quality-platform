@@ -2376,6 +2376,10 @@ function extractOriginFromProductName(value) {
 }
 
 async function importManifestExcel() {
+    if (currentUserRole === "QC Lead") {
+    alert("You do not have permission to import manifests.");
+    return;
+  }
   const file = $("manifestFile")?.files[0];
 
   if (!file) {
@@ -2832,6 +2836,21 @@ function renderInboundPreview(records) {
 }
 
 function openInboundModule(module) {
+
+  const requiredPermission = {
+    "arrivals": "arrivals.view",
+    "arrivals-history": "arrivals_history.view"
+  };
+
+ if (currentUserRole === "QC Lead") {
+  const permission = requiredPermission[module];
+
+  if (!permission || !hasPermission(permission)) {
+    console.warn("Access denied to inbound module:", module);
+    return;
+  }
+}
+
   const home = $("inboundHomeGrid");
   const content = $("inboundModuleContent");
 
@@ -2864,8 +2883,10 @@ function openInboundModule(module) {
           </div>
 
        ${!isHistory ? `
-<div class="qaToolbar">
 
+        <div class="qaToolbar">
+
+        <div style="${currentUserRole === 'QC Lead' ? 'display:none;' : 'display:contents;'}">
   <div class="arrivalImportBox">
     <label for="arrivalImportMode">Import Type</label>
 
@@ -2897,6 +2918,7 @@ function openInboundModule(module) {
     />
   </label>
 
+  </div>
   <button
   type="button"
   class="secondaryBtn"
@@ -3170,6 +3192,12 @@ function splitPoLot(value) {
 }
 
 window.importArrivalsExcel = async function importArrivalsExcel() {
+
+  if (currentUserRole === "QC Lead") {
+    alert("You do not have permission to import arrivals.");
+    return;
+  }
+
   const file = $("arrivalImportFile")?.files[0];
   const importMode = $("arrivalImportMode").value;
 
@@ -4667,7 +4695,7 @@ window.updateArrivalField = async function updateArrivalField(id, field, value) 
     status: "arrivals.edit_status",
     priority: "arrivals.edit_priority",
     eta: "arrivals.edit_eta",
-    door: "arrivals.edit_door"
+    door: "arrivals.edit_status"
   }[field];
 
   if (

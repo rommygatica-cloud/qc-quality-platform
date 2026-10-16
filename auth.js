@@ -273,7 +273,18 @@ function applyRoleAccess(role) {
   currentUserRole = role;
 
   const allowedViews =
-    ROLE_ACCESS[role] || ["dashboard"];
+  role === "QC Lead"
+    ? [
+        "dashboard",
+        ...(hasPermission("arrivals.view") ||
+            hasPermission("arrivals_history.view")
+          ? ["daily"]
+          : []),
+        ...(hasPermission("tolerances.view")
+          ? ["tolerances"]
+          : [])
+      ]
+    : ROLE_ACCESS[role] || ["dashboard"];
 
 
   document
@@ -350,9 +361,24 @@ function applyRoleAccess(role) {
 
 function canAccessView(viewId) {
 
+  if (currentUserRole === "QC Lead") {
+
+    if (viewId === "dashboard") return true;
+
+    if (viewId === "daily") {
+      return hasPermission("arrivals.view") ||
+             hasPermission("arrivals_history.view");
+    }
+
+    if (viewId === "tolerances") {
+      return hasPermission("tolerances.view");
+    }
+
+    return false;
+  }
+
   const allowedViews =
-    ROLE_ACCESS[currentUserRole] ||
-    ["dashboard"];
+    ROLE_ACCESS[currentUserRole] || ["dashboard"];
 
   return allowedViews.includes(viewId);
 }
@@ -381,15 +407,16 @@ function applyPermissionAccess() {
       const permission =
         element.dataset.permission;
 
-      if (!hasPermission(permission)) {
+      if (currentUserRole === "QC Lead") {
 
-        element.style.display = "none";
+  element.style.display =
+    hasPermission(permission) ? "" : "none";
 
-      } else {
+} else {
 
-        element.style.display = "";
+  element.style.display = "";
 
-      }
+}
 
     });
 }
