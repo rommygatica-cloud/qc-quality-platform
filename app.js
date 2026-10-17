@@ -4455,25 +4455,28 @@ today.setHours(0, 0, 0, 0);
 const startDate = new Date(today);
 startDate.setDate(startDate.getDate() - 7);
 
-const sortedData = data
-  .sort((a, b) => {
-    // TODAY view:
-    // Warehouse-confirmed arrivals first,
-    // JK ETA-only arrivals second.
-    if (currentArrivalHealthFilter === "today") {
-      const aHasWarehouseEta = Boolean(a.warehouse_eta);
-      const bHasWarehouseEta = Boolean(b.warehouse_eta);
+const sortedData = data.sort((a, b) => {
+  const dateA = a.warehouse_eta
+    ? parseEtaDate(a.warehouse_eta)
+    : null;
 
-      if (aHasWarehouseEta !== bHasWarehouseEta) {
-        return aHasWarehouseEta ? -1 : 1;
-      }
-    }
+  const dateB = b.warehouse_eta
+    ? parseEtaDate(b.warehouse_eta)
+    : null;
 
-    return (
-      parseEtaDate(b.warehouse_eta || b.eta) -
-      parseEtaDate(a.warehouse_eta || a.eta)
-    );
-  });
+  // Containers without Warehouse ETA go last
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return 1;
+  if (!dateB) return -1;
+
+  // History: newest first
+  if (currentArrivalView === "historical") {
+    return dateB - dateA;
+  }
+
+  // Arrivals: earliest first
+  return dateA - dateB;
+});
 
 renderArrivalHealthSummary(sortedData);
 
