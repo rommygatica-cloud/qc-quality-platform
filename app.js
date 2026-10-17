@@ -4658,11 +4658,10 @@ return !searchValue || text.includes(searchValue);
   data-id="${r.id}"
   ${typeof hasPermission === "function" && !hasPermission("arrivals.edit_priority") ? "disabled" : ""}
   onchange="window.updateArrivalField(this.dataset.id, 'priority', this.value)">
-        <option value="">Priority</option>
         <option value="Low" ${r.priority === "Low" ? "selected" : ""}>Low</option>
-        <option value="Normal" ${r.priority === "Normal" ? "selected" : ""}>Normal</option>
-        <option value="High" ${r.priority === "High" ? "selected" : ""}>High</option>
+        <option value="Normal" ${!r.priority || r.priority === "Normal" || r.priority === "High" ? "selected" : ""}>Normal</option>
         <option value="Critical" ${r.priority === "Critical" ? "selected" : ""}>Critical</option>
+        <option value="Lotted" ${r.priority === "Lotted" ? "selected" : ""}>Lotted</option>
       </select>
       ${r.warehouse_eta ? `
   <button

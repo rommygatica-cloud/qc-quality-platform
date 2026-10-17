@@ -1047,20 +1047,26 @@ canvas{
     background:#fafafa;
 }
 
-.arrivalRow.priority-low{
-    border-left:4px solid #22c55e;
+/* LOW - Can wait */
+.arrivalRow.priority-low {
+    border-left: 5px solid #94a3b8;
 }
 
-.arrivalRow.priority-normal{
-    border-left:4px solid #d4a017;
+/* NORMAL - Standard operation */
+.arrivalRow.priority-normal {
+    border-left: 5px solid #22c55e;
 }
 
-.arrivalRow.priority-high{
-    border-left:4px solid #f97316;
+/* CRITICAL - Immediate attention */
+.arrivalRow.priority-critical {
+    border-left: 5px solid #ef4444;
+    background-color: #fff1f2;
 }
 
-.arrivalRow.priority-critical{
-    border-left:4px solid #7c3aed;
+/* LOTTED - Already assigned to a sales order */
+.arrivalRow.priority-lotted {
+    border-left: 5px solid #d946ef;
+    background-color: #fdf4ff;
 }
 .arrivalTreatmentBadge {
   display: inline-flex;
