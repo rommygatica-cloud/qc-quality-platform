@@ -205,14 +205,43 @@
 </section>
 
     <section id="barcode" class="view">
-      <div class="scannerCard">
-        <h2>Barcode Lookup</h2>
-        <p>Type or scan a UPC/GTIN. Camera scanner can be added in version 2.</p>
-        <input id="barcodeInput" placeholder="Example: 895321002693" />
-        <button id="barcodeBtn">Search</button>
-        <div id="barcodeResult"></div>
-      </div>
-    </section>
+  <div class="scannerCard">
+    <h2>Barcode Lookup</h2>
+    <p>Enter a UPC/GTIN or scan it using your camera.</p>
+
+    <input
+      id="barcodeInput"
+      placeholder="Example: 895321002693"
+    />
+
+    <button id="barcodeBtn">Search</button>
+
+    <button
+      id="barcodeScanBtn"
+      type="button"
+    >
+      📷 Scan Barcode
+    </button>
+
+    <div id="barcodeCameraContainer" style="display:none; margin-top:16px;">
+      <video
+        id="barcodeVideo"
+        autoplay
+        playsinline
+        muted
+        style="width:100%; max-width:480px; border-radius:12px;"
+      ></video>
+
+      <button id="barcodeStopBtn" type="button">
+        Close Camera
+      </button>
+
+      <p id="barcodeScanStatus"></p>
+    </div>
+
+    <div id="barcodeResult"></div>
+  </div>
+</section>
 
    <section id="traceability" class="view">
 
@@ -560,5 +589,7 @@
   <script src="inspection-import.js?v=9"></script>
   <script src="app.js?v=qa-control-138"></script>
   <script src="traceability.js?v=1"></script>
+  <script src="https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+  <script src="barcode.js?v=1"></script>
 </body>
 </html>
