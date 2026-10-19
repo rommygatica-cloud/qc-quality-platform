@@ -3557,7 +3557,17 @@ function renderArrivalHealthSummary(list) {
     upcoming: 0
   };
 
-  list.forEach(r => {
+ list.forEach(r => {
+
+  // TODAY: count all containers scheduled by Warehouse ETA
+  if (
+    r.warehouse_eta &&
+    getEtaHealth(r.warehouse_eta) === "today"
+  ) {
+    counts.today++;
+  }
+
+  // Keep Need Attention logic unchanged
   if (isArrivalAttention(r)) {
     counts.delayed++;
     return;
@@ -3566,7 +3576,6 @@ function renderArrivalHealthSummary(list) {
   const health = getEtaHealth(r.warehouse_eta || r.eta);
 
   if (
-    health === "today" ||
     health === "tomorrow" ||
     health === "upcoming"
   ) {
@@ -4498,7 +4507,10 @@ const healthFilteredData =
         if (currentArrivalHealthFilter === "delayed") {
           return isArrivalAttention(r);
         }
-
+if (currentArrivalHealthFilter === "today") {
+  return Boolean(r.warehouse_eta) &&
+         getEtaHealth(r.warehouse_eta) === "today";
+}
         return getEtaHealth(r.warehouse_eta || r.eta) === currentArrivalHealthFilter;
       });
 

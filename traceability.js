@@ -639,6 +639,16 @@ container.innerHTML = `
 
 </div>
 
+<!-- 📥 EXPORT INVENTORY -->
+<div style="margin:18px 0;">
+  <button
+    type="button"
+    class="secondaryBtn"
+    id="inventoryExportExcelBtn">
+    📥 Export Excel
+  </button>
+</div>
+
 <div id="inventoryDetailView">
   <div class="qaTableWrap">
     <table class="qaTable">
@@ -700,6 +710,10 @@ const inventoryDetailRows = document.querySelectorAll(
 );
 setupInventoryGrouping();
 setupInventoryAdvancedFilters();
+
+// 📥 EXPORT INVENTORY EXCEL
+document.getElementById("inventoryExportExcelBtn")
+  ?.addEventListener("click", exportInventoryExcel);
 
 // 🔎 INVENTORY SEARCH — UPDATE BOTH VIEWS
 document.getElementById("inventorySearch")
@@ -994,6 +1008,72 @@ function renderInventorySummary() {
 // 🫘 INVENTORY EXPLORER — LOCATION FILTER
 // ==========================================
 
+// ==========================================
+// 📥 INVENTORY EXPLORER — EXPORT EXCEL
+// ==========================================
+
+function exportInventoryExcel() {
+
+  const rows = getFilteredInventoryRows();
+
+  if (!rows.length) {
+    alert("No inventory records to export.");
+    return;
+  }
+
+  const exportRows = rows.map(r => ({
+    "Grower": r.grower ?? "",
+    "PO": r.lot ?? "",
+    "Lot": r.gs1lot ?? "",
+    "Commodity": r.commodity ?? "",
+    "Variety": r.variety ?? "",
+    "Size": r.size ?? "",
+    "Package": r.package ?? "",
+    "Ageing": getInventoryAgeing(r.receivingdate),
+    "Receiving Date": r.receivingdate
+      ? new Date(r.receivingdate).toLocaleDateString("en-US", {
+          timeZone: "America/New_York"
+        })
+      : "",
+    "Pallet": r.pallet ?? "",
+    "QC Score": r.qcScore || r.grade || "",
+    "Boxes": r.boxes ?? ""
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(exportRows);
+  // 📊 Professional Excel column widths
+worksheet["!cols"] = [
+  { wch: 16 }, // Grower
+  { wch: 14 }, // PO
+  { wch: 20 }, // Lot
+  { wch: 18 }, // Commodity
+  { wch: 24 }, // Variety
+  { wch: 12 }, // Size
+  { wch: 16 }, // Package
+  { wch: 12 }, // Ageing
+  { wch: 18 }, // Receiving Date
+  { wch: 18 }, // Pallet
+  { wch: 14 }, // QC Score
+  { wch: 12 }  // Boxes
+];
+// 📊 Enable Excel filters on all exported columns
+worksheet["!autofilter"] = {
+  ref: worksheet["!ref"]
+};
+
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    "Pallet Detail"
+  );
+
+  XLSX.writeFile(
+    workbook,
+    `Famous_Inventory_${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
+}
 
 function getFilteredInventoryRows() {
   const value = id =>
