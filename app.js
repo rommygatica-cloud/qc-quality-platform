@@ -71,6 +71,12 @@ function initNav() {
     btn.onclick = () => show(btn.dataset.view);
   });
 
+  const barcodeBackBtn = $("barcodeBackBtn");
+
+  if (barcodeBackBtn) {
+    barcodeBackBtn.onclick = () => show("dashboard");
+  }
+
   const search = $("globalSearch");
   if (search) {
     search.oninput = () => {
@@ -126,10 +132,34 @@ function show(id) {
 
   $("pageTitle").textContent = names[id] || "Dashboard";
 
+    // Barcode Verification - Inspector Mode
+  const headerActions = document.querySelector(".headerActions");
+
+  if (headerActions) {
+    headerActions.style.display = id === "barcode" ? "none" : "";
+  }
+
 if (id === "qa") {
   openQAModule("dashboard");
   window.scrollTo(0, 0);
 }
+
+  // Hide extra header information in Barcode Verification
+  const barcodeMode = id === "barcode";
+  // Hide sidebar in Barcode Verification
+const sidebar = document.querySelector(".sidebar");
+
+if (sidebar) {
+  sidebar.style.display = barcodeMode ? "none" : "";
+}
+
+  ["pageSubtitle", "userRoleBadge"].forEach(elementId => {
+    const element = $(elementId);
+
+    if (element) {
+      element.style.display = barcodeMode ? "none" : "";
+    }
+  });
 
 if (id === "admin") {
   openAdminTab("users");
@@ -1011,27 +1041,101 @@ async function lookupBarcode() {
 
   const r = data?.[0];
 
-  $("barcodeResult").innerHTML = r
+    $("barcodeResult").innerHTML = r
     ? `
-      <h3>Match Found</h3>
-      <p><b>Commodity:</b> ${r.commodity || "-"}</p>
-      <p><b>Program:</b> ${r.program || "-"}</p>
-      <p><b>Label:</b> ${r.label || "-"}</p>
-      <p><b>Variety:</b> ${r.variety || "-"}</p>
-      <p><b>UPC:</b> ${r.upc || "-"}</p>
-      <p><b>GTIN:</b> ${r.gtin || "-"}</p>
-      <p><b>Pack Style:</b> ${r.pack_style || "-"}</p>
-      <p><b>PLU:</b> ${r.plu || "-"}</p>
-      <p><b>COO:</b> ${r.coo || "-"}</p>
-      <p><b>SSN East:</b> ${r.ssn_east || "-"}</p>
-      <p><b>SSN West:</b> ${r.ssn_west || "-"}</p>
-      <p><b>Traceability:</b> ${r.traceability_sticker || "-"}</p>
-      <p><b>Item Number:</b> ${r.item_number || "-"}</p>
+      <div class="barcodeProductCard">
+
+        <div class="barcodeProductHeader">
+          <span class="barcodeStatus">✓ Match Found</span>
+        </div>
+
+        <h4>🍇 Product Information</h4>
+
+<div class="barcodeProductGrid">
+  ${[
+    ["Commodity", r.commodity],
+    ["Variety", r.variety],
+    ["Label", r.label],
+    ["Program", r.program],
+    ["Pack Style", r.pack_style],
+    ["COO", r.coo]
+  ].map(([label]) => `
+    <div class="barcodeField">
+      <span class="barcodeFieldLabel">${label}</span>
+      <span class="barcodeFieldValue"></span>
+    </div>
+  `).join("")}
+</div>
+
+<h4>🔎 Barcode Information</h4>
+
+<div class="barcodeProductGrid">
+  ${[
+    ["UPC", r.upc],
+    ["GTIN", r.gtin]
+  ].map(([label]) => `
+    <div class="barcodeField">
+      <span class="barcodeFieldLabel">${label}</span>
+      <span class="barcodeFieldValue"></span>
+    </div>
+  `).join("")}
+</div>
+
+<details class="barcodeAdditionalDetails">
+  <summary>＋ Additional Details</summary>
+
+  <div class="barcodeProductGrid">
+    ${[
+      ["PLU", r.plu],
+      ["Traceability", r.traceability_sticker],
+      ["SSN East", r.ssn_east],
+      ["SSN West", r.ssn_west],
+      ["Item Number", r.item_number]
+    ].map(([label]) => `
+      <div class="barcodeField">
+        <span class="barcodeFieldLabel">${label}</span>
+        <span class="barcodeFieldValue"></span>
+      </div>
+    `).join("")}
+  </div>
+</details>
+      </div>
     `
     : `
-      <h3>No Match Found</h3>
-      <p>This UPC / GTIN does not exist in the Label Database.</p>
+      <div class="barcodeProductCard">
+        <h3>No Match Found</h3>
+        <p>This UPC / GTIN does not exist in the Label Database.</p>
+      </div>
     `;
+
+  if (r) {
+    const values = [
+  // Product Information
+  r.commodity,
+  r.variety,
+  r.label,
+  r.program,
+  r.pack_style,
+  r.coo,
+
+  // Barcode Information
+  r.upc,
+  r.gtin,
+
+  // Additional Details
+  r.plu,
+  r.traceability_sticker,
+  r.ssn_east,
+  r.ssn_west,
+  r.item_number
+];
+
+    document.querySelectorAll(
+      "#barcodeResult .barcodeFieldValue"
+    ).forEach((element, index) => {
+      element.textContent = values[index] || "-";
+    });
+  }
 }
 
 async function uploadDocument() {
