@@ -670,8 +670,7 @@ ${window.currentDailyReportEmailBody}
 Best regards,`;
 
   const mailto =
-    `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
+  `mailto:qualitycoordination@pacifictrellisfruit.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   window.location.href = mailto;
 };
 
