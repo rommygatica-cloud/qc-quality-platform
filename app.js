@@ -3064,6 +3064,11 @@ function openInboundModule(module) {
             <thead>
               <tr>
               <th style="width:40px;"></th>
+${!isHistory ? `
+  <th title="Packing List Uploaded" style="width:85px; text-align:center;">
+    📋 PL Uploaded
+  </th>
+` : ""}
 <th>JK ETA</th>
 <th>WH</th>
 <th>Warehouse ETA</th>
@@ -4730,7 +4735,17 @@ return !searchValue || text.includes(searchValue);
       ${expandedArrivalId === r.id ? "▼" : "▶"}
       </button>
       </td>
-
+${currentArrivalView === "live" ? `
+  <td style="text-align:center;">
+    <input
+      type="checkbox"
+      title="Packing List Uploaded"
+      ${r.packing_list_uploaded ? "checked" : ""}
+      onchange="updatePackingListUploaded('${r.id}', this.checked)"
+      style="width:18px; height:18px; cursor:pointer;"
+    >
+  </td>
+` : ""}
       <td>${r.eta || "-"}</td>
 
 <td>
@@ -4959,6 +4974,32 @@ if (field === "status") {
 }
   await loadInboundArrivals();
 }
+
+// 🫘 ARRIVALS — PACKING LIST UPLOADED CHECKBOX
+window.updatePackingListUploaded = async function(containerId, isChecked) {
+
+  const { error } = await supabaseClient
+    .from("arrival_containers")
+    .update({
+      packing_list_uploaded: isChecked
+    })
+    .eq("id", containerId);
+
+  if (error) {
+    console.error("Packing List update error:", error);
+    alert("Unable to update Packing List status.");
+
+    // Restore the previous state if saving fails
+    await loadInboundArrivals();
+    return;
+  }
+
+  console.log(
+    "📋 Packing List Uploaded:",
+    containerId,
+    isChecked
+  );
+};
 
 window.toggleArrivalDetails = function(id){
 
