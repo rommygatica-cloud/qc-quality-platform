@@ -67,6 +67,21 @@ function openTraceabilityModule(module) {
     loadFamousInventoryFromSupabase()
       .then(rows => {
   inventoryExplorerRows = rows;
+  renderDashboardEasternInventory(rows);
+
+  console.log(
+  "🫘 INVENTORY LOCATIONS:",
+  [...new Set(rows.map(r => r.location))]
+);
+
+// 🫘 TEST — EASTERN PROPAK SUMMARY
+console.table(
+  getEasternPropakInventorySummary(rows).map(group => ({
+    Commodity: group.values[0],
+    Boxes: group.totalBoxes,
+    Pallets: group.palletCount
+  }))
+);
 
   console.log("🫘 Famous inventory restored:", rows.length);
 
@@ -927,6 +942,153 @@ function groupInventoryRows(rows, fields) {
     palletCount: group.pallets.size
   }));
 
+}
+
+// 🫘 DASHBOARD — EASTERN PROPAK INVENTORY SUMMARY
+
+function getEasternPropakInventorySummary(rows) {
+
+  const easternRows = rows.filter(row => {
+    const location = String(row.location ?? "")
+      .trim()
+      .toUpperCase();
+
+    return location === "EPP" ||
+           location === "EASTERN PROPAK";
+  });
+
+  return groupInventoryRows(easternRows, ["commodity"]);
+
+}
+
+// 🫘 DASHBOARD — RENDER EASTERN PROPAK INVENTORY
+
+// 🫘 DASHBOARD — COMPACT EASTERN PROPAK INVENTORY
+function renderDashboardEasternInventory(rows) {
+
+  const container = document.getElementById(
+    "dashboardEasternInventory"
+  );
+
+  if (!container) return;
+
+  const groups = getEasternPropakInventorySummary(rows);
+
+  const totalBoxes = groups.reduce(
+    (sum, group) => sum + group.totalBoxes, 0
+  );
+
+  const totalPallets = groups.reduce(
+    (sum, group) => sum + group.palletCount, 0
+  );
+
+  const commodityNames = {
+    GP: "🍇 Grapes",
+    LE: "🍋 Lemons",
+    MD: "🍊 Mandarins",
+    OR: "🍊 Oranges"
+  };
+
+  container.innerHTML = `
+    <div style="
+      background:#fff;
+      border:1px solid #e2e8f0;
+      border-radius:16px;
+      padding:14px;
+      margin-bottom:14px;
+    ">
+
+      <h3 style="
+        margin:0 0 10px;
+        font-size:18px;
+        color:#172033;
+      ">
+        📦 Eastern Propak Inventory
+      </h3>
+
+      <div style="
+        display:flex;
+        gap:8px;
+        align-items:center;
+        flex-wrap:wrap;
+        margin-bottom:12px;
+        font-size:14px;
+        color:#64748b;
+      ">
+        <span>
+          <strong style="color:#172033;">
+            ${totalBoxes.toLocaleString("en-US")}
+          </strong> Boxes
+        </span>
+
+        <span>·</span>
+
+        <span>
+          <strong style="color:#172033;">
+            ${totalPallets.toLocaleString("en-US")}
+          </strong> Pallets
+        </span>
+      </div>
+
+      <table style="
+        width:100%;
+        table-layout:fixed;
+        border-collapse:collapse;
+        font-size:13px;
+      ">
+
+        <thead>
+          <tr style="
+            background:#f8fafc;
+            color:#64748b;
+          ">
+            <th style="text-align:left;padding:9px 4px;width:44%;">
+              Commodity
+            </th>
+            <th style="text-align:right;padding:9px 4px;width:32%;">
+              Boxes
+            </th>
+            <th style="text-align:right;padding:9px 4px;width:24%;">
+              Pallets
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${groups.map(group => `
+            <tr style="border-bottom:1px solid #f1f5f9;">
+
+              <td style="
+                padding:9px 4px;
+                font-weight:500;
+              ">
+                ${commodityNames[group.values[0]] || group.values[0]}
+              </td>
+
+              <td style="
+                padding:9px 4px;
+                text-align:right;
+                font-variant-numeric:tabular-nums;
+              ">
+                ${group.totalBoxes.toLocaleString("en-US")}
+              </td>
+
+              <td style="
+                padding:9px 4px;
+                text-align:right;
+                font-variant-numeric:tabular-nums;
+              ">
+                ${group.palletCount.toLocaleString("en-US")}
+              </td>
+
+            </tr>
+          `).join("")}
+        </tbody>
+
+      </table>
+
+    </div>
+  `;
 }
 
 // ==========================================

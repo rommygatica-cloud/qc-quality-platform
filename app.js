@@ -113,6 +113,17 @@ function show(id) {
   view.classList.add("active");
   view.style.display = "block";
 
+    // 🫘 DASHBOARD — LOAD EASTERN PROPAK INVENTORY
+  if (id === "dashboard") {
+    loadFamousInventoryFromSupabase()
+      .then(rows => {
+        renderDashboardEasternInventory(rows);
+      })
+      .catch(error => {
+        console.error("❌ Dashboard inventory load failed:", error);
+      });
+  }
+
   document.querySelectorAll(".nav").forEach(n =>
     n.classList.toggle("active", n.dataset.view === id)
   );
@@ -3739,16 +3750,27 @@ function getArrivalTreatmentAlert(container) {
 
   const sourceStatusUpper = sourceStatus.toUpperCase();
 
-  if (
+  // 🟡 CT NOT YET PASSED — AWAITING FINAL RESULT
+if (
   sourceStatusUpper.includes("HAS NOT PASSED COLD TREATMENT") ||
-  sourceStatusUpper.includes("NOT PASSED COLD TREATMENT") ||
+  sourceStatusUpper.includes("NOT PASSED COLD TREATMENT")
+) {
+  return {
+    level: "warning",
+    label: "🟡 CT Pending",
+    detail: sourceStatus
+  };
+}
+
+// 🔴 CONFIRMED COLD TREATMENT FAILURE
+if (
   sourceStatusUpper.includes("CT FAILED") ||
-    sourceStatusUpper.includes("FAILED COLD TREATMENT") ||
-    (
-      sourceStatusUpper.includes("FAILED") &&
-      sourceStatusUpper.includes("COLD TREATMENT")
-    )
-  ) {
+  sourceStatusUpper.includes("FAILED COLD TREATMENT") ||
+  (
+    sourceStatusUpper.includes("FAILED") &&
+    sourceStatusUpper.includes("COLD TREATMENT")
+  )
+) {
     return {
       level: "critical",
       label: "🔴 CT Failed",
@@ -3823,17 +3845,33 @@ function getArrivalReleaseDetails(container) {
     });
   }
 
-  if (upper.includes("FAILED COLD TREATMENT")) {
-    items.push({
-      type: "critical",
-      label: "Cold Treatment: Failed"
-    });
-  } else if (upper.includes("PASSED COLD TREATMENT")) {
-    items.push({
-      type: "success",
-      label: "Cold Treatment: Passed"
-    });
-  }
+  // 🟡 COLD TREATMENT — AWAITING FINAL RESULT
+if (
+  upper.includes("HAS NOT PASSED COLD TREATMENT") ||
+  upper.includes("NOT PASSED COLD TREATMENT")
+) {
+  items.push({
+    type: "warning",
+    label: "Cold Treatment: Pending"
+  });
+
+// 🔴 CONFIRMED COLD TREATMENT FAILURE
+} else if (
+  upper.includes("CT FAILED") ||
+  upper.includes("FAILED COLD TREATMENT")
+) {
+  items.push({
+    type: "critical",
+    label: "Cold Treatment: Failed"
+  });
+
+// 🟢 COLD TREATMENT PASSED
+} else if (upper.includes("PASSED COLD TREATMENT")) {
+  items.push({
+    type: "success",
+    label: "Cold Treatment: Passed"
+  });
+}
 
   if (upper.includes("PENDING INSPECTION")) {
     items.push({
