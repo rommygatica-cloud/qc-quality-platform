@@ -96,6 +96,36 @@ function initNav() {
   }
 }
 
+// 🫘 GARBANCITO — MOBILE MENU
+document.getElementById("mobileMenuBtn")?.addEventListener("click", () => {
+  const sidebar = document.querySelector(".sidebar");
+  const button = document.getElementById("mobileMenuBtn");
+
+  if (!sidebar || !button) return;
+
+  const isOpen = sidebar.classList.toggle("mobile-open");
+
+  button.textContent = isOpen ? "✕" : "☰";
+  button.setAttribute("aria-expanded", String(isOpen));
+});
+
+// 🫘 CLOSE MOBILE MENU AFTER SELECTING A SECTION
+document.querySelectorAll(".sidebar [data-view]").forEach(button => {
+  button.addEventListener("click", () => {
+    const sidebar = document.querySelector(".sidebar");
+    const menuBtn = document.getElementById("mobileMenuBtn");
+
+    if (sidebar) {
+      sidebar.classList.remove("mobile-open");
+    }
+
+    if (menuBtn) {
+      menuBtn.textContent = "☰";
+      menuBtn.setAttribute("aria-expanded", "false");
+    }
+  });
+});
+
 function show(id) {
   if (typeof canAccessView === "function" && !canAccessView(id)) {
     alert("You do not have permission to access this section.");
@@ -115,6 +145,7 @@ function show(id) {
 
     // 🫘 DASHBOARD — LOAD EASTERN PROPAK INVENTORY
   if (id === "dashboard") {
+    renderDashboardTodayArrivals();
     loadFamousInventoryFromSupabase()
       .then(rows => {
         renderDashboardEasternInventory(rows);
@@ -179,7 +210,382 @@ if (id === "admin") {
 }
 }
 
+// 🫘 DASHBOARD — WEEKLY ARRIVALS DATE CONTROL
+
+let dashboardWeekOffset = 0;
+
+function getDashboardWeekRange() {
+  const today = new Date();
+
+  // Monday as the first day of the week
+  const day = (today.getDay() + 6) % 7;
+
+  const monday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() - day + dashboardWeekOffset * 7
+  );
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const toISO = date => [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+
+  return {
+    start: toISO(monday),
+    end: toISO(sunday)
+  };
+}
+
+// 🫘 DASHBOARD — WEEKLY ARRIVALS
+async function renderDashboardWeeklyArrivals() {
+  const container = $("dashboardWeeklyQC");
+  if (!container) return;
+
+  const { start, end } = getDashboardWeekRange();
+
+  // 🫘 WEEKLY ARRIVALS — FRIENDLY DATE LABEL
+const weekStart = new Date(`${start}T12:00:00`);
+const weekEnd = new Date(`${end}T12:00:00`);
+
+const formatShortDate = date =>
+  date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric"
+  });
+
+// ISO week number
+const weekDate = new Date(Date.UTC(
+  weekStart.getFullYear(),
+  weekStart.getMonth(),
+  weekStart.getDate()
+));
+
+weekDate.setUTCDate(
+  weekDate.getUTCDate() + 4 - (weekDate.getUTCDay() || 7)
+);
+
+const yearStart = new Date(Date.UTC(weekDate.getUTCFullYear(), 0, 1));
+
+const weekNumber = Math.ceil(
+  (((weekDate - yearStart) / 86400000) + 1) / 7
+);
+
+const weekLabel = `Week ${weekNumber} · ${formatShortDate(weekStart)} – ${formatShortDate(weekEnd)}`;
+
+  const { data: arrivals, error } = await supabaseClient
+    .from("arrival_containers")
+    .select("id, container, grower, warehouse_eta")
+    .gte("warehouse_eta", start)
+    .lte("warehouse_eta", end);
+
+  if (error) {
+    console.error("Weekly arrivals error:", error);
+    container.innerHTML = "<p>Unable to load weekly arrivals.</p>";
+    return;
+  }
+
+  const rows = arrivals || [];
+
+// 🫘 GET VARIETIES FOR WEEKLY ARRIVALS
+const containerIds = rows.map(row => row.id);
+
+let manifestLines = [];
+
+if (containerIds.length > 0) {
+  const { data, error: manifestError } = await supabaseClient
+    .from("arrival_manifest_lines")
+    .select("container_id, variety")
+    .in("container_id", containerIds);
+
+  if (manifestError) {
+    console.error("Weekly manifest lines error:", manifestError);
+  } else {
+    manifestLines = data || [];
+  }
+}
+
+// 🫘 GROUP WEEKLY ARRIVALS BY GROWER AND VARIETY
+const weeklyGroups = new Map();
+
+rows.forEach(row => {
+  const varieties = [
+    ...new Set(
+      manifestLines
+        .filter(line => line.container_id === row.id)
+        .map(line => line.variety?.trim())
+        .filter(Boolean)
+    )
+  ];
+
+  const grower = row.grower || "Unknown Grower";
+
+  (varieties.length ? varieties : ["Not specified"]).forEach(variety => {
+    const key = JSON.stringify([grower, variety]);
+
+    weeklyGroups.set(key, {
+      grower,
+      variety,
+      count: (weeklyGroups.get(key)?.count || 0) + 1
+    });
+  });
+});
+
+const weeklySummary = [...weeklyGroups.values()];
+
+  container.innerHTML = `
+  <div class="qaPanel">
+    <h3>📊 Weekly Scheduled Arrivals</h3>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin:16px 0;">
+
+  <button
+    type="button"
+    id="dashboardPrevWeek"
+style="width:38px; height:38px; flex-shrink:0; padding:0; display:flex; align-items:center; justify-content:center; background:#f8fafc; color:#334155; border:1px solid #e2e8f0; border-radius:50%; font-size:14px; box-shadow:none; cursor:pointer;"  >
+    ◀
+  </button>
+
+  <span style="font-weight:600; text-align:center; font-size:14px;">
+  ${weekLabel}
+</span>
+
+  <button
+    type="button"
+    id="dashboardNextWeek"
+style="width:38px; height:38px; flex-shrink:0; padding:0; display:flex; align-items:center; justify-content:center; background:#f8fafc; color:#334155; border:1px solid #e2e8f0; border-radius:50%; font-size:14px; box-shadow:none; cursor:pointer;"  >
+    ▶
+  </button>
+
+</div>
+
+    <!-- 🫘 WEEKLY ARRIVALS — COMPACT KPI -->
+<div style="margin:16px 0 20px;">
+
+  <div style="
+    font-size:36px;
+    font-weight:700;
+    line-height:1.1;
+    color:#0f172a;
+  ">
+    ${rows.length}
+  </div>
+
+  <div style="
+    font-size:14px;
+    color:#64748b;
+    margin-top:4px;
+  ">
+    Scheduled Containers
+  </div>
+
+</div>
+
+    <div style="overflow-x:auto; margin-top:16px;">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:10px;">Grower</th>
+            <th style="text-align:left; padding:10px;">Variety</th>
+            <th style="text-align:center; padding:10px;">Containers</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            weeklySummary.length
+              ? weeklySummary.map(item => `
+                  <tr>
+                    <td style="padding:10px; border-top:1px solid #e2e8f0;">
+                      ${item.grower}
+                    </td>
+                    <td style="padding:10px; border-top:1px solid #e2e8f0;">
+                      ${item.variety}
+                    </td>
+                    <td style="padding:10px; text-align:center; border-top:1px solid #e2e8f0;">
+                      ${item.count}
+                    </td>
+                  </tr>
+                `).join("")
+              : `
+                <tr>
+                  <td colspan="3" style="padding:16px; text-align:center; color:#64748b;">
+                    No arrivals scheduled for this week.
+                  </td>
+                </tr>
+              `
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+`;
+
+// 🫘 WEEKLY ARRIVALS — NAVIGATION
+
+$("dashboardPrevWeek")?.addEventListener("click", () => {
+  dashboardWeekOffset--;
+  renderDashboardWeeklyArrivals();
+});
+
+$("dashboardNextWeek")?.addEventListener("click", () => {
+  dashboardWeekOffset++;
+  renderDashboardWeeklyArrivals();
+});
+
+}
+
+// 🫘 DASHBOARD — TODAY'S ARRIVALS
+async function renderDashboardTodayArrivals() {
+
+  const container = $("dashboardTodayArrivals");
+  if (!container) return;
+
+  const today = new Date();
+  const todayISO = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0")
+  ].join("-");
+
+  const { data: arrivals, error } = await supabaseClient
+  .from("arrival_containers")
+  .select("id, container, grower, warehouse_eta")
+  .eq("warehouse_eta", todayISO);
+
+  if (error) {
+    console.error("Dashboard arrivals error:", error);
+    container.innerHTML = "<p>Unable to load today's arrivals.</p>";
+    return;
+  }
+
+  const rows = arrivals || [];
+
+// 🫘 GET VARIETIES FOR TODAY'S ARRIVALS
+const containerIds = rows.map(row => row.id);
+
+let manifestLines = [];
+
+if (containerIds.length > 0) {
+  const { data, error: manifestError } = await supabaseClient
+    .from("arrival_manifest_lines")
+    .select("container_id, variety")
+    .in("container_id", containerIds);
+
+  if (manifestError) {
+    console.error("Dashboard manifest lines error:", manifestError);
+  } else {
+    manifestLines = data || [];
+  }
+}
+
+// 🫘 GROUP TODAY'S ARRIVALS BY GROWER AND VARIETY
+const arrivalGroups = new Map();
+
+rows.forEach(row => {
+  const varieties = [
+    ...new Set(
+      manifestLines
+        .filter(line => line.container_id === row.id)
+        .map(line => line.variety?.trim())
+        .filter(Boolean)
+    )
+  ];
+
+  const grower = row.grower || "Unknown Grower";
+
+  (varieties.length ? varieties : ["Not specified"]).forEach(variety => {
+    const key = JSON.stringify([grower, variety]);
+
+    arrivalGroups.set(key, {
+      grower,
+      variety,
+      count: (arrivalGroups.get(key)?.count || 0) + 1
+    });
+  });
+});
+
+const arrivalSummary = [...arrivalGroups.values()];
+
+  container.innerHTML = `
+  <div class="qaPanel">
+    <h3>🚢 Today's Arrivals</h3>
+
+    <!-- 🫘 TODAY'S ARRIVALS — COMPACT KPI -->
+<div style="margin:16px 0 20px;">
+
+  <div style="
+    font-size:36px;
+    font-weight:700;
+    line-height:1.1;
+    color:#0f172a;
+  ">
+    ${rows.length}
+  </div>
+
+  <div style="
+    font-size:14px;
+    color:#64748b;
+    margin-top:4px;
+  ">
+    Scheduled Containers Today
+  </div>
+
+</div>
+
+    <div style="overflow-x:auto; margin-top:16px;">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:10px;">Grower</th>
+            <th style="text-align:left; padding:10px;">Variety</th>
+            <th style="text-align:center; padding:10px;">Containers</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            arrivalSummary.length
+              ? arrivalSummary.map(item => `
+                  <tr>
+                    <td style="padding:10px; border-top:1px solid #e2e8f0;">
+                      ${item.grower}
+                    </td>
+                    <td style="padding:10px; border-top:1px solid #e2e8f0;">
+                      ${item.variety}
+                    </td>
+                    <td style="padding:10px; text-align:center; border-top:1px solid #e2e8f0;">
+                      ${item.count}
+                    </td>
+                  </tr>
+                `).join("")
+              : `
+                <tr>
+                  <td colspan="3" style="padding:16px; text-align:center; color:#64748b;">
+                    No arrivals scheduled for today.
+                  </td>
+                </tr>
+              `
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+`;
+
+}
+
 function renderDashboard() {
+  // 🫘 LOAD DASHBOARD DATA ON INITIAL OPEN
+renderDashboardTodayArrivals();
+renderDashboardWeeklyArrivals();
+
+loadFamousInventoryFromSupabase()
+  .then(rows => renderDashboardEasternInventory(rows))
+  .catch(error => console.error("Dashboard inventory error:", error));
   if ($("defectCount")) $("defectCount").textContent = defects.length;
   if ($("tolCount")) $("tolCount").textContent = docs.tolerances.length;
   if ($("specCount")) $("specCount").textContent = docs.specs.length;
@@ -505,6 +911,7 @@ const reportEmailBody = Object.entries(warehouseGroups).map(
         if (latestNote) {
           text += `Note: ${latestNote.note}\n`;
         }
+        text += "\n";
       });
     }
 

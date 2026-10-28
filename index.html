@@ -9,6 +9,9 @@
 </head>
 
 <body>
+  <button id="mobileMenuBtn" type="button" style="display:none;">
+  ☰
+</button>
   <aside class="sidebar">
     <div class="brand">
       <span>🔎</span>
@@ -29,34 +32,57 @@
       <button class="nav" data-view="traceability">Traceability Search</button>
       <button class="nav" data-view="qa">QA Control</button>
       <button id="adminMenu" class="nav" data-view="admin">Administration</button>
-    </nav>
+
+<button id="logoutBtn" type="button" class="logoutMenuBtn">
+  🚪 Logout
+</button>
+
+</nav>
   </aside>
 
   <main>
     <header>
       <div>
         <h1 id="pageTitle">Dashboard</h1>
-        <p id="pageSubtitle">Quality standards and operational resources.</p>
+        <p id="pageSubtitle">Quality operational resources.</p>
         <p id="userRoleBadge"></p>
       </div>
 
       <div class="headerActions">
-        <input id="globalSearch" placeholder="Search defects, specs, tolerances, UPC..." />
-        <button id="logoutBtn">🚪 Logout</button>
-      </div>
+  <!-- Reserved for future dashboard actions -->
+</div>
     </header>
 
     <section id="dashboard" class="view active">
       <!-- 🫘 EASTERN PROPAK INVENTORY OVERVIEW -->
 <div id="dashboardEasternInventory"></div>
-      <div class="cards">
-        <article class="stat"><b id="defectCount">0</b><span>Defects</span></article>
-        <article class="stat"><b>3</b><span>Commodities</span></article>
-        <article class="stat"><b id="tolCount">0</b><span>Tolerance PDFs</span></article>
-        <article class="stat"><b id="specCount">0</b><span>Spec PDFs</span></article>
-      </div>
+      <!-- 🫘 DASHBOARD — DAILY ARRIVALS -->
+<div
+  id="dashboardTodayArrivals"
+  style="margin-top:20px;"
+>
+  <div class="qaPanel">
+    <h3>🚢 Today's Arrivals</h3>
+    <p style="color:#64748b;">
+      Loading today's arrivals...
+    </p>
+  </div>
+</div>
 
-      <div class="quickGrid">
+<!-- 🫘 DASHBOARD — WEEKLY QC PERFORMANCE -->
+<div
+  id="dashboardWeeklyQC"
+  style="margin-top:20px;"
+>
+  <div class="qaPanel">
+    <h3>📊 Weekly Arrivals</h3>
+    <p style="color:#64748b;">
+      Loading weekly inspections...
+    </p>
+  </div>
+</div>
+
+      <div class="quickGrid" style="display:none;">
         <button data-view="defects">Library</button>
         <button data-view="tolerances">Tolerances</button>
         <button data-view="specs">Specifications</button>
