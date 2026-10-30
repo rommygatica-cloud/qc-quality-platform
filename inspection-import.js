@@ -1625,21 +1625,50 @@ window.groupInspectionDryRunBySheet =
     comments: ""
   };
 
-  // 3) Intentar enlazar con Arrival existente
-  if (inspectionRow.container) {
-    const { data: arrivalMatch, error: arrivalError } =
-      await supabaseClient
-        .from("arrival_containers")
-        .select("id")
-        .eq("container", inspectionRow.container)
-        .eq("po", inspectionRow.po_number)
-        .maybeSingle();
+  // 3) Link inspection to an existing Arrival
+if (inspectionRow.container) {
 
-    if (!arrivalError && arrivalMatch?.id) {
-      inspectionRow.arrival_container_id =
-        arrivalMatch.id;
-    }
+  const containerNumber =
+    String(inspectionRow.container).trim().toUpperCase();
+
+  const inspectionPO =
+    String(inspectionRow.po_number || "").trim();
+
+  let query = supabaseClient
+    .from("arrival_containers")
+    .select("id, po")
+    .ilike("container", containerNumber);
+
+  // Validate PO only when provided
+  if (inspectionPO) {
+    query = query.eq("po", inspectionPO);
   }
+
+  const { data: matches, error: arrivalError } = await query;
+
+  if (arrivalError) {
+    throw new Error(
+      `Arrival lookup failed for ${containerNumber}: ${arrivalError.message}`
+    );
+  }
+
+  if (matches?.length === 1) {
+    inspectionRow.arrival_container_id = matches[0].id;
+
+  } else if (matches?.length > 1) {
+    console.warn(
+      "⚠️ Multiple arrivals found. Inspection not linked:",
+      containerNumber,
+      matches
+    );
+
+  } else {
+    console.warn(
+      "⚠️ Arrival not found. Inspection not linked:",
+      containerNumber
+    );
+  }
+}
 
   // 4) Crear inspección
   const { data: savedInspection, error: insertInspectionError } =

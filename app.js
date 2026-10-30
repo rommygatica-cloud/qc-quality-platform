@@ -3465,6 +3465,80 @@ function openInboundModule(module) {
   >
 
 </div>
+${isHistory ? `
+  <!-- 🫘 ARRIVALS HISTORY — CUSTOMIZE VIEW -->
+  <div id="historyCustomizeView" class="qaPanel" style="margin-bottom:20px;">
+
+    <h3>⚙️ Customize View</h3>
+
+    <p style="color:#64748b; font-size:13px;">
+      Explore historical arrivals using custom filters.
+    </p>
+
+    <div id="historyFilters" style="
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:16px;
+">
+
+  <div style="flex:1; min-width:140px;">
+    <label for="historyYearFilter">Year</label>
+    <select id="historyYearFilter" style="width:100%;">
+      <option value="">All Years</option>
+    </select>
+  </div>
+
+  <div style="flex:1; min-width:140px;">
+    <label for="historyMonthFilter">Month</label>
+    <select id="historyMonthFilter" style="width:100%;">
+      <option value="">All Months</option>
+      <option value="01">January</option>
+      <option value="02">February</option>
+      <option value="03">March</option>
+      <option value="04">April</option>
+      <option value="05">May</option>
+      <option value="06">June</option>
+      <option value="07">July</option>
+      <option value="08">August</option>
+      <option value="09">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+  </div>
+<!-- 🫘 HISTORY — WEEK FILTER -->
+<div style="flex:1; min-width:140px;">
+  <label for="historyWeekFilter">Week</label>
+  <select id="historyWeekFilter" style="width:100%;">
+    <option value="">All Weeks</option>
+  </select>
+</div>
+<!-- 🫘 HISTORY — GROWER FILTER -->
+<div style="flex:1; min-width:140px;">
+  <label for="historyGrowerFilter">Grower</label>
+  <select id="historyGrowerFilter" style="width:100%;">
+    <option value="">All Growers</option>
+  </select>
+</div>
+<!-- 🫘 HISTORY — COMMODITY FILTER -->
+<div style="flex:1; min-width:140px;">
+  <label for="historyCommodityFilter">Commodity</label>
+  <select id="historyCommodityFilter" style="width:100%;">
+    <option value="">All Commodities</option>
+  </select>
+</div>
+<!-- 🫘 HISTORY — VARIETY FILTER -->
+<div style="flex:1; min-width:140px;">
+  <label for="historyVarietyFilter">Variety</label>
+  <select id="historyVarietyFilter" style="width:100%;">
+    <option value="">All Varieties</option>
+  </select>
+</div>
+</div>
+
+  </div>
+` : ""}
 <div class="qaTableWrap">
           <table class="qaTable">
             <thead>
@@ -3953,6 +4027,8 @@ if (
   }
 }
 
+await linkPendingDecofrutInspections();
+
 alert(
   `JK Fresh import completed.\n` +
   `New arrivals: ${newArrivals.length}\n` +
@@ -3967,6 +4043,215 @@ currentArrivalView =
 
 openInboundModule("arrivals");
 };
+
+// 🫘 GARBANCITO — AUTO-LINK DECOFRUT INSPECTIONS
+// Safely match pending inspections with JK Fresh arrivals.
+
+async function linkPendingDecofrutInspections() {
+
+  // SAFETY SWITCH — keep FALSE until testing is completed
+  const APPLY_LINKS = true;
+
+  console.log("🔗 Checking pending Decofrut inspections...");
+
+  const { data: pending, error: pendingError } =
+    await supabaseClient
+      .from("qc_inspections")
+      .select("id, container, po_number, inspection_date, arrival_container_id")
+      .is("arrival_container_id", null);
+
+  if (pendingError) {
+    console.error("❌ Pending inspections error:", pendingError);
+    return;
+  }
+
+  const { data: arrivals, error: arrivalsError } =
+    await supabaseClient
+      .from("arrival_containers")
+      .select("id, container, po, warehouse_eta, eta");
+
+  if (arrivalsError) {
+    console.error("❌ Arrivals lookup error:", arrivalsError);
+    return;
+  }
+
+  const normalize = value =>
+    String(value || "").trim().toUpperCase();
+
+  const normalizeDate = value => {
+
+    if (!value) return null;
+
+    const text = String(value).trim();
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+      const date = new Date(text + "T00:00:00Z");
+      return !Number.isNaN(date.getTime()) &&
+        date.toISOString().slice(0, 10) === text
+        ? text
+        : null;
+    }
+
+    const match = text.match(
+      /^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/
+    );
+
+    if (!match) return null;
+
+    const months = {
+      JAN: 1, FEB: 2, MAR: 3, APR: 4,
+      MAY: 5, JUN: 6, JUL: 7, AUG: 8,
+      SEP: 9, OCT: 10, NOV: 11, DEC: 12
+    };
+
+    const month = months[match[2].toUpperCase()];
+    if (!month) return null;
+
+    const year = 2000 + Number(match[3]);
+    const day = Number(match[1]);
+
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    if (
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    ) {
+      return null;
+    }
+
+    return date.toISOString().slice(0, 10);
+  };
+
+  const dayDifference = (date1, date2) => {
+    if (!date1 || !date2) return Infinity;
+
+    const first = Date.parse(date1 + "T00:00:00Z");
+    const second = Date.parse(date2 + "T00:00:00Z");
+
+    return Number.isFinite(first) && Number.isFinite(second)
+      ? Math.abs(first - second) / 86400000
+      : Infinity;
+  };
+
+  const results = [];
+
+  let linked = 0;
+  let failed = 0;
+
+  for (const inspection of pending || []) {
+
+    const container = normalize(inspection.container);
+    const po = normalize(inspection.po_number);
+    const inspectionDate = normalizeDate(
+      inspection.inspection_date
+    );
+
+    const sameContainer = (arrivals || []).filter(arrival =>
+      container &&
+      normalize(arrival.container) === container
+    );
+
+    // Require valid dates to prevent cross-season linking.
+    const candidates = sameContainer.filter(arrival => {
+
+      const arrivalDate = normalizeDate(
+        arrival.warehouse_eta
+      ) || normalizeDate(arrival.eta);
+
+      if (!inspectionDate || !arrivalDate) {
+        return false;
+      }
+
+      if (po) {
+
+        // With PO: exact PO + same year.
+        // CT delays may exceed two days.
+        return (
+          normalize(arrival.po) === po &&
+          inspectionDate.slice(0, 4) ===
+            arrivalDate.slice(0, 4)
+        );
+
+      }
+
+      // Without PO: container + date within two days.
+      return dayDifference(inspectionDate, arrivalDate) <= 2;
+
+    });
+
+    const uniqueMatch = candidates.length === 1
+      ? candidates[0]
+      : null;
+
+    const status = !container
+      ? "MISSING CONTAINER"
+      : !inspectionDate
+        ? "MISSING DATE"
+        : sameContainer.length === 0
+          ? "ARRIVAL NOT FOUND"
+          : candidates.length > 1
+            ? "AMBIGUOUS"
+            : uniqueMatch
+              ? "READY TO LINK"
+              : "NO SAFE MATCH";
+
+    const result = {
+      inspection_id: inspection.id,
+      container,
+      po,
+      inspection_date: inspectionDate,
+      matches: candidates.length,
+      arrival_id: uniqueMatch?.id || null,
+      arrival_po: uniqueMatch?.po || null,
+      status
+    };
+
+    results.push(result);
+
+    if (!uniqueMatch || !APPLY_LINKS) {
+      continue;
+    }
+
+    // Actual database update — disabled during testing.
+    const { data: updated, error: updateError } =
+      await supabaseClient
+        .from("qc_inspections")
+        .update({
+          arrival_container_id: uniqueMatch.id
+        })
+        .eq("id", inspection.id)
+        .is("arrival_container_id", null)
+        .select("id");
+
+    if (updateError) {
+      failed++;
+      console.error("❌ Auto-link failed:", container, updateError);
+    } else if (updated?.length === 1) {
+      linked++;
+      result.status = "LINKED";
+    } else {
+      result.status = "SKIPPED — ALREADY UPDATED";
+    }
+  }
+
+  console.table(results);
+
+  console.log("🫘 DECOFRUT AUTO-LINK SUMMARY:", {
+    mode: APPLY_LINKS ? "LIVE" : "DRY RUN",
+    pending: pending?.length || 0,
+    ready: results.filter(r => r.status === "READY TO LINK").length,
+    linked,
+    failed,
+    unmatched: results.filter(r =>
+      !["READY TO LINK", "LINKED"].includes(r.status)
+    ).length
+  });
+
+  return results;
+}
+
+window.testPendingInspectionLinks = linkPendingDecofrutInspections;
 
 function normalizeOrigin(value) {
   const code = String(value || "").trim().toUpperCase();
@@ -4335,6 +4620,19 @@ function renderArrivalDetails(
 ) {
    const isHistoricalView =
   currentArrivalView === "historical";
+
+  // 🫘 HISTORY — FILTER MANIFEST DETAIL BY VARIETY
+const selectedHistoryVariety = isHistoricalView
+  ? ($("historyVarietyFilter")?.value || "").trim().toLowerCase()
+  : "";
+
+const visibleHistoryLines = selectedHistoryVariety
+  ? lines.filter(line =>
+      String(line.variety || "")
+        .split(",")
+        .some(v => v.trim().toLowerCase() === selectedHistoryVariety)
+    )
+  : lines;
  
    const treatmentAlert = getArrivalTreatmentAlert(container);
    const releaseDetails = getArrivalReleaseDetails(container);
@@ -4377,21 +4675,47 @@ function renderArrivalDetails(
     `;
   }
 
-  const uniqueLots = [...new Set(lines.map(x => x.lot).filter(Boolean))];
-  const uniqueSubgrowers = [...new Set(lines.map(x => x.subgrower).filter(Boolean))];
-  const uniquePackDates = [...new Set(lines.map(x => x.pack_date).filter(Boolean))];
+  // 🫘 HISTORY — LOTS BASED ON VISIBLE VARIETY
+const uniqueLots = [
+  ...new Set(
+    visibleHistoryLines
+      .map(x => x.lot)
+      .filter(Boolean)
+  )
+];
 
-const totalBoxes = lines.reduce(
+// 🫘 HISTORY — SUBGROWERS BASED ON VISIBLE VARIETY
+const uniqueSubgrowers = [
+  ...new Set(
+    visibleHistoryLines
+      .map(x => x.subgrower)
+      .filter(Boolean)
+  )
+];
+
+// 🫘 HISTORY — PACK DATES BASED ON VISIBLE VARIETY
+const uniquePackDates = [
+  ...new Set(
+    visibleHistoryLines
+      .map(x => x.pack_date)
+      .filter(Boolean)
+  )
+];
+
+// 🫘 HISTORY — TOTAL BOXES BASED ON VISIBLE VARIETY
+const totalBoxes = visibleHistoryLines.reduce(
   (sum, x) => sum + (Number(x.boxes) || 0),
   0
 );
 
-const tempRecorderCount = lines.filter(
+// 🫘 HISTORY — TEMP RECORDERS BASED ON VISIBLE LINES
+const tempRecorderCount = visibleHistoryLines.filter(
   x => String(x.condition || "").trim().toLowerCase() === "temp recorder"
 ).length;
 
+// 🫘 HISTORY — PALLETS BASED ON VISIBLE VARIETY
 const manifestPalletNumbers = new Set(
-  (lines || [])
+  (visibleHistoryLines || [])
     .map(line => String(line.pallet_number || "").trim())
     .filter(Boolean)
 );
@@ -4454,6 +4778,15 @@ console.log(
   inspectionByPallet
 );
 
+// 🫘 DEBUG — GRAPE INSPECTION MATCHING
+console.log("🍇 QC DEBUG:", {
+  container: container.container,
+  manifestPallets: [...manifestPalletNumbers],
+  inspectionSamples: inspectionSamples,
+  inspectedPallets: [...inspectedPalletNumbers],
+  inspectionCoverage: inspectionCoverage
+});
+
 const pendingLotGroups = Object.values(
   lines
     .filter(x => !String(x.lot || "").trim())
@@ -4480,7 +4813,7 @@ const pendingLotGroups = Object.values(
 );
 
 const groupedLines = Object.values(
-  lines.reduce((acc, x) => {
+  visibleHistoryLines.reduce((acc, x) => {
     const key = [
       x.lot,
       x.commodity,
@@ -5017,6 +5350,154 @@ today.setHours(0, 0, 0, 0);
 const startDate = new Date(today);
 startDate.setDate(startDate.getDate() - 7);
 
+// 🫘 HISTORY — INITIALIZE DATE FILTERS
+if (currentArrivalView === "historical") {
+  const yearSelect = $("historyYearFilter");
+  const monthSelect = $("historyMonthFilter");
+
+  if (yearSelect && monthSelect) {
+    const selectedYear = yearSelect.value;
+
+    const years = [...new Set(
+      data
+        .map(r => String(r.warehouse_eta || "").slice(0, 4))
+        .filter(y => /^\d{4}$/.test(y))
+    )].sort((a, b) => b.localeCompare(a));
+
+    yearSelect.innerHTML =
+      `<option value="">All Years</option>` +
+      years.map(y => `<option value="${y}">${y}</option>`).join("");
+
+    yearSelect.value = years.includes(selectedYear) ? selectedYear : "";
+
+    yearSelect.onchange = () => loadInboundArrivals();
+    monthSelect.onchange = () => loadInboundArrivals();
+  }
+}
+
+// 🫘 HISTORY — GROWER FILTER OPTIONS
+if (currentArrivalView === "historical") {
+  const growerSelect = $("historyGrowerFilter");
+
+  if (growerSelect) {
+    const selectedGrower = growerSelect.value;
+
+    const growers = [...new Set(
+      data
+        .map(r => String(r.grower || "").trim())
+        .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+
+    growerSelect.innerHTML =
+      `<option value="">All Growers</option>` +
+      growers.map(g => `
+        <option value="${escapeHtml(g)}">${escapeHtml(g)}</option>
+      `).join("");
+
+    growerSelect.value = growers.includes(selectedGrower)
+      ? selectedGrower
+      : "";
+
+    growerSelect.onchange = () => loadInboundArrivals();
+  }
+}
+
+// 🫘 HISTORY — COMMODITY FILTER OPTIONS
+if (currentArrivalView === "historical") {
+  const commoditySelect = $("historyCommodityFilter");
+
+  if (commoditySelect) {
+    const selectedCommodity = commoditySelect.value;
+
+    // 🫘 HISTORY — NORMALIZE COMMODITY OPTIONS
+const normalizeCommodity = value => {
+  const name = String(value || "").trim().toLowerCase();
+
+  if (name.includes("grape")) return "Grapes";
+  if (name.includes("lemon")) return "Lemon";
+  if (name.includes("mandarin")) return "Mandarin";
+  if (name.includes("orange")) return "Orange";
+  if (name.includes("clementine")) return "Clementine";
+
+  return name
+    ? name.charAt(0).toUpperCase() + name.slice(1)
+    : "";
+};
+
+const commodities = [...new Set(
+  [
+    ...(data || []).map(r => r.commodity),
+    ...(manifestLines || []).map(line => line.commodity)
+  ]
+    .flatMap(value => String(value || "").split(","))
+    .map(normalizeCommodity)
+    .filter(Boolean)
+)].sort((a, b) => a.localeCompare(b));
+
+    commoditySelect.innerHTML =
+      `<option value="">All Commodities</option>` +
+      commodities.map(c => `
+        <option value="${escapeHtml(c)}">${escapeHtml(c)}</option>
+      `).join("");
+
+    commoditySelect.value = commodities.includes(selectedCommodity)
+      ? selectedCommodity
+      : "";
+
+    commoditySelect.onchange = () => loadInboundArrivals();
+  }
+}
+
+// 🫘 HISTORY — VARIETY FILTER OPTIONS
+if (currentArrivalView === "historical") {
+  const varietySelect = $("historyVarietyFilter");
+  const selectedCommodity = $("historyCommodityFilter")?.value || "";
+
+  if (varietySelect) {
+    const selectedVariety = varietySelect.value;
+
+    const normalizeCommodityName = value => {
+      const name = String(value || "").trim().toLowerCase();
+
+      if (name.includes("grape")) return "Grapes";
+      if (name.includes("lemon")) return "Lemon";
+      if (name.includes("mandarin")) return "Mandarin";
+      if (name.includes("orange")) return "Orange";
+      if (name.includes("clementine")) return "Clementine";
+
+      return name;
+    };
+
+    const varieties = [...new Set(
+      (manifestLines || [])
+        .filter(line => {
+          if (!selectedCommodity) return true;
+
+          return String(line.commodity || "")
+            .split(",")
+            .some(c =>
+              normalizeCommodityName(c) === selectedCommodity
+            );
+        })
+        .flatMap(line => String(line.variety || "").split(","))
+        .map(v => v.trim())
+        .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
+
+    varietySelect.innerHTML =
+      `<option value="">All Varieties</option>` +
+      varieties.map(v => `
+        <option value="${escapeHtml(v)}">${escapeHtml(v)}</option>
+      `).join("");
+
+    varietySelect.value = varieties.includes(selectedVariety)
+      ? selectedVariety
+      : "";
+
+    varietySelect.onchange = () => loadInboundArrivals();
+  }
+}
+
 const sortedData = data.sort((a, b) => {
   const dateA = a.warehouse_eta
     ? parseEtaDate(a.warehouse_eta)
@@ -5069,7 +5550,111 @@ if (currentArrivalHealthFilter === "today") {
 
 const searchValue = ($("arrivalSearch")?.value || "").toLowerCase().trim();
 
-const tableData = healthFilteredData.filter(r => {
+// 🫘 HISTORY — YEAR & MONTH FILTERS
+const historyYear = $("historyYearFilter")?.value || "";
+const historyMonth = $("historyMonthFilter")?.value || "";
+
+// 🫘 HISTORY — ISO WEEK FILTER
+const historyWeek = $("historyWeekFilter")?.value || "";
+const historyGrower = $("historyGrowerFilter")?.value || "";
+const historyCommodity = $("historyCommodityFilter")?.value || "";
+const historyVariety = $("historyVarietyFilter")?.value || "";
+
+function getHistoryISOWeek(dateString) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString || "")) return "";
+
+  const date = new Date(`${dateString}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return "";
+
+  date.setUTCDate(
+    date.getUTCDate() + 4 - (date.getUTCDay() || 7)
+  );
+
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+
+  return String(Math.ceil(
+    (((date - yearStart) / 86400000) + 1) / 7
+  )).padStart(2, "0");
+}
+
+// Fill Week dropdown without losing the selected week
+const historyWeekSelect = $("historyWeekFilter");
+
+if (currentArrivalView === "historical" && historyWeekSelect) {
+  const selectedWeek = historyWeekSelect.value;
+
+  historyWeekSelect.innerHTML =
+    `<option value="">All Weeks</option>` +
+    Array.from({ length: 53 }, (_, i) => {
+      const week = String(i + 1).padStart(2, "0");
+      return `<option value="${week}">Week ${week}</option>`;
+    }).join("");
+
+  historyWeekSelect.value = selectedWeek;
+  historyWeekSelect.onchange = () => loadInboundArrivals();
+}
+
+const historyDateFilteredData =
+  currentArrivalView === "historical"
+    ? healthFilteredData.filter(r => {
+        const date = String(r.warehouse_eta || "");
+
+        const matchesYear =
+          !historyYear || date.startsWith(historyYear + "-");
+
+        const matchesMonth =
+          !historyMonth || date.slice(5, 7) === historyMonth;
+
+        const matchesWeek =
+  !historyWeek ||
+  getHistoryISOWeek(date) === historyWeek;
+
+const matchesGrower =
+  !historyGrower || r.grower === historyGrower;
+
+  // 🫘 HISTORY — COMMODITY FILTER
+const containerLines = linesByContainerId[r.id] || [];
+
+const matchesCommodity =
+  !historyCommodity ||
+  containerLines.some(line =>
+    String(line.commodity || "")
+      .split(",")
+      .map(c => c.trim().toLowerCase())
+      .includes(historyCommodity.toLowerCase())
+  ) ||
+  String(r.commodity || "")
+    .split(",")
+    .map(c => c.trim().toLowerCase())
+    .includes(historyCommodity.toLowerCase());
+
+// 🫘 HISTORY — VARIETY FILTER
+const matchesVariety =
+  !historyVariety ||
+  containerLines.some(line =>
+    String(line.variety || "")
+      .split(",")
+      .some(v =>
+        v.trim().toLowerCase() === historyVariety.toLowerCase()
+      )
+  ) ||
+  String(r.variety || "")
+    .split(",")
+    .some(v =>
+      v.trim().toLowerCase() === historyVariety.toLowerCase()
+    );
+
+return matchesYear &&
+       matchesMonth &&
+       matchesWeek &&
+       matchesGrower &&
+       matchesCommodity &&
+       matchesVariety;
+
+      })
+    : healthFilteredData;
+
+const tableData = historyDateFilteredData.filter(r => {
   const lines = linesByContainerId[r.id] || [];
   if (r.container === "SUDU8234302") {
   console.log("🔎 SHERLOCK RENDER:", {
