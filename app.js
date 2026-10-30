@@ -182,7 +182,7 @@ function show(id) {
   }
 
 if (id === "qa") {
-  openQAModule("dashboard");
+  window.openQAManagement();
   window.scrollTo(0, 0);
 }
 
@@ -4050,7 +4050,7 @@ openInboundModule("arrivals");
 async function linkPendingDecofrutInspections() {
 
   // SAFETY SWITCH — keep FALSE until testing is completed
-  const APPLY_LINKS = true;
+  const APPLY_LINKS = false;
 
   console.log("🔗 Checking pending Decofrut inspections...");
 
