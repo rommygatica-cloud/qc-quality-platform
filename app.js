@@ -2971,7 +2971,8 @@ const records = rows
 
     pallet_number: String(row.tagid || "").trim(),
 
-    lot: String(row.entryno || "").trim(),
+    lot: String(row.gs1lot || row.entryno || "").trim(),
+    receiving_entry: String(row.entryno || "").trim(),
 
     commodity: String(row.commodity || "").trim(),
     variety: String(row.variety || "").trim(),
@@ -3180,6 +3181,7 @@ data.records.forEach(r => {
     pallet_number: palletNumber,
 
     lot: String(r.lot || "").trim(),
+    receiving_entry: String(r.receiving_entry || "").trim(),
 
     grower: data.grower,
     commodity: r.commodity,
@@ -3223,10 +3225,13 @@ for (const line of updateLines) {
       .from("arrival_manifest_lines")
       .update({
         po: line.po,
-        ...(line.lot ? {
-        lot: line.lot,
-        lot_source: "famous"
-        } : {}),
+        ...(line.receiving_entry ? {
+  receiving_entry: line.receiving_entry
+} : {}),
+        ...(line.lot && String(line.lot).trim() ? {
+  lot: String(line.lot).trim(),
+  lot_source: "famous"
+} : {}),
         grower: line.grower,
         commodity: line.commodity,
         variety: line.variety,
