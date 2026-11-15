@@ -93,7 +93,9 @@ const { data: inspectionHeaders, error: inspectionError } =
       po_number,
       lot_number,
       receiving_entry,
-      grower
+      grower,
+      commodity,
+      variety
     `);
 
 if (inspectionError) {
@@ -103,6 +105,39 @@ if (inspectionError) {
 console.log(
   "🔬 QA Inspection Headers:",
   inspectionHeaders?.length ?? 0
+);
+
+// 🫘 QA MANAGEMENT — POSSIBLE DUPLICATE CANDIDATES
+const duplicateGroups = new Map();
+
+(inspectionHeaders || [])
+  .filter(r => r.inspection_type === "Inbound")
+  .forEach(r => {
+
+    const key = [
+      r.inspection_date,
+      r.container,
+      r.lot_number || r.receiving_entry,
+      r.grower,
+      r.commodity,
+      r.variety
+    ]
+      .map(v => String(v || "").trim().toUpperCase())
+      .join("|");
+
+    if (!duplicateGroups.has(key)) {
+      duplicateGroups.set(key, []);
+    }
+
+    duplicateGroups.get(key).push(r);
+  });
+
+const possibleDuplicates = [...duplicateGroups.values()]
+  .filter(group => group.length > 1);
+
+console.log(
+  "🔎 Possible Duplicate Groups:",
+  possibleDuplicates.length
 );
 
 console.log(
