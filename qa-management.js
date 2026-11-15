@@ -140,6 +140,55 @@ console.log(
   possibleDuplicates.length
 );
 
+// 🔬 QA MANAGEMENT — DUPLICATE SAMPLE COMPARISON
+const candidateInspectionIds = possibleDuplicates
+  .flat()
+  .map(r => r.id);
+
+const { data: duplicateSamples, error: duplicateSamplesError } =
+  await supabaseClient
+    .from("qc_inspection_samples")
+    .select("inspection_id, pallet_number, sample_number")
+    .in("inspection_id", candidateInspectionIds);
+
+if (duplicateSamplesError) {
+  console.error("❌ Error loading duplicate samples:", duplicateSamplesError);
+}
+
+console.log(
+  "🔬 Duplicate Candidate Samples:",
+  duplicateSamples?.length ?? 0
+);
+
+// 🔬 Compare pallet and sample combinations
+const samplesByInspection = new Map();
+
+(duplicateSamples || []).forEach(s => {
+  if (!samplesByInspection.has(s.inspection_id)) {
+    samplesByInspection.set(s.inspection_id, []);
+  }
+
+  samplesByInspection.get(s.inspection_id).push(
+    `${s.pallet_number}|${s.sample_number}`
+  );
+});
+
+const confirmedSampleMatches = possibleDuplicates.filter(group => {
+  const signatures = group.map(inspection => {
+    const samples = samplesByInspection.get(inspection.id) || [];
+
+    return JSON.stringify([...samples].sort());
+  });
+
+  return signatures[0] !== "[]" &&
+    signatures.every(signature => signature === signatures[0]);
+});
+
+console.log(
+  "🔬 Possible Duplicates — Matching Samples:",
+  confirmedSampleMatches.length
+);
+
 console.log(
   "🔐 QA Inspection Validations:",
   inspectionValidations.length
