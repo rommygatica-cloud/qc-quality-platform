@@ -286,6 +286,49 @@ groupedInventory.forEach(group => {
       </div>
 
       <div class="qaPanel" style="margin-top:24px;">
+            <!-- 🔬 QA MANAGEMENT — POSSIBLE DUPLICATES -->
+      <div class="qaPanel" style="margin-top:24px;">
+        <h3>🔎 Possible Duplicate Inspections</h3>
+
+        <p style="color:#64748b;">
+          Inbound inspections with matching lot, container,
+          grower, variety and sample identifiers.
+          Pending QC validation.
+        </p>
+
+        <div class="qaTableWrap" style="margin-top:18px;">
+          <table class="qaTable">
+            <thead>
+              <tr>
+                <th>Container</th>
+                <th>Lot</th>
+                <th>Grower</th>
+                <th>Variety</th>
+                <th>IdSheets</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${confirmedSampleMatches.map(group => `
+                <tr>
+                  <td>${escapeHtml(group[0].container)}</td>
+                  <td>${escapeHtml(group[0].lot_number || group[0].receiving_entry)}</td>
+                  <td>${escapeHtml(group[0].grower)}</td>
+                  <td>${escapeHtml(group[0].variety)}</td>
+                  <td>${group.map(r => escapeHtml(r.source_sheet_id)).join(" / ")}</td>
+                  <td>🟠 Pending Review</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <p style="margin-top:12px; color:#64748b; font-size:13px;">
+          ${confirmedSampleMatches.length} groups flagged for review.
+          No inspections have been automatically excluded.
+        </p>
+      </div>
   <h3>📦 Current Storage Inventory</h3>
   <p style="color:#64748b;">
     Active Famous inventory · Storage Quality Monitoring
