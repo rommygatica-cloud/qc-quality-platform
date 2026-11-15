@@ -80,6 +80,31 @@ const groupedInventory = [...inventoryGroups.values()];
 // 🫘 QA MANAGEMENT — LOAD INSPECTION VALIDATIONS
 const inspectionValidations = await loadQCInspectionValidations();
 
+// 🫘 QA MANAGEMENT — LOAD INSPECTION HEADERS
+const { data: inspectionHeaders, error: inspectionError } =
+  await supabaseClient
+    .from("qc_inspections")
+    .select(`
+      id,
+      source_sheet_id,
+      inspection_type,
+      inspection_date,
+      container,
+      po_number,
+      lot_number,
+      receiving_entry,
+      grower
+    `);
+
+if (inspectionError) {
+  console.error("❌ QA Inspection Load Error:", inspectionError);
+}
+
+console.log(
+  "🔬 QA Inspection Headers:",
+  inspectionHeaders?.length ?? 0
+);
+
 console.log(
   "🔐 QA Inspection Validations:",
   inspectionValidations.length
