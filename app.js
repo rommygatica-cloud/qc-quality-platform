@@ -3605,6 +3605,10 @@ return;
           </div>
         </div>
         <div class="qaToolbar">
+        <select id="inspectionImportType" style="padding:10px; margin-right:12px;">
+  <option value="inbound">Inbound</option>
+  <option value="reinspection">Reinspection</option>
+</select>
   <label class="primaryBtn" style="display:inline-block;">
     📥 Upload Inspection Data
     <input
@@ -3648,7 +3652,8 @@ window.previewInspectionImport = async function previewInspectionImport() {
     return;
   }
 
-  const rows = await window.buildInspectionDryRun(previewFile, "auto");
+  const inspectionType = $("inspectionImportType")?.value || "inbound";
+  const rows = await window.buildInspectionDryRun(previewFile, inspectionType);
   const groups = window.groupInspectionDryRunBySheet(rows);
 
   console.log("🫘 DECOFRUT IMPORT PREVIEW:", groups);
