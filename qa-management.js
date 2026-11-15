@@ -1,6 +1,29 @@
 // 🫘 GARBANCITO — QA MANAGEMENT
-// Storage Quality & Reinspection Monitoring
 
+
+// 🫘 QA MANAGEMENT — INSPECTION VALIDATIONS
+async function loadQCInspectionValidations() {
+  const { data, error } = await supabaseClient
+    .from("qc_inspection_validations")
+    .select(`
+      id,
+      inspection_id,
+      validation_status,
+      related_inspection_id,
+      validation_reason,
+      validated_by,
+      validated_at
+    `)
+    .order("validated_at", { ascending: false });
+
+  if (error) {
+    console.error("❌ QC Validation Load Error:", error);
+    return [];
+  }
+
+  return data || [];
+}
+// Storage Quality & Reinspection Monitoring
 window.openQAManagement = async function () {
   const container = document.getElementById("qaModuleContent");
   if (!container) return;
@@ -54,6 +77,13 @@ inventoryRows.forEach(row => {
 
 const groupedInventory = [...inventoryGroups.values()];
 
+// 🫘 QA MANAGEMENT — LOAD INSPECTION VALIDATIONS
+const inspectionValidations = await loadQCInspectionValidations();
+
+console.log(
+  "🔐 QA Inspection Validations:",
+  inspectionValidations.length
+);
 
 // 🫘 QA MANAGEMENT — DECOFRUT QC SCORES
 const qcRows = await loadDecofrutScoresFromSupabase();

@@ -3605,7 +3605,8 @@ return;
           </div>
         </div>
         <div class="qaToolbar">
-        <select id="inspectionImportType" style="padding:10px; margin-right:12px;">
+        <select id="inspectionImportType"
+  style="padding:11px 16px; margin-right:12px; border:1px solid #e2e8f0; border-radius:10px; background:#ffffff; color:#334155; font-size:14px; cursor:pointer; outline:none;">
   <option value="inbound">Inbound</option>
   <option value="reinspection">Reinspection</option>
 </select>
