@@ -79,6 +79,7 @@ const groupedInventory = [...inventoryGroups.values()];
 
 // 🫘 QA MANAGEMENT — LOAD INSPECTION VALIDATIONS
 const inspectionValidations = await loadQCInspectionValidations();
+const canValidateInspections = hasPermission("inspections.validate");
 
 // 🫘 QA MANAGEMENT — LOAD INSPECTION HEADERS
 const { data: inspectionHeaders, error: inspectionError } =
@@ -306,6 +307,7 @@ groupedInventory.forEach(group => {
                 <th>Variety</th>
                 <th>IdSheets</th>
                 <th>Status</th>
+                ${canValidateInspections ? "<th>Action</th>" : ""}
               </tr>
             </thead>
 
@@ -328,11 +330,23 @@ groupedInventory.forEach(group => {
       : "🟠 Pending Review"
   }
 </td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
+${canValidateInspections ? `
+  <td>
+    <button
+      type="button"
+      class="qaReviewBtn"
+      disabled
+      title="Validation controls coming soon"
+    >
+      🔍 Review
+    </button>
+  </td>
+` : ""}
+</tr>
+`).join("")}
+</tbody>
+</table>
+</div>
 
         <p style="margin-top:12px; color:#64748b; font-size:13px;">
           ${confirmedSampleMatches.length} groups flagged for review.
