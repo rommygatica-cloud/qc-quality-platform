@@ -160,6 +160,24 @@ console.log(
   duplicateSamples?.length ?? 0
 );
 
+const sampleCounts = new Map();
+
+(duplicateSamples || []).forEach(s => {
+  sampleCounts.set(
+    s.inspection_id,
+    (sampleCounts.get(s.inspection_id) || 0) + 1
+  );
+});
+
+console.log(
+  "🔬 Candidate Reports:",
+  candidateInspectionIds.length,
+  "| Reports With Samples:",
+  sampleCounts.size,
+  "| Total Samples:",
+  duplicateSamples?.length ?? 0
+);
+
 // 🔬 Compare pallet and sample combinations
 const samplesByInspection = new Map();
 
