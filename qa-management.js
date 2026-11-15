@@ -317,7 +317,17 @@ groupedInventory.forEach(group => {
                   <td>${escapeHtml(group[0].grower)}</td>
                   <td>${escapeHtml(group[0].variety)}</td>
                   <td>${group.map(r => escapeHtml(r.source_sheet_id)).join(" / ")}</td>
-                  <td>🟠 Pending Review</td>
+                  <td>
+  ${
+    group.some(r =>
+      inspectionValidations.some(v =>
+        v.inspection_id === r.id
+      )
+    )
+      ? "🔵 Validation Recorded"
+      : "🟠 Pending Review"
+  }
+</td>
                 </tr>
               `).join("")}
             </tbody>
