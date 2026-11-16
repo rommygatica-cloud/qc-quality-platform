@@ -533,6 +533,24 @@ const shatterComparison = group.map(inspection => {
 
 console.table(shatterComparison);
 
+// 🔬 QA MANAGEMENT — ALL DEFECTS COMPARISON
+const defectTypes = [...new Map(
+  reviewDefects.map(d => [
+    `${d.defect_name}|${d.unit ?? ""}`,
+    {
+      name: d.defect_name,
+      unit: d.unit
+    }
+  ])
+).values()];
+
+console.log(
+  "🔬 Different Defect Types:",
+  defectTypes.length
+);
+
+console.table(defectTypes);
+
   console.table(
     group.map(r => ({
       IdSheet: r.source_sheet_id,
