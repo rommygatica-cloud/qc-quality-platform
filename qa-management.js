@@ -489,6 +489,22 @@ if (reviewSamplesError) {
 
 console.log("🔬 Review Samples Loaded:", reviewSamples.length);
 
+// 🔬 Load defects for both inspection reports
+const sampleIds = reviewSamples.map(s => s.id);
+
+const { data: reviewDefects, error: reviewDefectsError } =
+  await supabaseClient
+    .from("qc_inspection_defects")
+    .select("sample_id, defect_name, defect_value, unit")
+    .in("sample_id", sampleIds);
+
+if (reviewDefectsError) {
+  console.error("❌ Error loading review defects:", reviewDefectsError);
+  return;
+}
+
+console.log("🔬 Review Defects Loaded:", reviewDefects.length);
+
   console.table(
     group.map(r => ({
       IdSheet: r.source_sheet_id,
