@@ -692,14 +692,23 @@ modal.style.cssText = `
   inset: 0;
   background: rgba(15, 23, 42, 0.65);
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   z-index: 9999;
   padding: 20px;
 `;
 
 modal.innerHTML = `
-  <div style="background:white; padding:24px; border-radius:12px; width:100%; max-width:750px;">
+  <div style="
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  width:100%;
+  max-width:900px;
+  max-height:85vh;
+  overflow-y:auto;
+  box-sizing:border-box;
+">
     <h2>🔬 Inspection Review</h2>
     <p>Compare inspection reports before validation.</p>
     <div style="margin:16px 0; overflow-x:auto;">
@@ -827,6 +836,15 @@ modal.innerHTML = `
   <p style="font-size:12px; color:#64748b; margin-top:10px;">
     Preview only — no validation will be saved.
   </p>
+
+<button
+  type="button"
+  id="qaSaveValidation"
+  disabled
+  style="margin-top:12px; padding:10px 16px;"
+>
+  💾 Save Validation
+</button>
 
 </div>
 
