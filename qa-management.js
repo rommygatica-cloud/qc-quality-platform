@@ -788,6 +788,48 @@ modal.innerHTML = `
     </div>
   `).join("")}
 </div>
+
+<!-- 🔐 QC VALIDATION DECISION -->
+<div style="margin:20px 0; padding:16px; border:1px solid #e2e8f0; border-radius:10px;">
+
+  <h3>🔐 QC Validation Decision</h3>
+
+  <p style="color:#64748b; font-size:13px;">
+    Select which inspection reports should be considered valid.
+  </p>
+
+  <select id="qaValidationDecision"
+          style="width:100%; padding:10px; margin:12px 0;">
+
+    <option value="">Select a decision...</option>
+
+    ${group.map(r => `
+      <option value="${escapeHtml(r.id)}">
+        Keep IdSheet ${escapeHtml(r.source_sheet_id)}
+      </option>
+    `).join("")}
+
+    <option value="both">Keep Both Reports</option>
+
+  </select>
+
+  <label for="qaValidationReason">
+    <strong>Validation Reason</strong>
+  </label>
+
+  <textarea
+    id="qaValidationReason"
+    rows="3"
+    placeholder="Explain the reason for this decision..."
+    style="width:100%; padding:10px; margin-top:8px; box-sizing:border-box;"
+  ></textarea>
+
+  <p style="font-size:12px; color:#64748b; margin-top:10px;">
+    Preview only — no validation will be saved.
+  </p>
+
+</div>
+
     <button type="button" id="qaCloseReview">Close</button>
   </div>
 `;
