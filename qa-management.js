@@ -505,6 +505,34 @@ if (reviewDefectsError) {
 
 console.log("🔬 Review Defects Loaded:", reviewDefects.length);
 
+// 🍇 Compare Shatter (%) by inspection
+const shatterComparison = group.map(inspection => {
+  const sampleIds = reviewSamples
+    .filter(s => s.inspection_id === inspection.id)
+    .map(s => s.id);
+
+  const values = reviewDefects
+    .filter(d =>
+      sampleIds.includes(d.sample_id) &&
+      d.defect_name === "Shatter (%)"
+    )
+    .map(d => Number(d.defect_value))
+    .filter(Number.isFinite);
+
+  return {
+    IdSheet: inspection.source_sheet_id,
+    Samples: sampleIds.length,
+    ShatterReadings: values.length,
+    AverageShatter: values.length
+      ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2) + "%"
+      : "No data",
+    Minimum: values.length ? Math.min(...values) : "—",
+    Maximum: values.length ? Math.max(...values) : "—"
+  };
+});
+
+console.table(shatterComparison);
+
   console.table(
     group.map(r => ({
       IdSheet: r.source_sheet_id,
