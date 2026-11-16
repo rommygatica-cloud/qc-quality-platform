@@ -590,6 +590,40 @@ const allMeasurementsComparison = defectTypes.map(type => {
 
 console.table(allMeasurementsComparison);
 
+// 🔬 QA MANAGEMENT — SAMPLE-LEVEL COMPARISON
+const sampleMeasurements = new Map();
+
+reviewSamples.forEach(sample => {
+  const inspection = group.find(
+    r => r.id === sample.inspection_id
+  );
+
+  if (!inspection) return;
+
+  const sampleKey = [
+    String(sample.pallet_number ?? "").trim().toUpperCase(),
+    String(sample.sample_number ?? "").trim()
+  ].join("|");
+
+  const measurements = reviewDefects
+    .filter(d => d.sample_id === sample.id)
+    .map(d => ({
+      name: d.defect_name,
+      value: d.defect_value,
+      unit: d.unit
+    }));
+
+  sampleMeasurements.set(
+    `${inspection.source_sheet_id}|${sampleKey}`,
+    measurements
+  );
+});
+
+console.log(
+  "🔬 Sample Measurement Groups:",
+  sampleMeasurements.size
+);
+
   console.table(
     group.map(r => ({
       IdSheet: r.source_sheet_id,
