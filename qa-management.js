@@ -622,30 +622,46 @@ modal.innerHTML = `
     <h2>🔬 Inspection Review</h2>
     <p>Compare inspection reports before validation.</p>
     <div style="margin:16px 0; overflow-x:auto;">
-  <h3>🍇 Shatter (%) Comparison</h3>
+  <h3>🔬 Inspection Measurements Comparison</h3>
 
   <table class="qaTable">
     <thead>
       <tr>
-        <th>IdSheet</th>
-        <th>Samples</th>
-        <th>Average</th>
-        <th>Minimum</th>
-        <th>Maximum</th>
+        <th>Measurement</th>
+        <th>Unit</th>
+        ${group.map(r => `
+          <th>IdSheet ${escapeHtml(r.source_sheet_id)}</th>
+        `).join("")}
       </tr>
     </thead>
+
     <tbody>
-      ${shatterComparison.map(r => `
-        <tr>
-          <td>${escapeHtml(r.IdSheet)}</td>
-          <td>${r.Samples}</td>
-          <td>${escapeHtml(r.AverageShatter)}</td>
-          <td>${r.Minimum}</td>
-          <td>${r.Maximum}</td>
-        </tr>
-      `).join("")}
+      ${allMeasurementsComparison.map(row => {
+        const values = group.map(
+          r => row[`IdSheet ${r.source_sheet_id}`]
+        );
+
+        const isDifferent = new Set(values).size > 1;
+
+        return `
+          <tr style="${isDifferent ? 'background:#fff3e0;' : ''}">
+            <td>${escapeHtml(row.Measurement)}</td>
+            <td>${escapeHtml(row.Unit)}</td>
+            ${values.map(value => `
+              <td style="${isDifferent ? 'font-weight:700;' : ''}">
+                ${escapeHtml(String(value ?? "—"))}
+              </td>
+            `).join("")}
+          </tr>
+        `;
+      }).join("")}
     </tbody>
   </table>
+
+  <p style="margin-top:12px; color:#64748b; font-size:13px;">
+    Highlighted rows indicate differences between inspection averages.
+    Values are displayed using their recorded measurement units.
+  </p>
 </div>
     <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:20px 0;">
   ${group.map(r => `
