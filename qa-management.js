@@ -744,6 +744,39 @@ modal.innerHTML = `
     Values are displayed using their recorded measurement units.
   </p>
 </div>
+<div style="margin:20px 0; overflow-x:auto;">
+  <h3>🔎 Individual Measurement Differences</h3>
+
+  ${sampleDifferences.length ? `
+    <table class="qaTable">
+      <thead>
+        <tr>
+          <th>Pallet / Sample</th>
+          <th>Measurement</th>
+          ${group.map(r => `
+            <th>IdSheet ${escapeHtml(r.source_sheet_id)}</th>
+          `).join("")}
+        </tr>
+      </thead>
+
+      <tbody>
+        ${sampleDifferences.map(row => `
+          <tr>
+            <td>${escapeHtml(row.PalletSample)}</td>
+            <td>${escapeHtml(row.Measurement)}</td>
+            ${group.map(r => `
+              <td>${escapeHtml(
+                String(row[r.source_sheet_id] ?? "—")
+              )}</td>
+            `).join("")}
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  ` : `
+    <p>No individual measurement differences detected.</p>
+  `}
+</div>
     <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:20px 0;">
   ${group.map(r => `
     <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
