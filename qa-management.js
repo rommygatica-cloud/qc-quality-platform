@@ -904,6 +904,22 @@ const validationPreview = group.map(r => ({
 }));
 
 console.table(validationPreview);
+// 🔐 Prepare validation records for Supabase
+const validationRecords = group.map(r => ({
+  inspection_id: r.id,
+  validation_status:
+    decision === "both" || decision === r.id
+      ? "valid"
+      : "excluded",
+  related_inspection_id:
+    group.find(other => other.id !== r.id)?.id || null,
+  validation_reason: reason
+}));
+
+console.log(
+  "🔐 Supabase Validation Records — Preview Only:",
+  validationRecords
+);
 // 🔐 Verify the selected inspection group
 console.log(
   "🔐 Validation Group:",
