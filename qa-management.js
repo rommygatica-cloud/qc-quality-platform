@@ -323,15 +323,33 @@ groupedInventory.forEach(group => {
                   <td>${escapeHtml(group[0].variety)}</td>
                   <td>${group.map(r => escapeHtml(r.source_sheet_id)).join(" / ")}</td>
                   <td>
-  ${
-    group.some(r =>
-      inspectionValidations.some(v =>
+ ${
+  (() => {
+    const latest = group.map(r =>
+      inspectionValidations.find(v =>
         v.inspection_id === r.id
       )
-    )
-      ? "🔵 Validation Recorded"
-      : "🟠 Pending Review"
-  }
+    );
+
+    if (latest.every(v => !v)) {
+      return "🟠 Pending Review";
+    }
+
+    if (latest.some(v => !v)) {
+      return "🟡 Partially Validated";
+    }
+
+    const valid = latest.filter(
+      v => v.validation_status === "valid"
+    ).length;
+
+    const excluded = latest.filter(
+      v => v.validation_status === "excluded"
+    ).length;
+
+    return `✅ Validated — ${valid} Valid / ${excluded} Excluded`;
+  })()
+}
 </td>
 ${canValidateInspections ? `
   <td>
