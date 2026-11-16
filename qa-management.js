@@ -467,6 +467,7 @@ window.openQADuplicateReview = async function (groupIndex) {
   }
 
   const group = window.qaDuplicateReviewGroups?.[groupIndex];
+  window.qaActiveReviewGroup = group;
 
   if (!group) {
     console.error("QC review group not found:", groupIndex);
@@ -840,10 +841,9 @@ modal.innerHTML = `
 <button
   type="button"
   id="qaSaveValidation"
-  disabled
   style="margin-top:12px; padding:10px 16px;"
 >
-  💾 Save Validation
+  🔍 Preview Validation
 </button>
 
 </div>
@@ -855,5 +855,58 @@ modal.innerHTML = `
 document.body.appendChild(modal);
 
 modal.querySelector("#qaCloseReview").onclick = () => modal.remove();
+// 🔐 Connect validation button
+modal.querySelector("#qaSaveValidation").onclick =
+  window.saveQADuplicateValidation;
+};
 
+// 🔐 QA MANAGEMENT — VALIDATION SAVE HANDLER
+window.saveQADuplicateValidation = async function () {
+  if (!hasPermission("inspections.validate")) {
+    alert("You do not have permission to validate inspections.");
+    return;
+  }
+
+  console.log("🔐 QC validation permission verified.");
+  const decision = document.getElementById("qaValidationDecision")?.value;
+const reason = document.getElementById("qaValidationReason")?.value.trim();
+
+if (!decision || !reason) {
+  alert("Please select a decision and enter a validation reason.");
+  return;
+}
+
+console.log("🔐 QC Validation Preview:", {
+  decision,
+  reason
+});
+
+// 🔐 Determine which reports are valid or excluded
+const group = window.qaActiveReviewGroup || [];
+
+if (!group.length) {
+  alert("No inspection group selected.");
+  return;
+}
+
+if (decision !== "both" && !group.some(r => r.id === decision)) {
+  alert("Invalid inspection selection.");
+  return;
+}
+
+const validationPreview = group.map(r => ({
+  IdSheet: r.source_sheet_id,
+  InspectionId: r.id,
+  Status: decision === "both" || decision === r.id
+    ? "valid"
+    : "excluded",
+  Reason: reason
+}));
+
+console.table(validationPreview);
+// 🔐 Verify the selected inspection group
+console.log(
+  "🔐 Validation Group:",
+  group.map(r => r.source_sheet_id).join(" / ")
+);
 };
