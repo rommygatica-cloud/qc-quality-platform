@@ -482,4 +482,45 @@ window.openQADuplicateReview = function (groupIndex) {
       Variety: r.variety
     }))
   );
+
+  // 🔬 QA MANAGEMENT — REVIEW WINDOW
+document.getElementById("qaDuplicateModal")?.remove();
+
+const modal = document.createElement("div");
+modal.id = "qaDuplicateModal";
+
+modal.style.cssText = `
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+`;
+
+modal.innerHTML = `
+  <div style="background:white; padding:24px; border-radius:12px; width:100%; max-width:750px;">
+    <h2>🔬 Inspection Review</h2>
+    <p>Compare inspection reports before validation.</p>
+    <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:20px 0;">
+  ${group.map(r => `
+    <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+      <h3>📋 IdSheet ${escapeHtml(r.source_sheet_id)}</h3>
+      <p><strong>Container:</strong> ${escapeHtml(r.container)}</p>
+      <p><strong>Lot:</strong> ${escapeHtml(r.lot_number || r.receiving_entry)}</p>
+      <p><strong>Variety:</strong> ${escapeHtml(r.variety)}</p>
+      <p><strong>Grower:</strong> ${escapeHtml(r.grower)}</p>
+    </div>
+  `).join("")}
+</div>
+    <button type="button" id="qaCloseReview">Close</button>
+  </div>
+`;
+
+document.body.appendChild(modal);
+
+modal.querySelector("#qaCloseReview").onclick = () => modal.remove();
+
 };
