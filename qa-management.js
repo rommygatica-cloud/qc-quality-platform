@@ -624,6 +624,53 @@ console.log(
   sampleMeasurements.size
 );
 
+// 🔬 Compare individual measurements between reports
+const sampleDifferences = [];
+
+if (group.length === 2) {
+  const [reportA, reportB] = group;
+
+  const prefixA = `${reportA.source_sheet_id}|`;
+  const prefixB = `${reportB.source_sheet_id}|`;
+
+  for (const [key, measurementsA] of sampleMeasurements) {
+    if (!key.startsWith(prefixA)) continue;
+
+    const sampleKey = key.slice(prefixA.length);
+    const measurementsB = sampleMeasurements.get(prefixB + sampleKey);
+
+    if (!measurementsB) continue;
+
+    const measurementNames = new Set([
+      ...measurementsA.map(m => `${m.name}|${m.unit ?? ""}`),
+      ...measurementsB.map(m => `${m.name}|${m.unit ?? ""}`)
+    ]);
+
+    for (const measurementKey of measurementNames) {
+      const getValues = measurements =>
+        measurements
+          .filter(m => `${m.name}|${m.unit ?? ""}` === measurementKey)
+          .map(m => String(m.value ?? ""))
+          .sort();
+
+      const valuesA = getValues(measurementsA);
+      const valuesB = getValues(measurementsB);
+
+      if (JSON.stringify(valuesA) !== JSON.stringify(valuesB)) {
+        sampleDifferences.push({
+          PalletSample: sampleKey,
+          Measurement: measurementKey.split("|")[0],
+          [reportA.source_sheet_id]: valuesA.join(", ") || "—",
+          [reportB.source_sheet_id]: valuesB.join(", ") || "—"
+        });
+      }
+    }
+  }
+}
+
+console.log("🔬 Individual Measurement Differences:", sampleDifferences.length);
+console.table(sampleDifferences);
+
   console.table(
     group.map(r => ({
       IdSheet: r.source_sheet_id,
