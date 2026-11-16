@@ -208,6 +208,9 @@ console.log(
   confirmedSampleMatches.length
 );
 
+// 🔬 Make duplicate groups available for QC review
+window.qaDuplicateReviewGroups = confirmedSampleMatches;
+
 console.log(
   "🔐 QA Inspection Validations:",
   inspectionValidations.length
@@ -335,8 +338,9 @@ ${canValidateInspections ? `
     <button
       type="button"
       class="qaReviewBtn"
-      disabled
-      title="Validation controls coming soon"
+      data-group-index="${confirmedSampleMatches.indexOf(group)}"
+      onclick="window.openQADuplicateReview(Number(this.dataset.groupIndex))"
+      title="Review duplicate inspection reports"
     >
       🔍 Review
     </button>
@@ -454,4 +458,28 @@ ${canValidateInspections ? `
 </div>
     </section>
   `;
+};
+// 🔬 QA MANAGEMENT — INSPECTION REVIEW
+window.openQADuplicateReview = function (groupIndex) {
+  if (!hasPermission("inspections.validate")) {
+    alert("You do not have permission to validate inspections.");
+    return;
+  }
+
+  const group = window.qaDuplicateReviewGroups?.[groupIndex];
+
+  if (!group) {
+    console.error("QC review group not found:", groupIndex);
+    return;
+  }
+
+  console.table(
+    group.map(r => ({
+      IdSheet: r.source_sheet_id,
+      Container: r.container,
+      Lot: r.lot_number || r.receiving_entry,
+      Grower: r.grower,
+      Variety: r.variety
+    }))
+  );
 };
