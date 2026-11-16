@@ -841,7 +841,6 @@ modal.innerHTML = `
 <button
   type="button"
   id="qaSaveValidation"
-  disabled
   style="margin-top:12px; padding:10px 16px;"
 >
   💾 Save Validation
