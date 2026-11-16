@@ -460,7 +460,7 @@ ${canValidateInspections ? `
   `;
 };
 // 🔬 QA MANAGEMENT — INSPECTION REVIEW
-window.openQADuplicateReview = function (groupIndex) {
+window.openQADuplicateReview = async function (groupIndex) {
   if (!hasPermission("inspections.validate")) {
     alert("You do not have permission to validate inspections.");
     return;
@@ -472,6 +472,22 @@ window.openQADuplicateReview = function (groupIndex) {
     console.error("QC review group not found:", groupIndex);
     return;
   }
+
+// 🔬 Load samples for inspection comparison
+const inspectionIds = group.map(r => r.id);
+
+const { data: reviewSamples, error: reviewSamplesError } =
+  await supabaseClient
+    .from("qc_inspection_samples")
+    .select("id, inspection_id, pallet_number, sample_number")
+    .in("inspection_id", inspectionIds);
+
+if (reviewSamplesError) {
+  console.error("❌ Error loading review samples:", reviewSamplesError);
+  return;
+}
+
+console.log("🔬 Review Samples Loaded:", reviewSamples.length);
 
   console.table(
     group.map(r => ({
