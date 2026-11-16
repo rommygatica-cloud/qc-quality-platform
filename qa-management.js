@@ -853,7 +853,8 @@ modal.innerHTML = `
   ></textarea>
 
   <p style="font-size:12px; color:#64748b; margin-top:10px;">
-    Preview only — no validation will be saved.
+    Validation decisions are recorded with user, date, and reason.
+    Original inspection reports are preserved.
   </p>
 
 <button
