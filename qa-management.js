@@ -551,6 +551,45 @@ console.log(
 
 console.table(defectTypes);
 
+// 🔬 Compare all inspection measurements
+const allMeasurementsComparison = defectTypes.map(type => {
+  const result = {
+    Measurement: type.name,
+    Unit: type.unit || "—"
+  };
+
+  group.forEach(inspection => {
+    const sampleIds = new Set(
+      reviewSamples
+        .filter(s => s.inspection_id === inspection.id)
+        .map(s => s.id)
+    );
+
+    const values = reviewDefects
+      .filter(d =>
+        sampleIds.has(d.sample_id) &&
+        d.defect_name === type.name &&
+        d.unit === type.unit
+      )
+      .map(d => d.defect_value)
+      .filter(v => v !== null && v !== "");
+
+    const numbers = values.map(Number);
+
+    result[`IdSheet ${inspection.source_sheet_id}`] =
+      !values.length
+        ? "No data"
+        : numbers.every(Number.isFinite) &&
+          type.name !== "Pallet Type"
+          ? (numbers.reduce((a, b) => a + b, 0) / numbers.length).toFixed(2)
+          : [...new Set(values)].join(", ");
+  });
+
+  return result;
+});
+
+console.table(allMeasurementsComparison);
+
   console.table(
     group.map(r => ({
       IdSheet: r.source_sheet_id,
