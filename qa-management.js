@@ -841,9 +841,10 @@ modal.innerHTML = `
 <button
   type="button"
   id="qaSaveValidation"
+  disabled
   style="margin-top:12px; padding:10px 16px;"
 >
-  🔍 Preview Validation
+  💾 Save Validation
 </button>
 
 </div>
@@ -925,4 +926,43 @@ console.log(
   "🔐 Validation Group:",
   group.map(r => r.source_sheet_id).join(" / ")
 );
+
+// 🔐 Prevent simultaneous validation submissions
+if (window.qaValidationSaving) return;
+
+// 🔐 Save both validation decisions atomically
+const confirmed = window.confirm(
+  "Save this QC validation decision?\n\n" +
+  "This will affect which reports are considered valid."
+);
+
+if (!confirmed) return;
+// 🔐 Lock validation while saving
+window.qaValidationSaving = true;
+
+try {
+  const { error } = await supabaseClient.rpc(
+    "save_qc_duplicate_validation",
+    {
+      p_inspection_a: group[0].id,
+      p_inspection_b: group[1].id,
+      p_keep_inspection: decision === "both" ? null : decision,
+      p_reason: reason
+    }
+  );
+
+  if (error) throw error;
+
+  alert("QC validation saved successfully.");
+  document.getElementById("qaDuplicateModal")?.remove();
+  await window.openQAManagement();
+
+} catch (error) {
+  console.error("❌ QC validation failed:", error);
+  alert("Validation failed: " + (error.message || "Unexpected error"));
+
+} finally {
+  window.qaValidationSaving = false;
+}
+
 };
