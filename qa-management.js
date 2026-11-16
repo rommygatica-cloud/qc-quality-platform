@@ -564,6 +564,32 @@ modal.innerHTML = `
   <div style="background:white; padding:24px; border-radius:12px; width:100%; max-width:750px;">
     <h2>🔬 Inspection Review</h2>
     <p>Compare inspection reports before validation.</p>
+    <div style="margin:16px 0; overflow-x:auto;">
+  <h3>🍇 Shatter (%) Comparison</h3>
+
+  <table class="qaTable">
+    <thead>
+      <tr>
+        <th>IdSheet</th>
+        <th>Samples</th>
+        <th>Average</th>
+        <th>Minimum</th>
+        <th>Maximum</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${shatterComparison.map(r => `
+        <tr>
+          <td>${escapeHtml(r.IdSheet)}</td>
+          <td>${r.Samples}</td>
+          <td>${escapeHtml(r.AverageShatter)}</td>
+          <td>${r.Minimum}</td>
+          <td>${r.Maximum}</td>
+        </tr>
+      `).join("")}
+    </tbody>
+  </table>
+</div>
     <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:20px 0;">
   ${group.map(r => `
     <div style="border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
