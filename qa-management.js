@@ -203,6 +203,20 @@ const confirmedSampleMatches = possibleDuplicates.filter(group => {
     signatures.every(signature => signature === signatures[0]);
 });
 
+// 🫘 QA MANAGEMENT — PENDING DUPLICATE REVIEWS
+const pendingDuplicateGroups = confirmedSampleMatches.filter(group => {
+  return !group.every(inspection =>
+    inspectionValidations.some(
+      v => v.inspection_id === inspection.id
+    )
+  );
+});
+
+console.log(
+  "🔎 Pending Duplicate Reviews:",
+  pendingDuplicateGroups.length
+);
+
 console.log(
   "🔬 Possible Duplicates — Matching Samples:",
   confirmedSampleMatches.length
@@ -291,7 +305,7 @@ groupedInventory.forEach(group => {
 
       <div class="qaPanel" style="margin-top:24px;">
             <!-- 🔬 QA MANAGEMENT — POSSIBLE DUPLICATES -->
-      <div class="qaPanel" style="margin-top:24px;">
+      <div class="qaPanel" style="margin-top:24px; ${canValidateInspections && pendingDuplicateGroups.length > 0 ? "" : "display:none;"}">
         <h3>🔎 Possible Duplicate Inspections</h3>
 
         <p style="color:#64748b;">
@@ -315,7 +329,7 @@ groupedInventory.forEach(group => {
             </thead>
 
             <tbody>
-              ${confirmedSampleMatches.map(group => `
+              ${pendingDuplicateGroups.map(group => `
                 <tr>
                   <td>${escapeHtml(group[0].container)}</td>
                   <td>${escapeHtml(group[0].lot_number || group[0].receiving_entry)}</td>
@@ -371,7 +385,7 @@ ${canValidateInspections ? `
 </div>
 
         <p style="margin-top:12px; color:#64748b; font-size:13px;">
-          ${confirmedSampleMatches.length} groups flagged for review.
+          ${pendingDuplicateGroups.length} groups pending QC validation.
           No inspections have been automatically excluded.
         </p>
       </div>
