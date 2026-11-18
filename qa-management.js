@@ -1,5 +1,53 @@
 // 🫘 GARBANCITO — QA MANAGEMENT
 
+// 🫘 QA MANAGEMENT — MODULE NAVIGATION
+
+window.openQAModule = function (module) {
+  const home = document.getElementById("qaHomeGrid");
+  const content = document.getElementById("qaModuleContent");
+
+  if (!home || !content) return;
+
+  home.style.display = "none";
+  content.innerHTML = "";
+
+  if (module === "inventory") {
+    window.openQAManagement();
+    return;
+  }
+
+  const titles = {
+    history: "📚 Quality History",
+    settings: "⚙️ Reinspection Settings",
+    intelligence: "📊 Quality Intelligence"
+  };
+
+  content.innerHTML = `
+    <section class="qaPanel">
+
+      <button
+        class="secondaryBtn"
+        onclick="backToQAHome()">
+        ← Back
+      </button>
+
+      <h2 style="margin-top:20px;">
+        ${titles[module] || "QA Management"}
+      </h2>
+
+      <p>Module under development.</p>
+
+    </section>
+  `;
+};
+
+window.backToQAHome = function () {
+  const home = document.getElementById("qaHomeGrid");
+  const content = document.getElementById("qaModuleContent");
+
+  if (home) home.style.display = "";
+  if (content) content.innerHTML = "";
+};
 
 // 🫘 QA MANAGEMENT — INSPECTION VALIDATIONS
 async function loadQCInspectionValidations() {
@@ -274,6 +322,13 @@ groupedInventory.forEach(group => {
 
   container.innerHTML = `
     <section class="qaPanel">
+    <button
+  type="button"
+  class="secondaryBtn"
+  onclick="backToQAHome()"
+  style="margin-bottom:20px;">
+  ← Back to QA Management
+</button>
       <div class="qaPanelHeader">
         <div>
           <h2>🍇 QA Management</h2>

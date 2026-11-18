@@ -182,7 +182,7 @@ function show(id) {
   }
 
 if (id === "qa") {
-  window.openQAManagement();
+  window.backToQAHome();
   window.scrollTo(0, 0);
 }
 

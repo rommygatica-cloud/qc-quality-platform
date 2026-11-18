@@ -347,11 +347,39 @@
 
 </section>
 
-    <section id="qa" class="view">
+  <section id="qa" class="view">
 
   <div class="pageIntro">
     <h2>QA Management</h2>
-    <p>Manage storage quality, reinspections, and outbound quality checks.</p>
+    <p>Manage storage quality, reinspections, and quality history.</p>
+  </div>
+
+  <div id="qaHomeGrid" class="qaHomeGrid">
+
+    <article class="stat qaHomeCard"
+             onclick="openQAModule('inventory')">
+      <b>📦 Live Inventory</b>
+      <span>Manage active inventory and reinspection priorities.</span>
+    </article>
+
+    <article class="stat qaHomeCard"
+             onclick="openQAModule('history')">
+      <b>📚 Quality History</b>
+      <span>Review inbound inspections, reinspections, and QA notes.</span>
+    </article>
+
+    <article class="stat qaHomeCard"
+             onclick="openQAModule('settings')">
+      <b>⚙️ Reinspection Settings</b>
+      <span>Configure inspection intervals by commodity, origin, variety, and condition.</span>
+    </article>
+
+    <article class="stat qaHomeCard"
+             onclick="openQAModule('intelligence')">
+      <b>📊 Quality Intelligence</b>
+      <span>Monitor quality trends and inspection performance.</span>
+    </article>
+
   </div>
 
   <div id="qaModuleContent" style="margin-top:28px;"></div>
