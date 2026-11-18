@@ -16,6 +16,12 @@ window.openQAModule = function (module) {
     return;
   }
 
+// 🫘 QA MANAGEMENT — REINSPECTION SETTINGS
+if (module === "settings") {
+  window.openQAReinspectionSettings();
+  return;
+}
+
   const titles = {
     history: "📚 Quality History",
     settings: "⚙️ Reinspection Settings",
@@ -47,6 +53,321 @@ window.backToQAHome = function () {
 
   if (home) home.style.display = "";
   if (content) content.innerHTML = "";
+};
+
+// 🫘 QA MANAGEMENT — REINSPECTION SETTINGS
+
+window.openQAReinspectionSettings = async function () {
+  const container = document.getElementById("qaModuleContent");
+  if (!container) return;
+
+// 🫘 LOAD REINSPECTION RULES FROM SUPABASE
+const { data: reinspectionRules, error: rulesError } =
+  await supabaseClient
+    .from("qa_reinspection_rules")
+    .select("*")
+    .order("commodity")
+    .order("origin")
+    .order("variety")
+    .order("condition_score");
+
+if (rulesError) {
+  console.error("❌ Reinspection Rules Load Error:", rulesError);
+  alert("Unable to load reinspection rules.");
+  return;
+}
+
+console.log(
+  "🫘 Reinspection Rules Loaded:",
+  reinspectionRules?.length ?? 0
+);
+
+// 🫘 GROUP REINSPECTION RULES BY COMMODITY / ORIGIN / VARIETY
+const rulesByVariety = new Map();
+
+(reinspectionRules || []).forEach(rule => {
+  const key = JSON.stringify([
+    rule.commodity,
+    rule.origin,
+    rule.variety
+  ]);
+
+  if (!rulesByVariety.has(key)) {
+    rulesByVariety.set(key, {
+      commodity: rule.commodity,
+      origin: rule.origin,
+      variety: rule.variety,
+      conditions: {}
+    });
+  }
+
+  rulesByVariety.get(key).conditions[rule.condition_score] = {
+    min: rule.min_days,
+    max: rule.max_days
+  };
+});
+
+const groupedRules = [...rulesByVariety.values()];
+
+console.log(
+  "🍇 Reinspection Variety Groups:",
+  groupedRules.length
+);
+
+  container.innerHTML = `
+    <section class="qaPanel">
+
+      <button
+        type="button"
+        class="secondaryBtn"
+        onclick="backToQAHome()">
+        ← Back to QA Management
+      </button>
+
+      <div class="qaPanelHeader" style="margin-top:24px;">
+        <div>
+          <h2>⚙️ Reinspection Settings</h2>
+          <p>
+            Configure reinspection intervals by commodity,
+            origin, variety and condition.
+          </p>
+        </div>
+      </div>
+${hasPermission("reinspection_rules.edit") ? `
+  <div style="
+    display:flex;
+    justify-content:flex-end;
+    margin-top:20px;
+    margin-bottom:12px;
+  ">
+    <button
+      type="button"
+      class="primaryBtn"
+      id="qaAddReinspectionRule">
+      ➕ Add Rule
+    </button>
+  </div>
+` : ""}
+      <div class="qaTableWrap" style="margin-top:24px;">
+        <table class="qaTable">
+          <thead>
+            <tr>
+              <th>Commodity</th>
+              <th>Origin</th>
+              <th>Variety</th>
+              <th>Condition 1</th>
+              <th>Condition 2</th>
+              <th>Condition 3</th>
+            </tr>
+          </thead>
+
+          <tbody id="qaReinspectionRulesBody">
+  ${groupedRules.length
+    ? groupedRules.map(group => {
+
+        const formatDays = condition => {
+          const rule = group.conditions[condition];
+
+          if (!rule) return "—";
+
+          return rule.min === rule.max
+            ? `${rule.min} days`
+            : `${rule.min}–${rule.max} days`;
+        };
+
+        return `
+          <tr>
+            <td>${escapeHtml(group.commodity)}</td>
+            <td>${escapeHtml(group.origin)}</td>
+            <td>${escapeHtml(group.variety)}</td>
+            <td>${formatDays(1)}</td>
+            <td>${formatDays(2)}</td>
+            <td>${formatDays(3)}</td>
+          </tr>
+        `;
+      }).join("")
+    : `
+      <tr>
+        <td colspan="6" style="text-align:center;">
+          No reinspection rules configured yet.
+        </td>
+      </tr>
+    `}
+</tbody>
+        </table>
+      </div>
+
+    </section>
+  `;
+  // 🫘 REINSPECTION SETTINGS — ADD RULE FORM
+document.getElementById("qaAddReinspectionRule")
+  ?.addEventListener("click", () => {
+
+    const existingForm = document.getElementById("qaRuleForm");
+
+    if (existingForm) {
+      existingForm.remove();
+      return;
+    }
+
+    const form = document.createElement("div");
+    form.id = "qaRuleForm";
+    form.className = "qaPanel";
+    form.style.marginTop = "20px";
+
+    form.innerHTML = `
+      <h3>➕ New Reinspection Rule</h3>
+
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+        gap:14px;
+        margin-top:18px;
+      ">
+
+        <label>
+          Commodity
+          <input id="qaRuleCommodity" type="text"
+                 placeholder="Grapes">
+        </label>
+
+        <label>
+          Origin
+          <input id="qaRuleOrigin" type="text"
+                 placeholder="Peru">
+        </label>
+
+        <label>
+          Variety
+          <input id="qaRuleVariety" type="text"
+                 placeholder="Autumn Crisp">
+        </label>
+
+      </div>
+
+      <h4 style="margin-top:24px;">Reinspection Frequency (Days)</h4>
+
+      <div style="
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:16px;
+      ">
+
+        ${[1, 2, 3].map(condition => `
+          <div>
+            <strong>Condition ${condition}</strong>
+
+            <label style="display:block;margin-top:10px;">
+              Minimum Days
+              <input
+                type="number"
+                min="0"
+                id="qaRuleMin${condition}"
+                style="width:100%;box-sizing:border-box;">
+            </label>
+
+            <label style="display:block;margin-top:10px;">
+              Maximum Days
+              <input
+                type="number"
+                min="0"
+                id="qaRuleMax${condition}"
+                style="width:100%;box-sizing:border-box;">
+            </label>
+          </div>
+        `).join("")}
+
+      </div>
+
+      <div style="margin-top:24px;">
+        <button type="button"
+                class="primaryBtn"
+                id="qaSaveNewRule">
+          💾 Save Rule
+        </button>
+
+        <button type="button"
+                class="secondaryBtn"
+                onclick="document.getElementById('qaRuleForm').remove()">
+          Cancel
+        </button>
+      </div>
+    `;
+
+    document.getElementById("qaReinspectionRulesBody")
+      ?.closest(".qaTableWrap")
+      ?.before(form);
+
+// 🫘 REINSPECTION SETTINGS — SAVE NEW RULE
+document.getElementById("qaRuleForm")?.addEventListener("click", async (event) => {
+  if (event.target.id !== "qaSaveNewRule") return;
+
+    if (!hasPermission("reinspection_rules.edit")) {
+      alert("You do not have permission to edit reinspection rules.");
+      return;
+    }
+
+    const value = id =>
+      document.getElementById(id)?.value.trim() || "";
+
+    const commodity = value("qaRuleCommodity");
+    const origin = value("qaRuleOrigin");
+    const variety = value("qaRuleVariety");
+
+    if (!commodity || !origin || !variety) {
+      alert("Please enter Commodity, Origin and Variety.");
+      return;
+    }
+
+    const records = [];
+
+    for (const condition of [1, 2, 3]) {
+      const minText = value(`qaRuleMin${condition}`);
+      const maxText = value(`qaRuleMax${condition}`);
+
+      const min = Number(minText);
+      const max = Number(maxText);
+
+      if (
+        !minText || !maxText ||
+        !Number.isInteger(min) ||
+        !Number.isInteger(max) ||
+        min < 0 || max < min
+      ) {
+        alert(`Invalid days for Condition ${condition}.`);
+        return;
+      }
+
+      records.push({
+        commodity,
+        origin,
+        variety,
+        condition_score: condition,
+        min_days: min,
+        max_days: max
+      });
+    }
+
+    const button = document.getElementById("qaSaveNewRule");
+    button.disabled = true;
+
+    try {
+      const { error } = await supabaseClient
+        .from("qa_reinspection_rules")
+        .insert(records);
+
+      if (error) throw error;
+
+      alert("Reinspection rules saved successfully.");
+      await window.openQAReinspectionSettings();
+
+    } catch (error) {
+      console.error("❌ Reinspection Rule Save Error:", error);
+      alert("Unable to save rules: " + error.message);
+      button.disabled = false;
+    }
+    });
+  });
 };
 
 // 🫘 QA MANAGEMENT — INSPECTION VALIDATIONS
