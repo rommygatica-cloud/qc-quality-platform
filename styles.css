@@ -466,8 +466,7 @@ dialog{
   background:var(--primary-dark);
 }
 
-/* QA CONTROL */
-
+/* QA MANAGEMENT */
 .pageIntro{
   margin-bottom:22px;
 }

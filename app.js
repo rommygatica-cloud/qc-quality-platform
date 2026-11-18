@@ -168,7 +168,7 @@ function show(id) {
     daily: "Inbound Management",
     barcode: "Barcode Verification",
     traceability: "Traceability Search",
-    qa: "QA Control",
+    qa: "QA Management",
     admin: "Administration"
   };
 
@@ -2026,7 +2026,7 @@ console.log(records.slice(0, 10));
   }
 }
 
-/* QA CONTROL */
+/* QA MANAGEMENT */
 
 async function loadQARejections() {
   const { data, error } = await supabaseClient
