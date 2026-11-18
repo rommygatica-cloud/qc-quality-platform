@@ -109,6 +109,61 @@ const rulesByVariety = new Map();
 
 const groupedRules = [...rulesByVariety.values()];
 
+// 🫘 REINSPECTION SETTINGS — OPEN EDIT FORM
+window.editQAReinspectionRule = function (key) {
+  const [commodity, origin, variety] = JSON.parse(key);
+
+  const group = groupedRules.find(r =>
+    r.commodity === commodity &&
+    r.origin === origin &&
+    r.variety === variety
+  );
+
+  if (!group) return;
+
+  // Open the existing form
+  if (!document.getElementById("qaRuleForm")) {
+    document.getElementById("qaAddReinspectionRule")?.click();
+  }
+  // 🫘 STORE ORIGINAL RULE KEY FOR EDITING
+window.qaEditingRuleKey = {
+  commodity,
+  origin,
+  variety
+};
+
+  document.getElementById("qaRuleCommodity").value = commodity;
+  document.getElementById("qaRuleOrigin").value = origin;
+  document.getElementById("qaRuleVariety").value = variety;
+
+  // 🫘 LOCK RULE IDENTITY DURING EDITING
+[
+  "qaRuleCommodity",
+  "qaRuleOrigin",
+  "qaRuleVariety"
+].forEach(id => {
+  document.getElementById(id).readOnly = true;
+});
+
+  [1, 2, 3].forEach(condition => {
+    const rule = group.conditions[condition];
+
+    document.getElementById(`qaRuleMin${condition}`).value =
+      rule?.min ?? "";
+
+    document.getElementById(`qaRuleMax${condition}`).value =
+      rule?.max ?? "";
+  });
+
+  // Prevent inserting duplicate rules until UPDATE is implemented
+  const saveButton = document.getElementById("qaSaveNewRule");
+  saveButton.disabled = false;
+saveButton.textContent = "💾 Save Changes";
+
+  document.querySelector("#qaRuleForm h3").textContent =
+    "✏️ Edit Reinspection Rule";
+};
+
 console.log(
   "🍇 Reinspection Variety Groups:",
   groupedRules.length
@@ -158,6 +213,7 @@ ${hasPermission("reinspection_rules.edit") ? `
               <th>Condition 1</th>
               <th>Condition 2</th>
               <th>Condition 3</th>
+              ${hasPermission("reinspection_rules.edit") ? "<th>Actions</th>" : ""}
             </tr>
           </thead>
 
@@ -183,7 +239,17 @@ ${hasPermission("reinspection_rules.edit") ? `
             <td>${formatDays(1)}</td>
             <td>${formatDays(2)}</td>
             <td>${formatDays(3)}</td>
-          </tr>
+          ${hasPermission("reinspection_rules.edit") ? `
+  <td>
+    <button
+      type="button"
+      class="secondaryBtn"
+      onclick='window.editQAReinspectionRule(${JSON.stringify(JSON.stringify([group.commodity, group.origin, group.variety]))})'>
+      ✏️ Edit
+    </button>
+  </td>
+` : ""}
+</tr>
         `;
       }).join("")
     : `
@@ -203,12 +269,14 @@ ${hasPermission("reinspection_rules.edit") ? `
 document.getElementById("qaAddReinspectionRule")
   ?.addEventListener("click", () => {
 
+    // 🫘 RESET EDIT MODE WHEN ADDING A NEW RULE
+window.qaEditingRuleKey = null;
+
     const existingForm = document.getElementById("qaRuleForm");
 
-    if (existingForm) {
-      existingForm.remove();
-      return;
-    }
+if (existingForm) {
+  existingForm.remove();
+}
 
     const form = document.createElement("div");
     form.id = "qaRuleForm";
@@ -288,7 +356,7 @@ document.getElementById("qaAddReinspectionRule")
 
         <button type="button"
                 class="secondaryBtn"
-                onclick="document.getElementById('qaRuleForm').remove()">
+                onclick="window.qaEditingRuleKey = null; document.getElementById('qaRuleForm').remove()">
           Cancel
         </button>
       </div>
@@ -352,13 +420,45 @@ document.getElementById("qaRuleForm")?.addEventListener("click", async (event) =
     button.disabled = true;
 
     try {
-      const { error } = await supabaseClient
-        .from("qa_reinspection_rules")
-        .insert(records);
+      let error = null;
+
+if (window.qaEditingRuleKey) {
+  // 🫘 EDIT MODE — ATOMIC UPDATE
+  const original = window.qaEditingRuleKey;
+
+  const result = await supabaseClient.rpc(
+    "update_qa_reinspection_rules",
+    {
+      p_commodity: original.commodity,
+      p_origin: original.origin,
+      p_variety: original.variety,
+      p_rules: records.map(record => ({
+        condition_score: record.condition_score,
+        min_days: record.min_days,
+        max_days: record.max_days
+      }))
+    }
+  );
+
+  error = result.error;
+} else {
+  // 🫘 ADD MODE — INSERT NEW RULES
+  const result = await supabaseClient
+    .from("qa_reinspection_rules")
+    .insert(records);
+
+  error = result.error;
+}
 
       if (error) throw error;
 
-      alert("Reinspection rules saved successfully.");
+      alert(
+  window.qaEditingRuleKey
+    ? "Reinspection rules updated successfully."
+    : "Reinspection rules saved successfully."
+);
+
+window.qaEditingRuleKey = null;
       await window.openQAReinspectionSettings();
 
     } catch (error) {
