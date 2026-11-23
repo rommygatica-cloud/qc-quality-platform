@@ -495,7 +495,11 @@ async function loadQCInspectionValidations() {
 // Storage Quality & Reinspection Monitoring
 window.openQAManagement = async function () {
   const container = document.getElementById("qaModuleContent");
+  const home = document.getElementById("qaHomeGrid");
+
   if (!container) return;
+
+  if (home) home.style.display = "none";
 
   // 🫘 QA MANAGEMENT — LOAD CURRENT FAMOUS INVENTORY
   let inventoryRows = [];
@@ -545,6 +549,7 @@ inventoryRows.forEach(row => {
 });
 
 const groupedInventory = [...inventoryGroups.values()];
+window.qaGroupedInventory = groupedInventory;
 
 // 🫘 QA MANAGEMENT — LOAD INSPECTION VALIDATIONS
 const inspectionValidations = await loadQCInspectionValidations();
@@ -865,6 +870,17 @@ ${canValidateInspections ? `
           No inspections have been automatically excluded.
         </p>
       </div>
+
+    <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+    <button
+    type="button"
+    class="primaryBtn"
+    id="qaCreateReinspectionRequest"
+    >
+    📋 Create Reinspection Request
+    </button>
+    </div>
+
   <h3>📦 Current Storage Inventory</h3>
   <p style="color:#64748b;">
     Active Famous inventory · Storage Quality Monitoring
@@ -874,6 +890,7 @@ ${canValidateInspections ? `
     <table class="qaTable">
       <thead>
         <tr>
+          <th>☑</th>
           <th>PO</th>
           <th>Lot</th>
           <th>Commodity</th>
@@ -893,6 +910,13 @@ ${canValidateInspections ? `
   onclick="this.nextElementSibling.hidden = !this.nextElementSibling.hidden"
   title="Click to view pallets"
 >
+<td onclick="event.stopPropagation()">
+  <input
+    type="checkbox"
+    class="qaReinspectionSelect"
+    data-group-index="${index}"
+  >
+</td>
   <td>▶ ${escapeHtml(group.po)}</td>
       <td>${escapeHtml(group.lot)}</td>
       <td>${escapeHtml(group.commodity)}</td>
@@ -908,7 +932,7 @@ ${canValidateInspections ? `
       <td>${group.boxes.toLocaleString()}</td>
     </tr>
     <tr hidden>
-  <td colspan="9" style="padding:16px; background:#f8fafc;">
+  <td colspan="10" style="padding:16px; background:#f8fafc;">
 
     <div style="font-weight:600; margin-bottom:12px;">
       📦 Pallet Details — ${group.pallets.size} pallets
@@ -918,6 +942,7 @@ ${canValidateInspections ? `
       <table class="qaTable">
         <thead>
           <tr>
+            <th>☑</th>
             <th>Pallet ID</th>
             <th>Size</th>
             <th>Package</th>
@@ -931,6 +956,14 @@ ${canValidateInspections ? `
         <tbody>
           ${group.rows.map(r => `
             <tr>
+    <td>
+    <input
+    type="checkbox"
+    class="qaPalletSelect"
+    data-pallet-id="${escapeHtml(r.pallet)}"
+    data-group-index="${index}"
+    >
+    </td>
               <td>${escapeHtml(r.pallet)}</td>
               <td>${escapeHtml(r.size)}</td>
               <td>${escapeHtml(r.package)}</td>
@@ -966,7 +999,47 @@ ${canValidateInspections ? `
 </div>
     </section>
   `;
+
+     document.getElementById("qaCreateReinspectionRequest")
+    ?.addEventListener("click", () => {
+
+    const selectedLots = [
+      ...document.querySelectorAll(".qaReinspectionSelect:checked")
+    ];
+
+    const selectedPallets = [
+  ...document.querySelectorAll(".qaPalletSelect:checked")
+];
+
+console.table(
+  selectedPallets.map(pallet => {
+    const group = window.qaGroupedInventory?.[
+      Number(pallet.dataset.groupIndex)
+    ];
+
+const palletData = group?.rows.find(
+  r => String(r.pallet).trim() === pallet.dataset.palletId
+);
+
+    return {
+      palletId: pallet.dataset.palletId,
+      po: group?.po,
+      gs1lot: group?.lot,
+      grower: group?.grower,
+      variety: group?.variety
+    };
+  })
+);
+
+alert(
+  `${selectedLots.length} lot(s) selected.\n` +
+  `${selectedPallets.length} specific pallet(s) selected.`
+);
+
+    });
+
 };
+
 // 🔬 QA MANAGEMENT — INSPECTION REVIEW
 window.openQADuplicateReview = async function (groupIndex) {
   if (!hasPermission("inspections.validate")) {

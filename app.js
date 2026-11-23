@@ -4850,6 +4850,7 @@ const groupedLines = Object.values(
         temp_rec_loc: x.temp_rec_loc,
         condition: x.condition,
         pallet_numbers: [],
+        manifest_line_ids: [],
         pallets: 0,
         boxes: 0
       };
@@ -4857,6 +4858,9 @@ const groupedLines = Object.values(
 
     acc[key].pallets += 1;
     acc[key].boxes += Number(x.boxes || 0);
+    if (x.id) {
+    acc[key].manifest_line_ids.push(x.id);
+}
     if (x.pallet_number) {
   acc[key].pallet_numbers.push(x.pallet_number);
 }
@@ -4864,6 +4868,33 @@ const groupedLines = Object.values(
     return acc;
   }, {})
 );
+
+// 🫘 PACK DATE — VERIFICATION BY SEGREGATION
+
+groupedLines.forEach(group => {
+  const verifications = group.manifest_line_ids
+    .map(id => window.packDateVerificationByLineId?.[id])
+    .filter(Boolean);
+
+  group.pack_date_verification = verifications.sort(
+    (a, b) => new Date(b.verified_at) - new Date(a.verified_at)
+  )[0] || null;
+});
+
+// 🫘 WALMART SCAN — VERIFICATION BY SEGREGATION
+
+groupedLines.forEach(group => {
+    group.walmart_scan_required =
+    String(group.commodity || "").toUpperCase().includes("GRAPE") &&
+    /\bBAG\b/i.test(String(group.pack_style || ""));
+  const verifications = group.manifest_line_ids
+    .map(id => window.walmartScanVerificationByLineId?.[id])
+    .filter(Boolean);
+
+  group.walmart_scan_verification = verifications.sort(
+    (a, b) => new Date(b.verified_at) - new Date(a.verified_at)
+  )[0] || null;
+});
 
   return `
     <tr class="arrivalDetailRow">
@@ -4995,6 +5026,7 @@ ${isHistoricalView && inspectedPalletCount > 0 ? `
               <th>Variety</th>
               <th>Subgrower</th>
               <th>Pack Date</th>
+              <th>Pack Date Verification</th>
               <th>Pack</th>
               <th>Size</th>
               <th>Pallets</th>
@@ -5002,6 +5034,7 @@ ${isHistoricalView && inspectedPalletCount > 0 ? `
               <th>Pallet Numbers</th>
               <th>Label</th>
               <th>Condition</th>
+              <th>Walmart Scan</th>
               </tr>
               </thead>
             <tbody>
@@ -5012,6 +5045,20 @@ ${isHistoricalView && inspectedPalletCount > 0 ? `
                   <td>${x.variety || "-"}</td>
                   <td>${x.subgrower || "-"}</td>
                   <td>${x.pack_date || "-"}</td>
+                  <td>
+                  <span
+style="font-weight:600; cursor:pointer; text-decoration:underline;
+color:${x.pack_date_verification?.result === "Match" ? "#15803d" :
+x.pack_date_verification?.result === "Mismatch" ? "#dc2626" : "#d97706"};"
+  onclick="openPackDateVerification('${x.pack_date || ""}', '${container.id}', '${x.manifest_line_ids[0] || ""}')"
+>
+${x.pack_date_verification?.result === "Match"
+? "🟢 Match (Sampled)"
+: x.pack_date_verification?.result === "Mismatch"
+? "🔴 Mismatch"
+: "🟡 Pending"}
+</span>
+                  </td>
                   <td>${x.pack_style || "-"}</td>
                   <td>${x.size || "-"}</td>
                   <td>${x.pallets}</td>
@@ -5024,10 +5071,10 @@ ${isHistoricalView && inspectedPalletCount > 0 ? `
         const inspection = inspectionByPallet[palletNumber];
 
         return inspection
-          ? `
-            <span class="palletSampled">
-              ✓ ${palletNumber}
-              ${inspection.qc_grade
+        ? `
+        <span class="palletSampled">
+        ✓ ${palletNumber}
+        ${inspection.qc_grade
   ? `
     <strong class="qcGradeBadge ${getQcGradeColorClass(inspection.qc_grade)}">
       ${inspection.qc_grade}
@@ -5053,13 +5100,31 @@ ${isHistoricalView && inspectedPalletCount > 0 ? `
       : (x.condition || "-")
   }
 </td>
-                  </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      </td>
-    </tr>
+<td>
+  ${!x.walmart_scan_required
+    ? `<span style="color:#94a3b8; font-weight:500;">N/A</span>`
+    : `
+      <span
+        style="font-weight:600; cursor:pointer; text-decoration:underline;
+          color:${x.walmart_scan_verification?.result === "Pass" ? "#15803d" :
+                  x.walmart_scan_verification?.result === "Fail" ? "#dc2626" : "#d97706"};"
+        onclick="openWalmartScanVerification('${container.id}', '${x.manifest_line_ids[0] || ""}')"
+      >
+        ${x.walmart_scan_verification?.result === "Pass"
+          ? "🟢 Pass"
+          : x.walmart_scan_verification?.result === "Fail"
+            ? "🔴 Fail"
+            : "🟡 Pending"}
+      </span>
+    `}
+</td>
+  </tr>
+  `).join("")}
+  </tbody>
+  </table>
+  </div>
+  </td>
+  </tr>
   `;
 }
 
@@ -5249,6 +5314,56 @@ while (true) {
   offset += 1000;
 }
   console.log("🔎 MANIFEST LINES LOADED:", manifestLines?.length);
+
+  // 🫘 LOAD PACK DATE VERIFICATIONS
+
+const { data: packDateVerifications, error: packDateError } =
+  await supabaseClient
+    .from("pack_date_verifications")
+    .select("*")
+    .in("container_id", arrivalIds)
+    .order("verified_at", { ascending: false });
+
+if (packDateError) {
+  console.error("Pack Date Verifications error:", packDateError);
+}
+
+// 🫘 PACK DATE — LATEST VERIFICATION BY MANIFEST LINE
+
+const packDateVerificationByLineId = {};
+
+(packDateVerifications || []).forEach(v => {
+  if (!packDateVerificationByLineId[v.manifest_line_id]) {
+    packDateVerificationByLineId[v.manifest_line_id] = v;
+  }
+});
+
+window.packDateVerificationByLineId = packDateVerificationByLineId;
+
+// 🫘 LOAD WALMART SCAN VERIFICATIONS
+
+const { data: walmartScanVerifications, error: walmartScanError } =
+  await supabaseClient
+    .from("walmart_scan_verifications")
+    .select("*")
+    .in("container_id", arrivalIds)
+    .order("verified_at", { ascending: false });
+
+if (walmartScanError) {
+  console.error("Walmart Scan Verifications error:", walmartScanError);
+}
+
+// 🫘 WALMART SCAN — LATEST VERIFICATION BY MANIFEST LINE
+
+const walmartScanVerificationByLineId = {};
+
+(walmartScanVerifications || []).forEach(v => {
+  if (!walmartScanVerificationByLineId[v.manifest_line_id]) {
+    walmartScanVerificationByLineId[v.manifest_line_id] = v;
+  }
+});
+
+window.walmartScanVerificationByLineId = walmartScanVerificationByLineId;
 
 if (manifestError) {
   console.error("Manifest lines error:", manifestError);
@@ -6768,3 +6883,186 @@ if (tabName === "users") {
 }
 
 load();
+
+// 🫘 PACK DATE VERIFICATION — MODAL
+
+window.openPackDateVerification = function (manifestPackDate, containerId, manifestLineId) {
+window.currentManifestPackDate = manifestPackDate;
+window.currentPackDateContainerId = containerId;
+window.currentPackDateManifestLineId = manifestLineId;
+
+  $("modalContent").innerHTML = `
+    <h2>📦 Pack Date Verification</h2>
+    <p><strong>Manifest Pack Date:</strong> ${manifestPackDate || "-"}</p>
+
+    <p>Verify the physical pack date against the manifest.</p>
+
+    <label>Pallets Sampled</label>
+    <input
+      type="number"
+      id="packDateSampled"
+      min="1"
+      max="9999"
+      style="width:75px; padding:8px; text-align:center;"
+    >
+
+    <label>Physical Pack Date</label>
+    <input
+      type="date"
+      id="physicalPackDate"
+    >
+    <div style="margin-top:20px;">
+  <button
+    type="button"
+    class="primaryBtn"
+    onclick="checkPackDateVerification()"
+  >
+    Verify Pack Date
+  </button>
+</div>
+  `;
+
+  $("modal").showModal();
+
+};
+
+// 🫘 PACK DATE — COMPARE PHYSICAL VS MANIFEST
+
+window.checkPackDateVerification = async function () {
+
+  const sampled = Number($("packDateSampled")?.value);
+  const physicalDate = $("physicalPackDate")?.value;
+  const manifestDate = window.currentManifestPackDate;
+
+  if (!Number.isInteger(sampled) || sampled < 1 || !physicalDate) {
+    alert("Please enter the number of pallets sampled and the physical pack date.");
+    return;
+  }
+
+  // Convert manifest date (17-Oct-26) to YYYY-MM-DD
+  const months = {
+    Jan: "01", Feb: "02", Mar: "03", Apr: "04",
+    May: "05", Jun: "06", Jul: "07", Aug: "08",
+    Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+  };
+
+  const parts = String(manifestDate || "").split("-");
+
+  if (parts.length !== 3 || !months[parts[1]]) {
+    alert("Manifest Pack Date is missing or invalid.");
+    return;
+  }
+
+  const normalizedManifest =
+    `20${parts[2]}-${months[parts[1]]}-${parts[0].padStart(2, "0")}`;
+
+  const isMatch = physicalDate === normalizedManifest;
+
+  // 🫘 SAVE PACK DATE VERIFICATION TO SUPABASE
+
+const { data: { user } } = await supabaseClient.auth.getUser();
+
+const { error } = await supabaseClient
+  .from("pack_date_verifications")
+  .insert({
+    container_id: window.currentPackDateContainerId,
+    manifest_line_id: window.currentPackDateManifestLineId,
+    pallets_sampled: sampled,
+    manifest_pack_date: manifestDate,
+    physical_pack_date: physicalDate,
+    result: isMatch ? "Match" : "Mismatch",
+    verified_by: user?.email || "Unknown"
+  });
+
+if (error) {
+  console.error("Pack Date Verification error:", error);
+  alert("Unable to save verification: " + error.message);
+  return;
+}
+
+  alert(
+    `${isMatch ? "🟢 MATCH" : "🔴 MISMATCH"}\n\n` +
+    `Manifest: ${manifestDate}\n` +
+    `Physical: ${physicalDate}\n` +
+    `Pallets Sampled: ${sampled}`
+  );
+
+$("modal").close();
+
+await loadInboundArrivals();
+
+};
+
+// 🫘 WALMART SCAN VERIFICATION — MODAL
+
+window.openWalmartScanVerification = function (containerId, manifestLineId) {
+  window.currentWalmartContainerId = containerId;
+  window.currentWalmartManifestLineId = manifestLineId;
+
+  $("modalContent").innerHTML = `
+    <h2>📱 Walmart Scan Verification</h2>
+
+    <p>Verify that the grape bag barcode scans correctly.</p>
+
+    <label>Scan Result</label>
+    <select id="walmartScanResult">
+      <option value="">Select result</option>
+      <option value="Pass">🟢 Pass</option>
+      <option value="Fail">🔴 Fail</option>
+    </select>
+    <div style="margin-top:20px;">
+<button
+type="button"
+class="primaryBtn"
+onclick="saveWalmartScanVerification()"
+>
+      Save Verification
+      </button>
+      </div>
+      `;
+
+  $("modal").showModal();
+
+};
+
+// 🫘 WALMART SCAN — SAVE VERIFICATION
+
+window.saveWalmartScanVerification = async function () {
+
+  const result = $("walmartScanResult")?.value;
+
+  if (!["Pass", "Fail"].includes(result)) {
+    alert("Please select Pass or Fail.");
+    return;
+  }
+
+  const { data: { user }, error: userError } =
+    await supabaseClient.auth.getUser();
+
+  if (userError) {
+    console.error("Walmart Scan user error:", userError);
+    alert("Unable to verify the current user.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("walmart_scan_verifications")
+    .insert({
+      container_id: window.currentWalmartContainerId,
+      manifest_line_id: window.currentWalmartManifestLineId,
+      result: result,
+      verified_by: user?.email || "Unknown"
+    });
+
+  if (error) {
+    console.error("Walmart Scan save error:", error);
+    alert("Unable to save verification: " + error.message);
+    return;
+  }
+
+  alert(`Walmart Scan Verification saved: ${result}`);
+  $("modal").close();
+
+await loadInboundArrivals();
+
+};

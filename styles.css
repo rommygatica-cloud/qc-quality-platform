@@ -809,10 +809,10 @@ canvas{
 }
 
 #qa.view.active .qaHomeGrid{
-  display:grid !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  height:auto !important;
+  display:grid;
+  visibility:visible;
+  opacity:1;
+  height:auto;
 }
 
 .arrivalHealthCard{
