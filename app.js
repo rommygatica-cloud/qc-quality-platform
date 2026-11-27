@@ -4869,6 +4869,18 @@ const groupedLines = Object.values(
   }, {})
 );
 
+console.table(
+  groupedLines.map(group => ({
+    lot: group.lot,
+    variety: group.variety,
+    pack_date: group.pack_date,
+    manifest_line_ids: group.manifest_line_ids.join(", "),
+    matching_verifications: group.manifest_line_ids.filter(
+      id => window.packDateVerificationByLineId?.[id]
+    ).length
+  }))
+);
+
 // 🫘 PACK DATE — VERIFICATION BY SEGREGATION
 
 groupedLines.forEach(group => {
@@ -5327,6 +5339,12 @@ const { data: packDateVerifications, error: packDateError } =
 if (packDateError) {
   console.error("Pack Date Verifications error:", packDateError);
 }
+
+console.log("🫘 PACK DATE VERIFICATIONS LOADED:", {
+  total: packDateVerifications?.length || 0,
+  records: packDateVerifications,
+  error: packDateError
+});
 
 // 🫘 PACK DATE — LATEST VERIFICATION BY MANIFEST LINE
 
